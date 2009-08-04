@@ -1,0 +1,8 @@
+
+
+
+
+===FOR ANALYZING RESULTS FROM NETZSCORE OF BALDO:
+python netzcore.py  -t other -s data/ori_human/nodes_netzscore.sif -i data/netscore_results/aneurist_netscore/aneurist_2_r1_ms10_mx10mxe0_mnd01mnde0_mn00001mne0_dn5de10_nd5n25_xi5 -o aneurist_2_
+
+

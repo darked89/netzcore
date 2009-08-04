@@ -1,0 +1,42 @@
+
+CC=g++
+CFLAGS=-I $(HOME)/lib/boost_1_38_0/ -O3 #-Wall
+LDFLAGS=-c
+SRC=Graph.cpp Netshort.cpp ScoreNetwork.cpp Netscore.cpp
+#SRCNETSCORE=Graph.cpp Netscore.cpp ScoreNetwork.cpp 
+HEADER=Graph.hpp Netshort.hpp Netscore.hpp ScoreNetwork.hpp
+SRCTEST=$(wildcard test*.cpp) #does not work: test*.cpp
+HEADERTEST=$(wildcard test*.hpp)
+OBJ=$(patsubst %.cpp, %.o, $(SRC)) #does not work: $(SRC,.cpp=.o) 
+OBJTEST=$(patsubst %.cpp, %.o, $(SRCTEST))
+#OBJNETSCORE=$(patsubst %.cpp, %.o, $(SRCNETSCORE))
+
+all: scoreN test
+	
+scoreN: $(OBJ) $(HEADER) main.cpp
+	#echo $(SRC)
+	#echo $(OBJ)
+	$(CC) $(CFLAGS) $(OBJ) main.cpp -o scoreN
+
+test: $(OBJTEST) $(OBJ) $(HEADERTEST)
+	#$(CC) $(CFLAGS) $(OBJTEST) Netscore.o $(OBJ) main_test.cpp -o test
+	$(CC) $(CFLAGS) $(OBJTEST) $(OBJ) main_test.cpp -o testN
+
+#netscore: $(OBJNETSCORE)
+#	$(CC) $(CFLAGS) $(OBJNETSCORE) main_netscore.cpp -o netscore
+
+$(OBJ): $(SRC)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(SRC)
+
+$(OBJTEST): $(SRCTEST)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(SRCTEST)
+
+#$(OBJNETSCORE): $(SRCNETSCORE)
+#	$(CC) $(CFLAGS) $(LDFLAGS) $(SRCNETSCORE)
+
+#Graph.hpp:
+#	touch ScoreNetwork.hpp
+
+clean:
+	rm -f *.o
+
