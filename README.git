@@ -3,12 +3,16 @@ git init
 git add .
 git commit 
 git status
-#<operations on file1 file2>
-git diff --cached
+# operations on file1 file2
+git diff #--cached
 git commit -a "" 
-#or git add file1 file2 and git commit
+# or 
+#git add file1 file2 and git commit
 git remote add backup dayan:backup
+# need to make sure git is in the path of login shell (usually requires to modify .bashrc)
+# also need to create the folder as a git repository on remote
 git push backup master
 git pull backup master
-#from other place
+# from other place
 git clone backup project
+
