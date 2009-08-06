@@ -9,6 +9,7 @@ SRCNETSCORE=Netscore.cpp
 #SRCNETSCORE2=Netscore2.cpp
 SRCNETSHORT=Netshort.cpp
 SRCNETRANK=Netrank.cpp
+SRCNETZCORE=Netzcore.cpp
 
 HEADERGRAPHEXTRA=graph/page_rank_with_initial_ranks.hpp graph/clustering_coefficient.hpp
 OBJGRAPH=$(patsubst %.cpp, %.o, $(SRCGRAPH))
@@ -17,8 +18,9 @@ OBJNETSCORE=$(patsubst %.cpp, %.o, $(SRCNETSCORE))
 OBJNETSHORT=$(patsubst %.cpp, %.o, $(SRCNETSHORT))
 OBJNETRANK=$(patsubst %.cpp, %.o, $(SRCNETRANK))
 #OBJNETSCORE2=$(patsubst %.cpp, %.o, $(SRCNETSCORE2))
+OBJNETZCORE=$(patsubst %.cpp, %.o, $(SRCNETZCORE))
 
-OBJ=$(OBJGRAPH) $(OBJSNETWORK) $(OBJNETSCORE) $(OBJNETSHORT) $(OBJNETRANK) #$(OBJNETSCORE2)
+OBJ=$(OBJGRAPH) $(OBJSNETWORK) $(OBJNETSCORE) $(OBJNETSHORT) $(OBJNETRANK) #$(OBJNETZCORE) #$(OBJNETSCORE2)
 SRCMAIN=main.cpp
 SRCMAINNETSCORE=main_netscore.cpp
 
@@ -27,7 +29,7 @@ SRCTEST=main_test.cpp
 #SRCTEST=$(wildcard test*.cpp) 
 #OBJTEST=$(patsubst %.cpp, %.o, $(SRCTEST))
 
-all: scoreN testN netscore 
+all: scoreN testN netscore $(OBJNETZCORE)
 
 scoreN: $(OBJGRAPH) $(OBJSNETWORK) $(OBJNETSCORE) $(OBJNETSHORT) $(OBJNETRANK) $(SRCMAIN)
 	$(CC) $(CFLAGS) $(OBJGRAPH) $(OBJSNETWORK) $(OBJNETSCORE) $(OBJNETSHORT) $(OBJNETRANK) $(SRCMAIN) -o scoreN
@@ -37,6 +39,9 @@ netscore: $(OBJNETSCORE) $(SRCMAINNETSCORE)
 
 testN: $(OBJ) $(HEADERTEST)
 	$(CC) $(CFLAGS) $(OBJ) $(SRCTEST) -o testN
+
+$(OBJNETZCORE): $(SRCNETZCORE) 
+	$(CC) $(CFLAGS) $(LDFLAGS) $(SRCNETZCORE)
 
 $(OBJNETRANK): $(SRCNETRANK) 
 	$(CC) $(CFLAGS) $(LDFLAGS) $(SRCNETRANK)
