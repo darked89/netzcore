@@ -1,13 +1,37 @@
+# Creating a initial git repo from scratch
 cd project
 git init
 git add .
 git commit 
 git status
+
 # operations on file1 file2
 git diff #--cached
 git commit -a "" 
 # or 
 #git add file1 file2 and git commit
+
+# Using git like CVS (e.g. on seferad)
+mkdir repo.git/
+mkdir repo.git/netzcore
+cd repo.git/netzcore
+git --bare init --shared
+git --bare fetch weizmann:arastirma/netzcore/src master:master
+
+# cvs checkout
+git clone sefarad:repo.git/netzcore netzcore
+cd netzcore
+
+# cvs update
+git pull origin
+
+# cvs commit
+git push origin master
+# or (if master is the only branch in shared repo
+#git push origin
+#git push sefarad:repo.git/netzcore/
+
+# Other
 git remote add backup dayan:backup
 # need to make sure git is in the path of login shell (usually requires to modify .bashrc)
 # also need to create the folder as a git repository on remote
@@ -15,4 +39,5 @@ git push backup master
 git pull backup master
 # from other place
 git clone backup project
+
 
