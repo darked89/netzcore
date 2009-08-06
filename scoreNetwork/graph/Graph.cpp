@@ -71,14 +71,14 @@ Vertex Graph::addVertex(string const &id, float vData)
     Vertex v;
     unsigned int i = num_vertices(this->container);
     mapIdToIndex.right.insert(BiStrToUInt::right_value_type(i,id)); //mapIdToIndex.insert(BiStrToUInt::value_type(id, i)); // also using bundled id vertex attribute
-    //v = add_vertex(VertexProperties(i, VertexAttributes(id, vData)), this->container); // If graph defined with VertexAttributes instead of VertexProperties
+    ////v = add_vertex(VertexProperties(i, VertexAttributes(id, vData)), this->container); // If graph defined with VertexAttributes instead of VertexProperties
     v = add_vertex(i, this->container); //v=add_vertex(this->container);
     mapIndexToVertex.insert(make_pair(i, v)); // UIntToVertex::value_type(i, v) 
-    //container[v].id = id;
-    container[v].scoreInitial = vData;
+    ////container[v].id = id;
+    //container[v].scoreInitial = vData;
     container[v].score = vData;
-    //cout << get(vertex_index, this->container, v) << endl;
-    //cout << "Added vertex: " << i << " " << id << " " << vData << endl;
+    ////cout << get(vertex_index, this->container, v) << endl;
+    ////cout << "Added vertex: " << i << " " << id << " " << vData << endl;
     return v;
 }
 

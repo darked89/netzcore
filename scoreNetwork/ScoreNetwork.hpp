@@ -10,6 +10,10 @@
 //#define CONTROL 0
 #define sq(x) (x*x)
 
+//typedef boost::unordered_map<Vertex, float> VertexToFloat;
+//typedef std::map<Vertex, float> VertexToFloat;
+typedef boost::unordered_map<Vertex, float> VertexToFloat;
+
 class ScoreNetwork {
 public:
     ScoreNetwork(); 
@@ -54,6 +58,9 @@ protected:
     void scaleNodeScores();
     float transferScore(float score, float a = 0.5, float b = 0.1); 
 
+    float getVertexScoreUpdated(Vertex const v) const { return mapScoreUpdated.at(v); };
+    void setVertexScoreUpdated(Vertex const v, float vData) { mapScoreUpdated[v] = vData; };
+
 private:
     // CONSTANTS (MACROS)
     //static const float MIN_SCORE = 0.0;
@@ -66,6 +73,7 @@ private:
     // MEMBERS
     Graph network;
     //unordered_set<string> setSource;
+    VertexToFloat mapScoreUpdated;
 };
 
 #endif // SCORENETWORK_HPP_

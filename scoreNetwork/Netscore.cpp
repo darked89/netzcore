@@ -26,7 +26,9 @@ void Netscore::initializeScoring() {
     VertexIterator it, itEnd;
     for(boost::tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) 
     {
-	getNetwork().createVertexMessageMap(*it);
+	createVertexMessageMap(*it);
+	setVertexScoreInitial(*it, getNetwork().getVertexScore(*it));
+	setVertexScoreUpdated(*it, 0.0);
     }
 }
 
@@ -39,7 +41,7 @@ void Netscore::initializeRepeatition()
 	//std::cout << getNetwork().getVertexName(*it) << std::endl;
 	//mapMessage = getNetwork().getVertexMessageMap(*it); 
 	//mapMessage[getNetwork().getVertexIndex(*it)] = std::pair<float, int>(1.0, 0);
-	pMapMessage = getNetwork().getVertexMessageMap(*it); 
+	pMapMessage = getVertexMessageMap(*it); 
 	(*pMapMessage)[getNetwork().getVertexIndex(*it)] = boost::make_tuple(1.0, 0, 1); //std::pair<float, int>(1.0, 0);
 	//UIntToMessage::iterator mt, mtEnd;
 	//for(mt=mapMessage.begin(), mtEnd=mapMessage.end(); mt != mtEnd; ++mt)
@@ -54,7 +56,7 @@ void Netscore::updateNodeScore(Vertex v)
 {
     AdjVertexIterator vt, vtEnd;
     UIntToMessage::iterator it, itEnd, itSearch;
-    UIntToMessage * pMapMessage = getNetwork().getVertexMessageMap(v), mapMessageNeighbor;
+    UIntToMessage * pMapMessage = getVertexMessageMap(v), mapMessageNeighbor;
     float tempScore = 0.0;
     //boost::unordered_map<unsigned int, unsigned int> mapIterationToCount;
     unsigned int nMessagesRecieved = 0;
@@ -65,7 +67,7 @@ void Netscore::updateNodeScore(Vertex v)
     {
 	if(flagVerbose)
 	    std::cout << "--Messages from neighbor: " << getNetwork().getVertexName(*vt) << std::endl; 
-	mapMessageNeighbor = *(getNetwork().getVertexMessageMap(*vt)); 
+	mapMessageNeighbor = *(getVertexMessageMap(*vt)); 
 	for(it=mapMessageNeighbor.begin(), itEnd=mapMessageNeighbor.end(); it != itEnd; ++it)
 	{
 	    //std::cout << boost::get<1>(it->second) << " " << iterationCounter << std::endl;
@@ -103,11 +105,11 @@ void Netscore::updateNodeScore(Vertex v)
 	// Vertex score contains accumulated score over the iterations so only consider messages from that iteration
 	if(boost::get<1>(it->second) == iterationCounter) 
 	{
-	    tempScore += boost::get<0>(it->second) * getNetwork().getVertexScoreInitial(getNetwork().getVertex(it->first));
+	    tempScore += boost::get<0>(it->second) * getVertexScoreInitial(getNetwork().getVertex(it->first));
 	    //nMessagesRecieved += 1;
 	    nMessagesRecieved += boost::get<2>(it->second);
 	    if(flagVerbose)
-		std::cout << "Evaluating message of " << it->first << " " << getNetwork().getVertexName(it->first) << " score: " << tempScore << "(+ " << boost::get<0>(it->second) << " * " << getNetwork().getVertexScoreInitial(getNetwork().getVertex(it->first)) <<" )" << std::endl; 
+		std::cout << "Evaluating message of " << it->first << " " << getNetwork().getVertexName(it->first) << " score: " << tempScore << "(+ " << boost::get<0>(it->second) << " * " << getVertexScoreInitial(getNetwork().getVertex(it->first)) <<" )" << std::endl; 
 	}
     }
     if(nMessagesRecieved != 0) 
@@ -118,10 +120,10 @@ void Netscore::updateNodeScore(Vertex v)
     // Remove initial score if accumulation to initial score is not desired
     if(flagAccumulateToInitialNodeScore == false && iterationCounter == 1) 
     {
-    	tempScore -= getNetwork().getVertexScoreInitial(v);
+    	tempScore -= getVertexScoreInitial(v);
     } 
     // Update scoreUpdated (for error calculation)
-    getNetwork().setVertexScoreUpdated(v, tempScore);
+    setVertexScoreUpdated(v, tempScore);
     if(flagVerbose)
 	std::cout << "Score calculated for " << getNetwork().getVertexName(v) << ": " << tempScore << " after iteration " << iterationCounter << std::endl;
 }

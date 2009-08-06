@@ -117,9 +117,9 @@ float ScoreNetwork::calculateErrorAndUpdateScores() {
                 //!pVertex->data.scoreUpdated = pVertex->data.scoreInitial; 
             //}
         //}
-        error = getNetwork().getVertexScoreUpdated(*it) - getNetwork().getVertexScore(*it); 
+        error = getVertexScoreUpdated(*it) - getNetwork().getVertexScore(*it); 
         sumErrorNode += sq(error);
-	getNetwork().setVertexScore(*it, getNetwork().getVertexScoreUpdated(*it)); 
+	getNetwork().setVertexScore(*it, getVertexScoreUpdated(*it)); 
         //!pVertex->data.score = pVertex->data.scoreUpdated;
 	// For the time being, not considering updation of edge scores
 	/*

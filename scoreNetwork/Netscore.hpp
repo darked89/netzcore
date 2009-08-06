@@ -3,6 +3,13 @@
 
 #include "ScoreNetwork.hpp"
 
+#include <boost/unordered_map.hpp>
+
+typedef boost::unordered_map<unsigned int,  Message> UIntToMessage;
+//typedef std::map<unsigned int,  Message> UIntToMessage;
+typedef boost::unordered_map<Vertex, UIntToMessage* > VertexToMessageMap;
+//typedef std::map<Vertex, UIntToMessage* > VertexToMessageMap;
+
 class Netscore: public ScoreNetwork {
 public:
     Netscore(); 
@@ -14,8 +21,15 @@ private:
     void initializeRepeatition();
     void updateNodeScore(Vertex v);
 
+    UIntToMessage * getVertexMessageMap(Vertex const v) { return messageMaps[v]; };
+    void createVertexMessageMap(Vertex const v) { messageMaps[v] = new UIntToMessage(); };
+
+    float getVertexScoreInitial(Vertex const v) const { return mapScoreInitial.at(v); };
+    void setVertexScoreInitial(Vertex const v, float vData) { mapScoreInitial[v] = vData; };
+
     // MEMBERS
-    //VertexToMessageMap 
+    VertexToMessageMap messageMaps;
+    VertexToFloat mapScoreInitial;
 };
 
 #endif // NETSCORE_HPP_

@@ -19,7 +19,7 @@ int main(int argc, char **argv)
     static const char *optString = "n:e:i:s:o:h?";
     int opt = 0;
     string fileNode, fileEdge, fileOutput;
-    enum ScoringMethod { NETSHORT, NETSCORE, NETRANK };
+    enum ScoringMethod { NETSHORT = 0, NETSCORE = 1, NETRANK = 2 };
     //ScoringMethod scoring = NETSCORE;
     unsigned int nIteration = 1, scoring = 1;
     opt = getopt( argc, argv, optString );

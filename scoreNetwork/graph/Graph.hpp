@@ -27,17 +27,17 @@ struct edge_score_t {
 
 //typedef std::pair<float, int> Message;
 typedef boost::tuple<float, int, int> Message;
-typedef boost::unordered_map<unsigned int,  Message> UIntToMessage;
+//typedef boost::unordered_map<unsigned int,  Message> UIntToMessage;
 
 // Define features as bundled types - somewhat suggested
 struct VertexAttributes {
     ////unsigned int index; // using built-in index attribute
     ////std::string id; // not necessary to store it here since there is the mapIdToIndex in graph
-    float scoreInitial; // Should the error need not be calculated, this would be unnecessary - one would use score as initial scores and scoreUpdated for updated scores
+    //float scoreInitial; // Should the error need not be calculated, this would be unnecessary - one would use score as initial scores and scoreUpdated for updated scores
     float score;
-    float scoreUpdated;
+    //float scoreUpdated;
     ////UIntToMessage mapMessage;
-    UIntToMessage* pMapMessage; // naming consideration: p_mapMessage;
+    //UIntToMessage* pMapMessage; // naming consideration: p_mapMessage;
     //VertexAttributes(unsigned int i=0, std::string id="", float s=0):index(i), id(id), score(s) {};
     VertexAttributes(float s=0):score(s) {};
     ////VertexAttributes(std::string id="", float s=0):id(id), score(s) {};
@@ -98,15 +98,15 @@ public:
     // Vertex Getters & Setters // suggestion: inlines better in cpp 
     Vertex getVertex(std::string const &id) const { return (mapIndexToVertex.find(mapIdToIndex.left.at(id)))->second; }; // was using instead of at: (.left.find(id))->second
     Vertex getVertex(unsigned int index) const { return mapIndexToVertex.find(index)->second; }; 
-    float getVertexScoreInitial(Vertex const v) const { return container[v].scoreInitial; };
-    void setVertexScoreInitial(Vertex const v, float vData) { container[v].scoreInitial = vData; };
+    //float getVertexScoreInitial(Vertex const v) const { return container[v].scoreInitial; };
+    //void setVertexScoreInitial(Vertex const v, float vData) { container[v].scoreInitial = vData; };
     float getVertexScore(Vertex const v) const { return container[v].score; };
     void setVertexScore(Vertex const v, float vData) { container[v].score = vData; };
-    float getVertexScoreUpdated(Vertex const v) const { return container[v].scoreUpdated; };
-    void setVertexScoreUpdated(Vertex const v, float vData) { container[v].scoreUpdated = vData; };
+    //float getVertexScoreUpdated(Vertex const v) const { return container[v].scoreUpdated; };
+    //void setVertexScoreUpdated(Vertex const v, float vData) { container[v].scoreUpdated = vData; };
     ////UIntToMessage & getVertexMessageMap(Vertex const v) { return container[v].mapMessage; };
-    UIntToMessage * getVertexMessageMap(Vertex const v) { return container[v].pMapMessage; };
-    void createVertexMessageMap(Vertex const v) { container[v].pMapMessage = new UIntToMessage(); };
+    //UIntToMessage * getVertexMessageMap(Vertex const v) { return container[v].pMapMessage; };
+    //void createVertexMessageMap(Vertex const v) { container[v].pMapMessage = new UIntToMessage(); };
     ////float getVertexScore(std::string const &id) const { getVertexScore(getVertex(id)); }; // does not work
     float getVertexScore(std::string const &id) const { return container[(mapIndexToVertex.find(mapIdToIndex.left.at(id)))->second].score; };
     unsigned int getVertexIndex(std::string const &id) const { return mapIdToIndex.left.at(id); };
