@@ -156,7 +156,7 @@ float ScoreNetwork::transferScore(float score, float a, float b) {
     }
 }
 
-void ScoreNetwork::scaleNodeScores() {
+void ScoreNetwork::scaleNodeScores(bool flagScaleBetweenZeroAndOne) {
     VertexIterator it, itEnd;
     float value = 0;
     for(boost::tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) 
@@ -167,7 +167,12 @@ void ScoreNetwork::scaleNodeScores() {
     }
     for(boost::tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) 
     {
-	getNetwork().setVertexScore(*it, getNetwork().getVertexScore(*it)/maxScore);
+	value = getNetwork().getVertexScore(*it);
+	if(flagScaleBetweenZeroAndOne)
+	    value = (value - minScore) / (maxScore - minScore);
+	else
+	    value /= maxScore - minScore;
+	getNetwork().setVertexScore(*it, value);
     }
     return;
 }

@@ -137,6 +137,7 @@ public:
     // Graph outputting & printing 
     void outputScores(std::string outputFile) const throw(GenericError);
     void printAdjacencyList() const;
+    void print(bool includeScores) const;
     void print() const;
     void printVertices() const;
 

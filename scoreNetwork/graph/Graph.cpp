@@ -262,6 +262,28 @@ void Graph::printAdjacencyList() const
     print_graph(this->container, mapIndex);
 }
 
+void Graph::print(bool includeScores) const
+{
+    Vertex u;
+    VertexIterator it, itEnd;
+    AdjVertexIterator vt, vtEnd;
+
+    for(boost::tie(it, itEnd) = getVertexIterator(); it != itEnd; ++it) 
+    {
+        u = *it;
+	cout << getVertexName(u);
+	if(includeScores) 
+	  cout << "(" << getVertexScore(u) << "):";
+	for(boost::tie(vt, vtEnd) = getAdjacentVertexIteratorOfVertex(u); vt != vtEnd; ++vt) 
+	{
+	    cout << "\t" << getVertexName(*vt);
+	    if(includeScores)
+		cout << "(" << getEdgeScore(u, *vt) << ")";
+	}
+	cout << endl;
+    }
+}
+
 void Graph::print() const
 {
     Vertex u;
@@ -280,7 +302,6 @@ void Graph::print() const
         }
 	cout << endl;
     }
-
 }
 
 void Graph::printVertices() const

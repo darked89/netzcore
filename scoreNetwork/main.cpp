@@ -3,6 +3,7 @@
 #include "Netshort.hpp"
 #include "Netscore.hpp"
 #include "Netrank.hpp"
+#include "Netzcore.hpp"
 
 #include <iostream>
 #include <ctime>
@@ -13,15 +14,18 @@ void runScoreNetwork();
 void runNetshort(string, string, string);
 void runNetscore(string, string, string, unsigned int);
 void runNetrank(string, string, string);
+void runNetzcore(string, string, string, string, unsigned int);
 
 int main(int argc, char **argv)
 {
     static const char *optString = "n:e:i:s:o:h?";
     int opt = 0;
     string fileNode, fileEdge, fileOutput;
-    enum ScoringMethod { NETSHORT = 0, NETSCORE = 1, NETRANK = 2 };
+    enum ScoringMethod { NETSHORT = 'd', NETSCORE = 's', NETRANK = 'r', NETZCORE = 'z' };
     //ScoringMethod scoring = NETSCORE;
-    unsigned int nIteration = 1, scoring = 1;
+    unsigned int nIteration = 1; //, scoring = 1; 
+    char scoring = 's';
+
     opt = getopt( argc, argv, optString );
     while( opt != -1 ) {
 	istringstream iss;
@@ -54,7 +58,7 @@ int main(int argc, char **argv)
         opt = getopt( argc, argv, optString );
     }
         
-    cout << "Arguments: " << scoring << " " << nIteration << " " << fileNode << " " << fileEdge << " " << fileOutput << endl;
+    cout << "Arguments: scoring type " << scoring << ", nIteration " << nIteration << ", nodeFile " << fileNode << ", edgeFile " << fileEdge << ", outputFile " << fileOutput << endl;
     clock_t t1 = clock();
     if(scoring == NETSHORT)
 	runNetshort(fileNode, fileEdge, fileOutput);
@@ -62,12 +66,20 @@ int main(int argc, char **argv)
 	runNetscore(fileNode, fileEdge, fileOutput, nIteration);
     else if (scoring == NETRANK)
 	runNetrank(fileNode, fileEdge, fileOutput);
+    else if (scoring == NETZCORE)
+	runNetzcore(fileNode, fileEdge, fileOutput, "../../data/sampled_graphs/test_interactions_small.txt.", 4);
     else
 	//runScoreNetwork();
 	cerr << "Unrecognized scoring type!" << endl;
     clock_t t2 = clock();
     cout << "Time: " << (t2-t1) << " (" << (t2-t1)/(double)CLOCKS_PER_SEC << "s)" << endl;
     return 0;
+}
+
+void runNetzcore(string fileNode, string fileEdge, string fileOutput, string prefixSampledGraphs, unsigned int nSampled) //, unsigned int nIteration) 
+{
+    Netzcore sN(fileNode, fileEdge, fileOutput, prefixSampledGraphs, nSampled, false, false, false, false);
+    sN.run(1,1);
 }
 
 void runNetscore(string fileNode, string fileEdge, string fileOutput, unsigned int nIteration) 

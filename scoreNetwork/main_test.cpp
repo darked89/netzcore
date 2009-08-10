@@ -8,6 +8,7 @@
 #include "test/testNetscore.hpp"
 #include "test/testNetrank.hpp"
 //#include "test/testNetscore2.hpp"
+#include "test/testNetzcore.hpp"
 
 using namespace boost;
 using namespace boost::unit_test;
@@ -26,12 +27,18 @@ test_suite* init_unit_test_suite(int argc, char** argv)
     //suite_netscore2->add(new TestSuiteNetscore2());
     test_suite* suite_netrank(BOOST_TEST_SUITE("Netrank Suite"));
     suite_netrank->add(new TestSuiteNetrank());
+
+    test_suite* suite_netzcore(BOOST_TEST_SUITE("Netzcore Suite"));
+    suite_netzcore->add(new TestSuiteNetzcore());
+
     framework::master_test_suite().add(suite_graph);
     framework::master_test_suite().add(suite_score_network);
     framework::master_test_suite().add(suite_netshort);
     framework::master_test_suite().add(suite_netscore);
     framework::master_test_suite().add(suite_netrank);
     //framework::master_test_suite().add(suite_netscore2);
+    framework::master_test_suite().add(suite_netzcore);
+    
     return 0;
 }
 

@@ -55,7 +55,7 @@ protected:
 
     float calculateErrorAndUpdateScores();
     void updateNetwork();
-    void scaleNodeScores();
+    void scaleNodeScores(bool flagScaleBetweenZeroAndOne = false);
     float transferScore(float score, float a = 0.5, float b = 0.1); 
 
     float getVertexScoreUpdated(Vertex const v) const { return mapScoreUpdated.at(v); };
