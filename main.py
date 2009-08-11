@@ -51,6 +51,12 @@ def score():
     return
 
 def prepare(create_method_filtered_files = False, filter_hubs = False):
+
+    #prepare_data.sample_network_preserving_topology(edge_file_netzcore_relevance[:-4] + ".sif", 100, "../data/sampled_graphs/sampled_graph.txt.")
+    prepare_data.sample_network_preserving_topology("../data/toy_data/test_interactions_small.sif", 4, "../data/sampled_graphs/sampled_graph.txt.")
+
+    return
+
     # Filter by detection method (non-tap interactions)
     if create_method_filtered_files:
 	prepare_data.create_method_filtered_network_files(network_file_method_attribute)

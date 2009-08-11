@@ -67,7 +67,7 @@ int main(int argc, char **argv)
     else if (scoring == NETRANK)
 	runNetrank(fileNode, fileEdge, fileOutput);
     else if (scoring == NETZCORE)
-	runNetzcore(fileNode, fileEdge, fileOutput, "../../data/sampled_graphs/test_interactions_small.txt.", 4);
+	runNetzcore(fileNode, fileEdge, fileOutput, "../../data/sampled_graphs/sampled_graph.txt.", 100);
     else
 	//runScoreNetwork();
 	cerr << "Unrecognized scoring type!" << endl;
@@ -87,7 +87,7 @@ void runNetscore(string fileNode, string fileEdge, string fileOutput, unsigned i
     //clock_t t1 = clock();
     //Netscore sN("../../data/input/node_scores.txt", "../../data/input/edge_weights.txt");
     //Netscore sN("../../data/toy_data/test_proteins_small.txt", "../../data/toy_data/test_interactions_small.txt", true, true, false, true);
-    Netscore sN(fileNode, fileEdge, fileOutput, true, false, false, false);
+    Netscore sN(fileNode, fileEdge, fileOutput, false, false, false, false);
     //clock_t t2 = clock();
     //cout << "Time to load graph: " << (t2-t1) << " (" << (t2-t1)/(double)CLOCKS_PER_SEC << "s)" << endl;
     sN.run(1,nIteration);

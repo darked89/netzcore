@@ -44,6 +44,20 @@ void Netzcore::printSampledGraphs()
     }
 }
 
+void Netzcore::updateSampledGraphScores()
+{
+    std::list<Graph*>::iterator it, itEnd;
+    Graph* pG;
+    VertexIterator it, itEnd;
+    for(it=sampledGraphs.begin(), itEnd=sampledGraphs.end(); it != itEnd; ++it)
+    {	
+	pG = *it;
+	for(boost::tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) {
+	    pG->setVertexScore(pG->getVertex(getNetwork().getVertexName(*it)), getNetwork().getVertexScore(*it));
+	}
+    }
+}
+
 void Netzcore::initializeScoring() {
     VertexIterator it, itEnd;
     for(boost::tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) 
@@ -62,6 +76,7 @@ void Netzcore::initializeScoring() {
 void Netzcore::finalizeIteration()
 {
     scaleNodeScores(true);
+    updateSampledGraphScores();
 }
 
 void Netzcore::updateNodeScore(Vertex v) 
@@ -85,7 +100,8 @@ void Netzcore::updateNodeScore(Vertex v)
 	for(boost::tie(vt, vtEnd) = pG->getAdjacentVertexIteratorOfVertex(u); vt != vtEnd; ++vt) 
 	{
 	    tempScore = pG->getVertexScore(*vt);
-            if(flagUseEdgeScore) {
+            if(flagUseEdgeScore) 
+	    {
                 tempScore *= pG->getEdgeScore(u, *vt);
             }
 	    scores.push_back(tempScore);
@@ -97,7 +113,14 @@ void Netzcore::updateNodeScore(Vertex v)
     i = 0;
     for(boost::tie(vt, vtEnd) = getNetwork().getAdjacentVertexIteratorOfVertex(v); vt != vtEnd; ++vt) 
     {
-	tempScore += getNetwork().getVertexScore(*vt);
+	if(flagUseEdgeScore) 
+	{
+	    tempScore += getNetwork().getEdgeScore(v, *vt) * getNetwork().getVertexScore(*vt);
+	} 
+	else 
+	{
+	    tempScore += getNetwork().getVertexScore(*vt);
+	}
 	i += 1;
     }
     tempScore /= i;
