@@ -108,7 +108,7 @@ void Graph::loadEdges(string const &fileName, bool flagInverseWeights) throw(Gen
 	cerr << "Error: Edge file can not be opened " + fileName << endl;
 	throw (new GenericError( "File can not be opened: " + fileName)); 
     }
-    while(file >> name1 >> name2 >> value) {
+    while(file >> name1 >> value >> name2) {
 	if(flagInverseWeights)
 	{
 	    value = 1/value; 
@@ -240,7 +240,9 @@ void Graph::calculatePageRank(map<Vertex, float> & vertexToFloat)
 void Graph::outputScores(string fileName) const throw(GenericError)
 {
     Vertex u;
-    VertexIterator it, itEnd;
+    VertexIterator vt, vtEnd;
+    list< pair<string, float> > scores;
+    list< pair<string, float> >::iterator it, itEnd;
 
     fstream outFile;
     outFile.open(fileName.c_str(), ios::out);
@@ -249,9 +251,16 @@ void Graph::outputScores(string fileName) const throw(GenericError)
 	cerr << "Error in file opening: " << fileName << endl;
 	throw (new GenericError("File can not be opened: " + fileName)); 
     }
-    for (tie(it, itEnd) = vertices(this->container); it != itEnd; ++it) {
-        u = *it;
-        outFile << mapIdToIndex.right.at(mapIndex[u]) << "\t" << this->container[u].score << endl;
+    for(tie(vt, vtEnd) = getVertexIterator(); vt != vtEnd; ++vt) 
+    {
+        u = *vt;
+        //outFile << getVertexName(u) << "\t" << getVertexScore(u) << endl;
+        scores.push_back(make_pair(getVertexName(u), getVertexScore(u)));
+    }
+    scores.sort(pairSortBySecondPredicate< pair<string, float> >);
+    for(it=scores.begin(), itEnd=scores.end(); it != itEnd; ++it)
+    {
+	outFile << it->first << "\t" << it->second << endl;
     }
     outFile.close();
 }
@@ -399,5 +408,11 @@ void test_boost_create_and_iterate()
 
     clock_t t3 = clock();
     cout << (t3-t2) << " (" << (t3-t2)/(double)CLOCKS_PER_SEC << "s)" << endl;
+}
+
+template <class Pair>
+bool pairSortBySecondPredicate(const Pair& lhs, const Pair& rhs)
+{
+      return lhs.second < rhs.second;
 }
 

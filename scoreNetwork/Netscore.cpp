@@ -20,16 +20,27 @@ Netscore::Netscore(std::string fileNode, std::string fileEdge, std::string fileO
 
 Netscore::~Netscore()
 {
+    VertexToMessageMap::iterator it, itEnd;
+    for(it = messageMaps.begin(), itEnd = messageMaps.end(); it != itEnd; ++it) 
+    {
+	delete it->second;
+    }
 }
 
 void Netscore::initializeScoring() {
     VertexIterator it, itEnd;
+    scaleNodeScores(SCALE_BETWEEN_ZERO_AND_ONE);
     for(boost::tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) 
     {
 	createVertexMessageMap(*it);
-	setVertexScoreInitial(*it, getNetwork().getVertexScore(*it));
+	setVertexScoreInitial(*it, getNetwork().getVertexScore(*it)); // storing scaled (between 0 and 1) initial scores
 	setVertexScoreUpdated(*it, 0.0);
     }
+}
+
+void Netscore::finalizeScoring()
+{
+    scaleNodeScores(SCALE_BETWEEN_INITIAL_MIN_AND_MAX_SCORE);
 }
 
 void Netscore::initializeRepeatition()
@@ -50,6 +61,11 @@ void Netscore::initializeRepeatition()
 	//for(mt=mapMessage.begin(), mtEnd=mapMessage.end(); mt != mtEnd; ++mt)
 	//    std::cout << mt->first << " " << mt->second.second << std::endl;
     }
+}
+
+void Netscore::finalizeIteration()
+{
+    scaleNodeScores(SCALE_BETWEEN_ZERO_AND_ONE);
 }
 
 void Netscore::updateNodeScore(Vertex v) 

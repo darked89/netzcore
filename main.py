@@ -8,6 +8,7 @@ from biana.utilities import biana_output_converter as biana_output_converter
 from biana.utilities import graph_utilities as network_utilities
 import prepare_data
 import score_network
+import analyze_results
 
 #arff_file = "../data/aneurist.arff"
 network_file = "/home/emre/arastirma/data/ppi_exp/human/human_interactome_biana/human.sif"
@@ -26,9 +27,20 @@ edge_file_netzcore_relevance_prefix = "../data/input/edge_relevance_scores"
 arff_file = "../data/arff/network_metrics.arff"
 arff_file_prefix = "../data/arff/network_metrics"
 result_file_prefix = "../data/output/fold"
+output_dir = "../data/output/"
+
+netshort_results = output_dir + "netshort_onlyEdgeRelevance_noNodeInitialScoreAccumulation.txt"
+netrank_results = output_dir + "netrank_onlyEdgeRelevance_noNodeInitialScoreAccumulation.txt"
+netscore_results_1 = output_dir + "netscore_onlyEdgeRelevance_noNodeInitialScoreAccumulation_i1.txt"
+netscore_results_3 = output_dir + "netscore_onlyEdgeRelevance_noNodeInitialScoreAccumulation_i3.txt"
+netscore_results_no_1 = output_dir + "netscore_noEdgeRelevance_noNodeInitialScoreAccumulation_i1.txt"
+netscore_results_no_3 = output_dir + "netscore_noEdgeRelevance_noNodeInitialScoreAccumulation_i3.txt"
+netzcore_results_1 = output_dir + "netzcore_onlyEdgeRelevance_noNodeInitialScoreAccumulation_i1.txt"
+netzcore_results_3 = output_dir + "netzcore_onlyEdgeRelevance_noNodeInitialScoreAccumulation_i3.txt"
 
 def main():
-    prepare(create_method_filtered_files = False, filter_hubs = False)
+    analyze()
+    #prepare(create_method_filtered_files = False, filter_hubs = False)
     #score()
     #test_timing_score_one_fold()
     return
@@ -39,6 +51,15 @@ def test_timing_score_one_fold():
     print score_network.test_run(edge_file_netzcore)
     t2 = clock()
     print "Time: ", t2-t1
+    return
+
+def analyze():
+    result_files = [ netshort_results, netrank_results, netscore_results_1, netscore_results_3,  netscore_results_no_1, netscore_results_no_3, netzcore_results_1, netzcore_results_3 ]
+    for percentage in (10, 25, 50):
+	print "---- %s:" % percentage
+	for f in result_files:
+	    print f
+	    print analyze_results.calculate_seed_coverage_at_given_percentage(node_file_netzcore[:-3]+"sif", f, percentage)
     return
 
 def score():
@@ -52,8 +73,8 @@ def score():
 
 def prepare(create_method_filtered_files = False, filter_hubs = False):
 
-    #prepare_data.sample_network_preserving_topology(edge_file_netzcore_relevance[:-4] + ".sif", 100, "../data/sampled_graphs/sampled_graph.txt.")
-    prepare_data.sample_network_preserving_topology("../data/toy_data/test_interactions_small.sif", 4, "../data/sampled_graphs/sampled_graph.txt.")
+    prepare_data.sample_network_preserving_topology(edge_file_netzcore_relevance[:-4] + ".sif", 100, "../data/sampled_graphs/sampled_graph.sif.")
+    #prepare_data.sample_network_preserving_topology("../data/toy_data/test_interactions_small.sif", 4, "../data/sampled_graphs/sampled_graph.sif.")
 
     return
 

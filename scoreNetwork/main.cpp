@@ -12,18 +12,17 @@ using namespace std;
 
 void runScoreNetwork();
 void runNetshort(string, string, string);
-void runNetscore(string, string, string, unsigned int);
+void runNetscore(string, string, string, unsigned int, unsigned int);
 void runNetrank(string, string, string);
-void runNetzcore(string, string, string, string, unsigned int);
+void runNetzcore(string, string, string, string, unsigned int, unsigned int, unsigned int);
 
 int main(int argc, char **argv)
 {
-    static const char *optString = "n:e:i:s:o:h?";
+    static const char *optString = "n:e:i:s:o:r:h?";
     int opt = 0;
     string fileNode, fileEdge, fileOutput;
     enum ScoringMethod { NETSHORT = 'd', NETSCORE = 's', NETRANK = 'r', NETZCORE = 'z' };
-    //ScoringMethod scoring = NETSCORE;
-    unsigned int nIteration = 1; //, scoring = 1; 
+    unsigned int nIteration = 1, nRepetition = 1, nSampled = 4;  
     char scoring = 's';
 
     opt = getopt( argc, argv, optString );
@@ -40,6 +39,10 @@ int main(int argc, char **argv)
                 iss.str(optarg);
             	iss >> nIteration;
                 break;
+            case 'r':
+                iss.str(optarg);
+            	iss >> nRepetition;
+                break;
             case 's':
                 iss.str(optarg);
                 iss >> scoring;
@@ -49,8 +52,8 @@ int main(int argc, char **argv)
                 break;
 	    case 'h':
 	    case '?':
-		cout << "-n <node_file> -e <edge_file> -s <scoring_method>{NETSHORT:0|NETSCORE:1|NETRANK:2}" << 
-                "-i <number_of_iteration> -o <output_file>" << endl;
+		cout << "-n <node_file> -e <edge_file> -s <scoring_method>{NETSHORT:d|NETSCORE:s|NETRANK:r|NETZCORE:z}" << 
+                "-i <number_of_iteration> -o <output_file> -r <number_of_repetition>" << endl;
                 return 0;
             default:
                 break;
@@ -63,11 +66,11 @@ int main(int argc, char **argv)
     if(scoring == NETSHORT)
 	runNetshort(fileNode, fileEdge, fileOutput);
     else if (scoring == NETSCORE)
-	runNetscore(fileNode, fileEdge, fileOutput, nIteration);
+	runNetscore(fileNode, fileEdge, fileOutput, nRepetition, nIteration);
     else if (scoring == NETRANK)
 	runNetrank(fileNode, fileEdge, fileOutput);
     else if (scoring == NETZCORE)
-	runNetzcore(fileNode, fileEdge, fileOutput, "../../data/sampled_graphs/sampled_graph.txt.", 100);
+	runNetzcore(fileNode, fileEdge, fileOutput, "../../data/sampled_graphs/sampled_graph.sif.", nSampled, nRepetition, nIteration); 
     else
 	//runScoreNetwork();
 	cerr << "Unrecognized scoring type!" << endl;
@@ -76,28 +79,21 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void runNetzcore(string fileNode, string fileEdge, string fileOutput, string prefixSampledGraphs, unsigned int nSampled) //, unsigned int nIteration) 
+void runNetzcore(string fileNode, string fileEdge, string fileOutput, string prefixSampledGraphs, unsigned int nSampled, unsigned int nRepetition, unsigned int nIteration) 
 {
-    Netzcore sN(fileNode, fileEdge, fileOutput, prefixSampledGraphs, nSampled, false, false, false, false);
-    sN.run(1,1);
+    Netzcore sN(fileNode, fileEdge, fileOutput, prefixSampledGraphs, nSampled, true, false, false, false);
+    sN.run(nRepetition, nIteration);
 }
 
-void runNetscore(string fileNode, string fileEdge, string fileOutput, unsigned int nIteration) 
+void runNetscore(string fileNode, string fileEdge, string fileOutput, unsigned int nRepetition, unsigned int nIteration) 
 {
-    //clock_t t1 = clock();
-    //Netscore sN("../../data/input/node_scores.txt", "../../data/input/edge_weights.txt");
-    //Netscore sN("../../data/toy_data/test_proteins_small.txt", "../../data/toy_data/test_interactions_small.txt", true, true, false, true);
     Netscore sN(fileNode, fileEdge, fileOutput, false, false, false, false);
-    //clock_t t2 = clock();
-    //cout << "Time to load graph: " << (t2-t1) << " (" << (t2-t1)/(double)CLOCKS_PER_SEC << "s)" << endl;
-    sN.run(1,nIteration);
-    //cout << sN.run(1,1) << endl;
+    sN.run(nRepetition, nIteration);
 }
 
 void runNetshort(string fileNode, string fileEdge, string fileOutput) 
 {
     //clock_t t1 = clock();
-    //Netshort sN("../../data/input/node_scores.txt", "../../data/input/edge_weights.txt");
     Netshort sN(fileNode, fileEdge, fileOutput);
     //clock_t t2 = clock();
     //cout << "Time to load graph: " << (t2-t1) << " (" << (t2-t1)/(double)CLOCKS_PER_SEC << "s)" << endl;

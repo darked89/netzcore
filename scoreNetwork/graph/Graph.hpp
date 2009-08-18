@@ -15,6 +15,9 @@
 
 #include <map>
 
+template <class Pair>
+bool pairSortBySecondPredicate(const Pair& lhs, const Pair& rhs);
+
 // Define features as built-in types
 struct vertex_score_t { 
     typedef boost::vertex_property_tag kind;

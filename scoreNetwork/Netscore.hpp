@@ -18,7 +18,9 @@ public:
 
 private:
     void initializeScoring();
+    void finalizeScoring();
     void initializeRepeatition();
+    void finalizeIteration();
     void updateNodeScore(Vertex v);
 
     UIntToMessage * getVertexMessageMap(Vertex const v) { return messageMaps[v]; };

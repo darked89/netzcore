@@ -15,7 +15,7 @@ class TestNetscore
 public:
 
     TestNetscore() {
-	_sNetwork = Netscore("../../data/toy_data/test_proteins_small.txt", "../../data/toy_data/test_interactions_small.txt", "../../data/out_toy_testNetscore.txt", true, true, false, false);
+	_sNetwork = Netscore("../../data/toy_data/test_proteins_small.sif", "../../data/toy_data/test_interactions_small.sif", "../../test/data/out_toy_testNetscore.sif", true, true, false, false);
     }
 
     ~TestNetscore() {
@@ -26,7 +26,7 @@ public:
 	BOOST_CHECK_EQUAL(_sNetwork.getNetwork().getSize(), 5);
 	BOOST_CHECK(_sNetwork.getNetwork().getNumberOfEdges() == 5);
 	std::string str("v1"); 
-	BOOST_CHECK_CLOSE(_sNetwork.getNetwork().getVertexScore(str), 0.0f, 0.00001f);
+	BOOST_CHECK_CLOSE(_sNetwork.getNetwork().getVertexScore(str), 0.0f, ScoreNetwork::getPrecision());
     }
 
     void test_initialScores()
@@ -37,8 +37,8 @@ public:
 	VertexIterator it, itEnd;
 	for(boost::tie(it, itEnd) = _sNetwork.getNetwork().getVertexIterator(); it != itEnd; it++) 
 	{
-	    BOOST_CHECK_CLOSE(_sNetwork.getNetwork().getVertexScore(*it), vertex_scores[_sNetwork.getNetwork().getVertexIndex(*it)], 0.00001f);
-	    //BOOST_CHECK_CLOSE(_sNetwork.getNetwork().getVertexScoreInitial(*it), vertex_scores[_sNetwork.getNetwork().getVertexIndex(*it)], 0.00001f);
+	    BOOST_CHECK_CLOSE(_sNetwork.getNetwork().getVertexScore(*it), vertex_scores[_sNetwork.getNetwork().getVertexIndex(*it)], ScoreNetwork::getPrecision());
+	    //BOOST_CHECK_CLOSE(_sNetwork.getNetwork().getVertexScoreInitial(*it), vertex_scores[_sNetwork.getNetwork().getVertexIndex(*it)], ScoreNetwork::getPrecision());
 	}
     }
 
@@ -58,7 +58,7 @@ public:
 
 	for(boost::tie(it, itEnd) = _sNetwork.getNetwork().getVertexIterator(); it != itEnd; it++) 
 	{
-	//    BOOST_CHECK_CLOSE(_sNetwork.getNetwork().getVertexScore(*it), vertex_scores[_sNetwork.getNetwork().getVertexIndex(*it)], 0.00001f);
+	//    BOOST_CHECK_CLOSE(_sNetwork.getNetwork().getVertexScore(*it), vertex_scores[_sNetwork.getNetwork().getVertexIndex(*it)], ScoreNetwork::getPrecision());
 	//    std::cout << _sNetwork.getNetwork().getVertexName(*it) << " " << _sNetwork.getNetwork().getVertexScore(*it) << std::endl;
 	}
     }

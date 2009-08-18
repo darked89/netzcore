@@ -16,6 +16,11 @@ Netzcore::Netzcore(std::string fileNode, std::string fileEdge, std::string fileO
 
 Netzcore::~Netzcore()
 {
+    std::list<Graph*>::iterator it, itEnd;
+    for(it=sampledGraphs.begin(), itEnd=sampledGraphs.end(); it != itEnd; ++it)
+    {
+	delete *it;
+    }
 }
 
 void Netzcore::loadSampledGraphs()
@@ -48,12 +53,12 @@ void Netzcore::updateSampledGraphScores()
 {
     std::list<Graph*>::iterator it, itEnd;
     Graph* pG;
-    VertexIterator it, itEnd;
+    VertexIterator vt, vtEnd;
     for(it=sampledGraphs.begin(), itEnd=sampledGraphs.end(); it != itEnd; ++it)
     {	
 	pG = *it;
-	for(boost::tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) {
-	    pG->setVertexScore(pG->getVertex(getNetwork().getVertexName(*it)), getNetwork().getVertexScore(*it));
+	for(boost::tie(vt, vtEnd) = getNetwork().getVertexIterator(); vt != vtEnd; ++vt) {
+	    pG->setVertexScore(pG->getVertex(getNetwork().getVertexName(*vt)), getNetwork().getVertexScore(*vt));
 	}
     }
 }
@@ -73,9 +78,14 @@ void Netzcore::initializeScoring() {
     //std::cout << tempPair.first << " " << tempPair.second << std::endl;
 }
 
+void Netzcore::finalizeScoring()
+{
+    scaleNodeScores(SCALE_BETWEEN_INITIAL_MIN_AND_MAX_SCORE);
+}
+
 void Netzcore::finalizeIteration()
 {
-    scaleNodeScores(true);
+    scaleNodeScores(SCALE_BETWEEN_ZERO_AND_ONE);
     updateSampledGraphScores();
 }
 

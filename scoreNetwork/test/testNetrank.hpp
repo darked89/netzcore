@@ -13,7 +13,7 @@ class TestNetrank
 public:
 
     TestNetrank() {
-	_sNetwork = Netrank("../../data/toy_data/test_proteins_small.txt", "../../data/toy_data/test_interactions_small.txt", "../../data/out_toy_testNetrank.txt");
+	_sNetwork = Netrank("../../data/toy_data/test_proteins_small.sif", "../../data/toy_data/test_interactions_small.sif", "../../test/data/out_toy_testNetrank.sif");
     }
 
     ~TestNetrank() {

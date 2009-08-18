@@ -36,7 +36,7 @@ class TestNetzcore
 public:
 
     TestNetzcore() {
-	_sNetwork = Netzcore("../../data/toy_data/test_proteins_small.txt", "../../data/toy_data/test_interactions_small.txt", "../../data/out_toy_testNetzcore.txt", "../../data/sampled_graphs/test_interactions_small.txt.", 4);
+	_sNetwork = Netzcore("../../data/toy_data/test_proteins_small.sif", "../../data/toy_data/test_interactions_small.sif", "../../data/out_toy_testNetzcore.sif", "../../test/data/sampled_graphs/sampled_graph.sif.", 4);
     }
 
     ~TestNetzcore() {

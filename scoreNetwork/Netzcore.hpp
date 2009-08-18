@@ -21,6 +21,7 @@ public:
 
 private:
     void initializeScoring();
+    void finalizeScoring();
     void finalizeIteration();
     void updateNodeScore(Vertex v);
 
@@ -32,6 +33,7 @@ private:
 
     void loadSampledGraphs();
     void printSampledGraphs();
+    void updateSampledGraphScores();
 
     // MEMBERS
     //VertexToMessageMap messageMaps;

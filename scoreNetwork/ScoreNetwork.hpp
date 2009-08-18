@@ -14,6 +14,8 @@
 //typedef std::map<Vertex, float> VertexToFloat;
 typedef boost::unordered_map<Vertex, float> VertexToFloat;
 
+typedef enum ScaleType { SCALE_BY_MAX_SCORE, SCALE_BETWEEN_ZERO_AND_ONE, SCALE_BETWEEN_INITIAL_MIN_AND_MAX_SCORE } ScaleType;
+
 class ScoreNetwork {
 public:
     ScoreNetwork(); 
@@ -21,7 +23,8 @@ public:
     virtual ~ScoreNetwork();
     Graph & getNetwork() { return network; };
     void run(int nRepetition, int nIteration, float tError = PRECISION); 
-    void scaleNodeScoresWrapper() { scaleNodeScores(); };
+    void scaleNodeScoresWrapper(ScaleType type) { scaleNodeScores(type); }
+    static const float getPrecision() { return PRECISION; }
     /*
     //void outputGraph(Graph const & g, std::string fileName);
     void outputGraph(Graph *g, std::string fileName);
@@ -55,7 +58,8 @@ protected:
 
     float calculateErrorAndUpdateScores();
     void updateNetwork();
-    void scaleNodeScores(bool flagScaleBetweenZeroAndOne = false);
+    void scaleNodeScores(ScaleType typeScale);
+    std::pair<float, float> getMinAndMaxNodeScores();
     float transferScore(float score, float a = 0.5, float b = 0.1); 
 
     float getVertexScoreUpdated(Vertex const v) const { return mapScoreUpdated.at(v); };
@@ -65,10 +69,9 @@ private:
     // CONSTANTS (MACROS)
     //static const float MIN_SCORE = 0.0;
     //static const float MAX_SCORE = 1.0;
-    static const float PRECISION = 0.00001;
+    static const float PRECISION = 0.00001f;
     //static const enum TransferType { IDENTITY, POLYNOMIAL, LOGARITHMIC, EXPONENTIAL };
-    enum TransferType { IDENTITY, POLYNOMIAL, LOGARITHMIC, EXPONENTIAL };
-    int typeTransfer;
+    enum TransferType { IDENTITY, POLYNOMIAL, LOGARITHMIC, EXPONENTIAL } typeTransfer;
     
     // MEMBERS
     Graph network;

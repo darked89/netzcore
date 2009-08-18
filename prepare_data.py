@@ -192,8 +192,7 @@ def sample_network_preserving_topology(network_sif_file, n_sample, output_prefix
     g = network_utilities.create_network_from_sif_file(network_file_in_sif = network_sif_file, weighted = True, delim = " ")
     for i in xrange(1,n_sample+1):
 	g_sampled = network_utilities.randomize_graph(graph=g, randomization_type="preserve_topology_and_node_degree")
-	#network_utilities.output_network_in_sif(g_sampled, output_prefix+"%s"%i)
-	network_utilities.output_network_in_txt(g_sampled, output_prefix+"%s"%i)
+	network_utilities.output_network_in_sif(g_sampled, output_prefix+"%s"%i)
     return
 
 if __name__ == "__main__":

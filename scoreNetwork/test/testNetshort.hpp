@@ -13,7 +13,7 @@ class TestNetshort
 public:
 
     TestNetshort() {
-	_sNetwork = Netshort("../../data/toy_data/test_proteins_small.txt", "../../data/toy_data/test_interactions_small.txt", "../../data/out_toy_testNetshort.txt", false);
+	_sNetwork = Netshort("../../data/toy_data/test_proteins_small.sif", "../../data/toy_data/test_interactions_small.sif", "../../test/data/out_toy_testNetshort.sif", false);
     }
 
     ~TestNetshort() {
