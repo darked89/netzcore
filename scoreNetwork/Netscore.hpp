@@ -13,7 +13,7 @@ typedef boost::unordered_map<Vertex, UIntToMessage* > VertexToMessageMap;
 class Netscore: public ScoreNetwork {
 public:
     Netscore(); 
-    Netscore(std::string fileNode, std::string fileEdge, std::string fileOutput, bool fUseEdgeReliabilityScore = true, bool fAccumulateToInitialNodeScore = true, bool fResetSeedScoresToInitial = false, bool fVerbose = false); 
+    Netscore(std::string fileNode, std::string fileEdge, std::string fileOutput, bool fUseEdgeScore = true, bool fAccumulateToInitialNodeScore = true, bool fResetSeedScoresToInitial = false, bool fVerbose = false); 
     ~Netscore();
 
 private:

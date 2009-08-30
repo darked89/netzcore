@@ -28,18 +28,29 @@ Netscore::~Netscore()
 }
 
 void Netscore::initializeScoring() {
-    VertexIterator it, itEnd;
     scaleNodeScores(SCALE_BETWEEN_ZERO_AND_ONE);
+    VertexIterator it, itEnd;
     for(boost::tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) 
     {
 	createVertexMessageMap(*it);
-	setVertexScoreInitial(*it, getNetwork().getVertexScore(*it)); // storing scaled (between 0 and 1) initial scores
-	setVertexScoreUpdated(*it, 0.0);
+	// Moved below to initializeRepeatition
+	//setVertexScoreInitial(*it, getNetwork().getVertexScore(*it)); // storing scaled (between 0 and 1) initial scores
+	//setVertexScoreUpdated(*it, 0.0);
+	//getNetwork().setVertexScore(*it, 0.0);
     }
 }
 
 void Netscore::finalizeScoring()
 {
+    VertexIterator it, itEnd;
+    // Add initial score if accumulation to initial score is desired 
+    if(flagAccumulateToInitialNodeScore == true) 
+    {
+	for(boost::tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) 
+	{
+	    getNetwork().setVertexScore(*it, getNetwork().getVertexScore(*it) + getVertexScoreInitial(*it));
+	}
+    }
     scaleNodeScores(SCALE_BETWEEN_INITIAL_MIN_AND_MAX_SCORE);
 }
 
@@ -60,6 +71,9 @@ void Netscore::initializeRepeatition()
 	//mapMessage = getNetwork().getVertexMessageMap(*it); 
 	//for(mt=mapMessage.begin(), mtEnd=mapMessage.end(); mt != mtEnd; ++mt)
 	//    std::cout << mt->first << " " << mt->second.second << std::endl;
+	setVertexScoreInitial(*it, getNetwork().getVertexScore(*it)); // storing scaled (between 0 and 1) scores from the last repeatition's iteration or initial scores 
+	setVertexScoreUpdated(*it, 0.0);
+	getNetwork().setVertexScore(*it, 0.0);
     }
 }
 
@@ -134,10 +148,10 @@ void Netscore::updateNodeScore(Vertex v)
     }
     tempScore += getNetwork().getVertexScore(v);
     // Remove initial score if accumulation to initial score is not desired
-    if(flagAccumulateToInitialNodeScore == false && iterationCounter == 1) 
-    {
-    	tempScore -= getVertexScoreInitial(v);
-    } 
+    //if(flagAccumulateToInitialNodeScore == false && iterationCounter == 1) 
+    //{
+    //	tempScore -= getVertexScoreInitial(v);
+    //}
     // Update scoreUpdated (for error calculation)
     setVertexScoreUpdated(v, tempScore);
     if(flagVerbose)

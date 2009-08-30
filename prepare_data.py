@@ -7,118 +7,46 @@
 from biana.utilities import biana_output_converter
 from biana.utilities import graph_utilities as network_utilities
 
-def old_generate_cross_validation_node_files(g, node_to_score, seeds, node_file_netzcore_prefix, edge_file_netzcore_relevance_prefix, arff_file_prefix, edge_file_netzcore):
-    # seeds = [ v for v, s in node_to_score.iteritems() if s != 0 ] # was assuming that non-seeds should have zero score
-    for k, training, test in k_fold_cross_validation(seeds, 10, randomize = True, useSeed = True):
-	assign_node_scores(g = g, node_to_score = node_to_score, out_file = node_file_netzcore_prefix+"_%i.txt"%k, as_edge_relevance_score = False, seeds_ignored=test)
-	assign_node_scores(g = g, node_to_score = node_to_score, out_file = edge_file_netzcore_relevance_prefix+"_%i.txt"%k, as_edge_relevance_score = True, seeds_ignored=test)
-	create_edge_file_from_weight_and_score_files(edge_file_netzcore_relevance_prefix+"_%i.txt"%k, edge_file_netzcore)
-	network_utilities.create_arff_file_with_network_metrics(g, node_to_score, training, arff_file_prefix+"_%i.arff"%k)
-    return
 
-def old_create_edge_file_from_weight_and_score_files(edge_file_weights, edge_file_scores, out_file):
-    setNode, setEdge, dictNode, dictEdgeWeight = network_utilities.get_nodes_and_edges_from_sif_file(file_name = edge_file_weights[:-3]+"sif", store_edge_type = True)
-    setNode, setEdge, dictNode, dictEdge = network_utilities.get_nodes_and_edges_from_sif_file(file_name = edge_file_scores[:-3]+"sif", store_edge_type = True)
-    f = open(out_file, "w")
-    for e, s in dictEdge.iteritems():
-	u,v=e
-	s = float(s)
-	w = dictEdgeWeight[e]
-	s = s*100 + 1
-	#if s == 0:
-	#    s = 0.1
-	w /= s
-	#print w
-	f.write("%s %s %s\n" % (u, w, v))
-    return 
-
-def k_fold_cross_validation(X, K, randomize = False, useSeed = False):
-	"""
-	By John Reid (code.activestate.com)
-	Generates K (training, validation) pairs from the items in X.
-
-	Each pair is a partition of X, where validation is an iterable
-	of length len(X)/K. So each training iterable is of length (K-1)*len(X)/K.
-
-	If randomise is true, a copy of X is shuffled before partitioning,
-	otherwise its order is preserved in training and validation.
-	"""
-	#if randomize: from random import shuffle; X=list(X); shuffle(X)
-	if randomize: 
-	    from random import shuffle, seed
-	    X=list(X)
-	    if useSeed: 
-		random.seed(123)
-	    shuffle(X)
-	for k in xrange(K):
-	    training = [x for i, x in enumerate(X) if i % K != k]
-	    validation = [x for i, x in enumerate(X) if i % K == k]
-	    yield k, training, validation
+def get_nodes_in_network(network_file):
+    g = network_utilities.create_network_from_sif_file(network_file)
+    return g.nodes()
 
 
-def old_extract_test_data_from_arff_files(arff_file_all, arff_file_filtered, arff_file_training, arff_file_test):
-    f_all = open(arff_file_all)
-    f_training = open(arff_file_training)
-    f_filtered = open(arff_file_filtered)
-    f_out = open(arff_file_test, 'w')
-    line_all = f_all.readline()
-    line_training = f_training.readline()
-    line_filtered = f_filtered.readline()
-    while line_all.startswith("@"):
-	f_out.write(line_filtered)
-	line_all = f_all.readline()
-	line_training = f_training.readline()
-	line_filtered = f_filtered.readline()
-    while line_all:
-	words_all = line_all.split(",")
-	words_training = line_training.split(",")
-	if(words_all[1] != words_training[1]):
-	    f_out.write(line_filtered)
-	line_all = f_all.readline()
-	line_training = f_training.readline()
-	line_filtered = f_filtered.readline()
-    f_out.close()
+def generate_cross_validation_node_score_files(nodes, node_to_score, node_scores_file, xval = 5, default_score = 0):
+    seeds = node_to_score.keys()
+    for k, training, test in k_fold_cross_validation(seeds, xval, randomize = True, replicable = True):
+	create_node_scores_file(nodes = nodes, node_to_score = node_to_score, node_scores_file = node_scores_file+".%i"%k, ignored_nodes = test, default_score = default_score )
+	create_node_scores_file(nodes = test, node_to_score = node_to_score, node_scores_file = node_scores_file+".%i.test"%k, ignored_nodes = None, default_score = default_score )
     return
 
 
-def old_generate_cross_validation_test_test_arff_files(k, arff_file_all, arff_file_filtered, arff_file_training_prefix):
-    for i in xrange(k):
-	extract_test_data_from_arff_files(arff_file_all, arff_file_filtered, arff_file_training_prefix+"_%i.arff"%i, arff_file_training_prefix+"_test_%i.arff"%i)
+def k_fold_cross_validation(X, K, randomize = False, replicable = False):
+    """
+    By John Reid (code.activestate.com)
+    Generates K (training, validation) pairs from the items in X.
+
+    Each pair is a partition of X, where validation is an iterable
+    of length len(X)/K. So each training iterable is of length (K-1)*len(X)/K.
+
+    If randomise is true, a copy of X is shuffled before partitioning,
+    otherwise its order is preserved in training and validation.
+
+    If replicable is true, an internal number (123) is used to create the same random splits at each call
+    """
+    #if randomize: from random import shuffle; X=list(X); shuffle(X)
+    if randomize: 
+	from random import shuffle, seed
+	X=list(X)
+	if replicable: 
+	    seed(123)
+	shuffle(X)
+    for k in xrange(K):
+	training = [x for i, x in enumerate(X) if i % K != k]
+	validation = [x for i, x in enumerate(X) if i % K == k]
+	yield k+1, training, validation
     return
 
-
-def old_assign_edge_reliability_scores(g, network_file_method_attribute, network_file_source_attribute, network_file_pubmed_attribute, out_file):
-    # linear combination of 
-    # pubmed/5
-    # db/3
-    # method/2
-    # jaccard/0.4
-    # cc1*cc2/0.4
-    edge_to_methods = network_utilities.get_edge_values_from_sif_attribute_file(file_name = network_file_method_attribute, store_edge_type = False)
-    edge_to_sources = network_utilities.get_edge_values_from_sif_attribute_file(file_name = network_file_source_attribute, store_edge_type = False)
-    edge_to_pubmeds = network_utilities.get_edge_values_from_sif_attribute_file(file_name = network_file_pubmed_attribute, store_edge_type = False)
-    edge_to_jaccard = network_utilities.get_jaccard_index_map(g)
-    node_to_ccoef = network_utilities.get_clustering_coefficient_map(g)
-    f = open(out_file, 'w')
-    for u,v in g.edges_iter():
-	score = 0.0
-	if edge_to_methods.has_key((u,v)):
-	    score += len(edge_to_methods[(u,v)])/2.0
-	elif edge_to_methods.has_key((v,u)):
-	    score += len(edge_to_methods[(v,u)])/2.0
-	if edge_to_sources.has_key((u,v)):
-	    score += len(edge_to_sources[(u,v)])/3.0
-	elif edge_to_sources.has_key((v,u)):
-	    score += len(edge_to_sources[(v,u)])/3.0
-	if edge_to_pubmeds.has_key((u,v)):
-	    score += len(edge_to_pubmeds[(u,v)])/5.0
-	elif edge_to_pubmeds.has_key((v,u)):
-	    score += len(edge_to_pubmeds[(v,u)])/5.0
-	score += node_to_ccoef[u]*node_to_ccoef[v]/0.4
-	score += edge_to_jaccard[(u,v)]/0.4
-	f.write("%s\t%s\t%f\n" % (u, v, score))
-    f.close()
-    return
 
 def sample_network_preserving_topology(network_sif_file, n_sample, output_prefix):
     g = network_utilities.create_network_from_sif_file(network_file_in_sif = network_sif_file, use_edge_data = True, delim = " ")
@@ -137,7 +65,7 @@ def create_edge_scores_file(network_file, edge_scores_file):
     return
 
 
-def create_edge_scores_file_from_node_scores(network_file, node_scores_file, edge_scores_file, ignored_seed_nodes = None, default_non_seed_score = 0):
+def create_edge_scores_file_from_node_scores(network_file, node_scores_file, edge_scores_file, ignored_nodes = None, default_score = 0):
     """
 	Creates edge score file from node association scores, intended comparing netshort with other algorithms without using other edge reliability/relevance score
     """
@@ -145,12 +73,12 @@ def create_edge_scores_file_from_node_scores(network_file, node_scores_file, edg
     setNode, setDummy, dictNode, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = node_scores_file, store_edge_type = False)
     f = open(edge_scores_file, 'w')
     for u,v in g.edges_iter():
-	if ignored_seed_nodes is not None and u in ignored_seed_nodes:
-	    score_u = default_non_seed_score
+	if ignored_nodes is not None and u in ignored_nodes:
+	    score_u = default_score
 	else:
 	    score_u = dictNode[u]
-	if ignored_seed_nodes is not None and v in ignored_seed_nodes:
-	    score_v = default_non_seed_score
+	if ignored_nodes is not None and v in ignored_nodes:
+	    score_v = default_score
 	else:
 	    score_v = dictNode[v]
 	f.write("%s %f %s\n" % (u, (score_u + score_v) / 2, v))
@@ -158,20 +86,37 @@ def create_edge_scores_file_from_node_scores(network_file, node_scores_file, edg
     return
 
 
-def create_node_scores_file(network_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, node_scores_file, ignored_seed_nodes = None, default_non_seed_score = 0):
+def create_node_scores_file(nodes, node_to_score, node_scores_file, ignored_nodes = None, default_score = 0):
     """
-	Creates node association/relevance score file for the nodes in the network using given association_scores_file, correspondance identifiers
-	ignored_seed_nodes: nodes in this set are ignored
+	Creates node association/relevance score file for the nodes in the network 
+	ignored_nodes: nodes in this set are ignored (assigned default_score)
+    """
+    f = open(node_scores_file, 'w')
+    for v in nodes:
+	if ignored_nodes is not None and v in ignored_nodes:
+	    score_v = default_score
+	else:
+	    if node_to_score.has_key(v):
+		score_v = node_to_score[v]
+	    else:
+		score_v = default_score
+	f.write("%s %f\n" % (v, score_v))
+    f.close()
+    return 
+
+
+def get_node_association_score_mapping(network_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type):
+    """
+	Maps genes and their scores to nodes in the network using given association_scores_file, correspondance identifiers
     """
     g = network_utilities.create_network_from_sif_file(network_file)
     nodes = g.nodes()
     setNode, setDummy, dictNode, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = association_scores_file, store_edge_type = False)
     node_to_genes, gene_to_nodes = biana_output_converter.get_attribute_to_attribute_mapping(node_description_file, network_file_identifier_type, association_scores_file_identifier_type, keys_to_include=set(nodes))
-
-    f = open(node_scores_file, 'w')
     covered_genes = set()
     seeds = set()
-    for v in nodes: #g.nodes_iter():
+    node_to_score = {}
+    for v in nodes: 
 	gene_with_score = setNode & node_to_genes[v]
 	covered_genes |= gene_with_score
 
@@ -187,19 +132,14 @@ def create_node_scores_file(network_file, network_file_identifier_type, node_des
 	    score /= i
 	    if score <= 0:
 		print "non-positive seed score", v, score, "genes:", node_to_genes[v]
-	else:
-	    score = default_non_seed_score
+	    node_to_score[v] = score
+	#else:
+	#    score = default_score
+	#node_to_score[v] = score
 
-	if ignored_seed_nodes is not None and v in ignored_seed_nodes:
-	    score_v = default_non_seed_score
-	else:
-	    score_v = score
-	f.write("%s %f\n" % (v, score_v))
-
-    f.close()
     print "Covered genes (seed genes):", len(covered_genes), "among", len(setNode)
     print "Covered gene products (seed nodes):", len(seeds), "among", g.number_of_nodes()
-    return 
+    return node_to_score
 
 
 def create_degree_filtered_network_file(network_file, network_file_filtered, degree):
@@ -280,8 +220,10 @@ def create_human_interactome_using_biana(node_file_prefix="human_nodes", network
 	save_session("biana_session", network_files_prefix + "_session.dat")
 
     # Output set details - all nodes
-    objSession.output_user_entity_set_details(user_entity_set_id = "User_Entity_Set_1", out_method = open(node_file_prefix + ".tsv", "w").write, attributes=node_attributes, include_level_info=False, include_degree_info=True, level=None, only_selected=False, output_format="tabulated", include_tags_info = True, include_tags_linkage_degree_info=[], substitute_node_attribute_if_not_exists=False, output_1_value_per_attribute=False, include_command_in_rows=False)
-	
+    objSession.output_user_entity_set_details(user_entity_set_id = "User_Entity_Set_1", out_method = open(node_file_prefix + ".tsv", "w").write, attributes=node_attributes, include_level_info=False, include_degree_info=False, level=None, only_selected=False, output_format="tabulated", include_tags_info = False, include_tags_linkage_degree_info=[], substitute_node_attribute_if_not_exists=False, output_1_value_per_attribute=False, include_command_in_rows=False, output_only_native_values=False)
+
+    objSession.output_user_entity_set_details(user_entity_set_id = "User_Entity_Set_1", out_method = open(node_file_prefix + "_only_native.tsv", "w").write, attributes=["uniprotaccession"], include_level_info=False, include_degree_info=False, level=None, only_selected=False, output_format="tabulated", include_tags_info = False, include_tags_linkage_degree_info=[], substitute_node_attribute_if_not_exists=False, output_1_value_per_attribute=False, include_command_in_rows=False, output_only_native_values=True)
+
     # Export all the information of this set and its network to a file in a tab separated format
     objSession.output_user_entity_set_network_in_sif_format(user_entity_set_id = "User_Entity_Set_1", output_path = "./", output_prefix = network_files_prefix, node_attributes = [], participant_attributes = [], relation_attributes = relation_attributes, output_1_value_per_attribute = False, include_tags = False) 
 
@@ -373,6 +315,99 @@ def old_create_human_interactome_using_biana(node_file_prefix="human_nodes", net
     # Save the session
     save_session("biana_session", network_files_prefix + "_session.dat")
     return
+
+
+def old_generate_cross_validation_node_score_files(g, node_to_score, seeds, node_file_netzcore_prefix, edge_file_netzcore_relevance_prefix, arff_file_prefix, edge_file_netzcore):
+    # seeds = [ v for v, s in node_to_score.iteritems() if s != 0 ] # was assuming that non-seeds should have zero score
+    for k, training, test in k_fold_cross_validation(seeds, 10, randomize = True, useSeed = True):
+	assign_node_scores(g = g, node_to_score = node_to_score, out_file = node_file_netzcore_prefix+"_%i.txt"%k, as_edge_relevance_score = False, seeds_ignored=test)
+	assign_node_scores(g = g, node_to_score = node_to_score, out_file = edge_file_netzcore_relevance_prefix+"_%i.txt"%k, as_edge_relevance_score = True, seeds_ignored=test)
+	create_edge_file_from_weight_and_score_files(edge_file_netzcore_relevance_prefix+"_%i.txt"%k, edge_file_netzcore)
+	network_utilities.create_arff_file_with_network_metrics(g, node_to_score, training, arff_file_prefix+"_%i.arff"%k)
+    return
+
+
+def old_create_edge_file_from_weight_and_score_files(edge_file_weights, edge_file_scores, out_file):
+    setNode, setEdge, dictNode, dictEdgeWeight = network_utilities.get_nodes_and_edges_from_sif_file(file_name = edge_file_weights[:-3]+"sif", store_edge_type = True)
+    setNode, setEdge, dictNode, dictEdge = network_utilities.get_nodes_and_edges_from_sif_file(file_name = edge_file_scores[:-3]+"sif", store_edge_type = True)
+    f = open(out_file, "w")
+    for e, s in dictEdge.iteritems():
+	u,v=e
+	s = float(s)
+	w = dictEdgeWeight[e]
+	s = s*100 + 1
+	#if s == 0:
+	#    s = 0.1
+	w /= s
+	#print w
+	f.write("%s %s %s\n" % (u, w, v))
+    return 
+
+
+def old_extract_test_data_from_arff_files(arff_file_all, arff_file_filtered, arff_file_training, arff_file_test):
+    f_all = open(arff_file_all)
+    f_training = open(arff_file_training)
+    f_filtered = open(arff_file_filtered)
+    f_out = open(arff_file_test, 'w')
+    line_all = f_all.readline()
+    line_training = f_training.readline()
+    line_filtered = f_filtered.readline()
+    while line_all.startswith("@"):
+	f_out.write(line_filtered)
+	line_all = f_all.readline()
+	line_training = f_training.readline()
+	line_filtered = f_filtered.readline()
+    while line_all:
+	words_all = line_all.split(",")
+	words_training = line_training.split(",")
+	if(words_all[1] != words_training[1]):
+	    f_out.write(line_filtered)
+	line_all = f_all.readline()
+	line_training = f_training.readline()
+	line_filtered = f_filtered.readline()
+    f_out.close()
+    return
+
+
+def old_generate_cross_validation_test_test_arff_files(k, arff_file_all, arff_file_filtered, arff_file_training_prefix):
+    for i in xrange(k):
+	extract_test_data_from_arff_files(arff_file_all, arff_file_filtered, arff_file_training_prefix+"_%i.arff"%i, arff_file_training_prefix+"_test_%i.arff"%i)
+    return
+
+
+def old_assign_edge_reliability_scores(g, network_file_method_attribute, network_file_source_attribute, network_file_pubmed_attribute, out_file):
+    # linear combination of 
+    # pubmed/5
+    # db/3
+    # method/2
+    # jaccard/0.4
+    # cc1*cc2/0.4
+    edge_to_methods = network_utilities.get_edge_values_from_sif_attribute_file(file_name = network_file_method_attribute, store_edge_type = False)
+    edge_to_sources = network_utilities.get_edge_values_from_sif_attribute_file(file_name = network_file_source_attribute, store_edge_type = False)
+    edge_to_pubmeds = network_utilities.get_edge_values_from_sif_attribute_file(file_name = network_file_pubmed_attribute, store_edge_type = False)
+    edge_to_jaccard = network_utilities.get_jaccard_index_map(g)
+    node_to_ccoef = network_utilities.get_clustering_coefficient_map(g)
+    f = open(out_file, 'w')
+    for u,v in g.edges_iter():
+	score = 0.0
+	if edge_to_methods.has_key((u,v)):
+	    score += len(edge_to_methods[(u,v)])/2.0
+	elif edge_to_methods.has_key((v,u)):
+	    score += len(edge_to_methods[(v,u)])/2.0
+	if edge_to_sources.has_key((u,v)):
+	    score += len(edge_to_sources[(u,v)])/3.0
+	elif edge_to_sources.has_key((v,u)):
+	    score += len(edge_to_sources[(v,u)])/3.0
+	if edge_to_pubmeds.has_key((u,v)):
+	    score += len(edge_to_pubmeds[(u,v)])/5.0
+	elif edge_to_pubmeds.has_key((v,u)):
+	    score += len(edge_to_pubmeds[(v,u)])/5.0
+	score += node_to_ccoef[u]*node_to_ccoef[v]/0.4
+	score += edge_to_jaccard[(u,v)]/0.4
+	f.write("%s\t%s\t%f\n" % (u, v, score))
+    f.close()
+    return
+
 
 if __name__ == "__main__":
     pass

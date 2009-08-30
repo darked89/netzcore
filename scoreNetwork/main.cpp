@@ -18,11 +18,11 @@ void runNetzcore(string, string, string, string, unsigned int, unsigned int, uns
 
 int main(int argc, char **argv)
 {
-    static const char *optString = "n:e:i:s:o:r:h?";
+    static const char *optString = "n:e:i:s:o:r:x:d:h?";
     int opt = 0;
-    string fileNode, fileEdge, fileOutput;
+    string fileNode, fileEdge, fileOutput, dirSampling;
     enum ScoringMethod { NETSHORT = 'd', NETSCORE = 's', NETRANK = 'r', NETZCORE = 'z' };
-    unsigned int nIteration = 1, nRepetition = 1, nSampled = 4;  
+    unsigned int nIteration = 1, nRepetition = 1, nSampled = 0;  
     char scoring = 's';
 
     opt = getopt( argc, argv, optString );
@@ -50,10 +50,18 @@ int main(int argc, char **argv)
             case 'o':
             	fileOutput = string(optarg);
                 break;
+	    case 'x':
+                iss.str(optarg);
+            	iss >> nSampled;
+                break;
+            case 'd':
+            	dirSampling = string(optarg); 
+                break;
 	    case 'h':
 	    case '?':
 		cout << "-n <node_file> -e <edge_file> -s <scoring_method>{NETSHORT:d|NETSCORE:s|NETRANK:r|NETZCORE:z}" << 
-                "-i <number_of_iteration> -o <output_file> -r <number_of_repetition>" << endl;
+                " -i <number_of_iteration> -o <output_file> -r <number_of_repetition> -x <number_of_sampled_graphs>" <<
+	        " -d <sampling_graph_directory> " << endl;
                 return 0;
             default:
                 break;
@@ -70,7 +78,7 @@ int main(int argc, char **argv)
     else if (scoring == NETRANK)
 	runNetrank(fileNode, fileEdge, fileOutput);
     else if (scoring == NETZCORE)
-	runNetzcore(fileNode, fileEdge, fileOutput, "../../data/sampled_graphs/sampled_graph.sif.", nSampled, nRepetition, nIteration); 
+	runNetzcore(fileNode, fileEdge, fileOutput, dirSampling + string("sampled_graph.sif."), nSampled, nRepetition, nIteration); 
     else
 	//runScoreNetwork();
 	cerr << "Unrecognized scoring type!" << endl;
@@ -81,13 +89,15 @@ int main(int argc, char **argv)
 
 void runNetzcore(string fileNode, string fileEdge, string fileOutput, string prefixSampledGraphs, unsigned int nSampled, unsigned int nRepetition, unsigned int nIteration) 
 {
+    // flagUseEdgeScore, flagAccumulateToInitialNodeScore, flagResetSeedScoresToInitial, flagVerbose
     Netzcore sN(fileNode, fileEdge, fileOutput, prefixSampledGraphs, nSampled, true, false, false, false);
     sN.run(nRepetition, nIteration);
 }
 
 void runNetscore(string fileNode, string fileEdge, string fileOutput, unsigned int nRepetition, unsigned int nIteration) 
 {
-    Netscore sN(fileNode, fileEdge, fileOutput, false, false, false, false);
+    // flagUseEdgeScore, flagAccumulateToInitialNodeScore, flagResetSeedScoresToInitial, flagVerbose
+    Netscore sN(fileNode, fileEdge, fileOutput, true, false, false, false);
     sN.run(nRepetition, nIteration);
 }
 

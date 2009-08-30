@@ -16,7 +16,7 @@ std::pair<float, float> calculateMeanAndSigma(InputIterator first, InputIterator
 class Netzcore: public ScoreNetwork {
 public:
     Netzcore(); 
-    Netzcore(std::string fileNode, std::string fileEdge, std::string fileOutput, std::string prefixSampled, unsigned int nSample, bool fUseEdgeReliabilityScore = true, bool fAccumulateToInitialNodeScore = true, bool fResetSeedScoresToInitial = false, bool fVerbose = false); 
+    Netzcore(std::string fileNode, std::string fileEdge, std::string fileOutput, std::string prefixSampled, unsigned int nSample, bool fUseEdgeScore = true, bool fAccumulateToInitialNodeScore = true, bool fResetSeedScoresToInitial = false, bool fVerbose = false); 
     ~Netzcore();
 
 private:
