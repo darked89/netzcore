@@ -12,7 +12,8 @@ ScoreNetwork::ScoreNetwork()
     typeTransfer = IDENTITY;
     //minScore = INFINITY;
     //maxScore = -INFINITY;
-    nIteration = 0;
+    //nIteration = 0;
+    repeatCounter = 0;
     iterationCounter = 0;
     flagVerbose = false;
     flagUseEdgeScore = true;
@@ -25,7 +26,8 @@ ScoreNetwork::ScoreNetwork(string fileNode, string fileEdge, string fileOutput, 
     typeTransfer = IDENTITY;
     //minScore = INFINITY;
     //maxScore = -INFINITY;
-    nIteration = 0;
+    //nIteration = 0;
+    repeatCounter = 0;
     iterationCounter = 0;
     flagVerbose = fVerbose;
     flagUseEdgeScore = fUseEdgeScore; // should? be in updateEdgeScore
@@ -45,13 +47,16 @@ ScoreNetwork::~ScoreNetwork() {
 
 void ScoreNetwork::run(int nRepeatition, int nIteration, float tError) 
 { 
-    nIteration = nIteration;
     float error = INFINITY;
     initializeScoring();
     //cout << "Snet fAccumulate in run: " << flagAccumulateToInitialNodeScore << endl;
-    for(int repeatCounter = 1; repeatCounter<=nRepeatition and error > tError; ++repeatCounter) {
+    for(repeatCounter = 1; repeatCounter<=nRepeatition and error > tError; ++repeatCounter) {
+	if(flagVerbose)
+	    cout << "((repeatition " << repeatCounter << "))" << std::endl;
 	initializeRepeatition();
 	for(iterationCounter = 1; iterationCounter<=nIteration and error > tError; ++iterationCounter) {
+	    if(flagVerbose)
+		cout << "(iteration " << iterationCounter << ")" << std::endl;
 	    initializeIteration();
 	    updateNetwork();
 	    error = calculateErrorAndUpdateScores();

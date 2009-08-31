@@ -1,6 +1,6 @@
 
 CC=g++
-CFLAGS=-I $(HOME)/lib/boost_1_38_0/ -O3 #-g #-Wall
+CFLAGS=-I $(HOME)/lib/boost_1_38_0/ -O3 #-g -Wall
 LDFLAGS=-c
 
 SRCGRAPH=graph/Graph.cpp 
@@ -31,7 +31,8 @@ SRCTEST=main_test.cpp
 #SRCTEST=$(wildcard test*.cpp) 
 #OBJTEST=$(patsubst %.cpp, %.o, $(SRCTEST))
 
-all: scoreN testN netscore 
+#all: scoreN testN netscore 
+all: scoreN 
 
 scoreN: $(OBJGRAPH) $(OBJSNETWORK) $(OBJNETSCORE) $(OBJNETSHORT) $(OBJNETRANK) $(OBJNETZCORE) $(OBJNETRANDOM) $(SRCMAIN)
 	$(CC) $(CFLAGS) $(OBJGRAPH) $(OBJSNETWORK) $(OBJNETSCORE) $(OBJNETSHORT) $(OBJNETRANK) $(OBJNETZCORE) $(OBJNETRANDOM) $(SRCMAIN) -o scoreN

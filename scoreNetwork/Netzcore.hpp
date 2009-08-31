@@ -7,8 +7,8 @@
 
 #include <list>
 
-typedef boost::unordered_map<unsigned int,  Message> UIntToMessage;
-typedef boost::unordered_map<Vertex, UIntToMessage* > VertexToMessageMap;
+//typedef boost::unordered_map<unsigned int,  Message> UIntToMessage;
+///typedef boost::unordered_map<Vertex, UIntToMessage* > VertexToMessageMap;
 
 template <class InputIterator>
 std::pair<float, float> calculateMeanAndSigma(InputIterator first, InputIterator beyond);

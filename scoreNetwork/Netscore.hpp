@@ -5,6 +5,8 @@
 
 #include <boost/unordered_map.hpp>
 
+// multiplication of weight of edges on the path, iteration of arrival, number of equidistant arrivals
+typedef boost::tuple<float, int, int> Message;
 typedef boost::unordered_map<unsigned int,  Message> UIntToMessage;
 //typedef std::map<unsigned int,  Message> UIntToMessage;
 typedef boost::unordered_map<Vertex, UIntToMessage* > VertexToMessageMap;

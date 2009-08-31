@@ -32,8 +32,9 @@ struct edge_score_t {
 };
 //typedef property< vertex_score_t, float> VertexAttributes;
 
+// Moved to Netscore
 //typedef std::pair<float, int> Message;
-typedef boost::tuple<float, int, int> Message;
+//typedef boost::tuple<float, int, int> Message;
 //typedef boost::unordered_map<unsigned int,  Message> UIntToMessage;
 
 // Define features as bundled types - somewhat suggested

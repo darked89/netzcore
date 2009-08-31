@@ -124,7 +124,7 @@ public:
 
     void test_shortestPath()
     {
-	float vertex_distances[] = { 0, 0.1, 0.3, 0.4, 0.9 };
+	//float vertex_distances[] = { 0, 0.1, 0.3, 0.4, 0.9 };
 	std::map<Vertex, Vertex> mapPredecessor;
 	std::map<Vertex, float> mapDistance;
 	std::map<Vertex, float>::iterator vt, vtEnd;

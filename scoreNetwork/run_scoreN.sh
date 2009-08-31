@@ -10,3 +10,4 @@
 #./scoreN -n ../../data/toy_data/test_proteins_small.txt -e ../../data/toy_data/test_interactions_small.txt -o ../../data/output/test.txt -s r 
 #./scoreN -n ../../data/toy_data/test_proteins_small.txt -e ../../data/toy_data/test_interactions_small.txt -o ../../data/output/test.txt -s z 
 
+./scoreN -n ../../data/toy_data/test_proteins_small.sif -e ../../data/toy_data/test_interactions_small_with_scores.sif -o test.txt -d ../../data/toy_data/sampled_graphs_toy/ -x 4 -s z -i 1

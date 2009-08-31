@@ -30,7 +30,7 @@ public:
     void test_initialScores()
     {
 	float vertex_scores[] = { 0.1, 0.3, 0.5, 0.7, 0.9 };
-	std::size_t n_vertex = sizeof(vertex_scores)/sizeof(float);
+	//std::size_t n_vertex = sizeof(vertex_scores)/sizeof(float);
 
 	VertexIterator it, itEnd;
 	for(boost::tie(it, itEnd) = _sNetwork.getNetwork().getVertexIterator(); it != itEnd; it++) 
@@ -42,7 +42,6 @@ public:
     void test_scaledScores()
     {	
 	float vertex_scores[] = { 0.0, 1.0, 1.0, 0.0, 0.0 };
-	std::size_t n_vertex = sizeof(vertex_scores)/sizeof(float);
 
 	_sNetwork.scaleNodeScoresWrapper(SCALE_BY_MAX_SCORE);
 
@@ -56,7 +55,6 @@ public:
     void test_scaledScores_by_max()
     {	
 	float vertex_scores[] = { 0.111111, 0.333333, 0.555555, 0.777777, 1.0 };
-	std::size_t n_vertex = sizeof(vertex_scores)/sizeof(float);
 
 	_sNetwork.scaleNodeScoresWrapper(SCALE_BY_MAX_SCORE);
 
@@ -70,7 +68,6 @@ public:
     void test_scaledScores_between_zero_one()
     {	
 	float vertex_scores[] = { 0.0, 0.25, 0.5, 0.75, 1.0 };
-	std::size_t n_vertex = sizeof(vertex_scores)/sizeof(float);
 
 	_sNetwork.scaleNodeScoresWrapper(SCALE_BETWEEN_ZERO_AND_ONE);
 
@@ -84,7 +81,6 @@ public:
     void test_scaledScores_between_initial_min_max()
     {	
 	float vertex_scores[] = { 0.1, 0.3, 0.5, 0.7, 0.9 };
-	std::size_t n_vertex = sizeof(vertex_scores)/sizeof(float);
 
 	_sNetwork.scaleNodeScoresWrapper(SCALE_BETWEEN_INITIAL_MIN_AND_MAX_SCORE);
 

@@ -94,12 +94,12 @@ void Netzcore::updateNodeScore(Vertex v)
     Vertex u;
     AdjVertexIterator vt, vtEnd;
     std::list<Graph*>::iterator it, itEnd;
-    float tempScore = 0.0;
+    float tempScore = 0.0, sumScore = 0.0;
     std::pair<float, float> tempPair(0.0,0.0);
     unsigned int i = 0;
     Graph* pG;
     if(flagVerbose)
-        std::cout << "-Checking node: " << getNetwork().getVertexName(v) << std::endl;
+        std::cout << "Checking node: " << getNetwork().getVertexName(v) << std::endl;
 
     std::list<float> scores;
     for(it=sampledGraphs.begin(), itEnd=sampledGraphs.end(); it != itEnd; ++it)
@@ -107,39 +107,51 @@ void Netzcore::updateNodeScore(Vertex v)
 	pG = *it;
 	u = pG->getVertex(getNetwork().getVertexName(v));
 	//pG->print(false);
+	sumScore = 0.0;
+	tempScore = 0.0;
+	i = 0;
 	for(boost::tie(vt, vtEnd) = pG->getAdjacentVertexIteratorOfVertex(u); vt != vtEnd; ++vt) 
 	{
 	    tempScore = pG->getVertexScore(*vt);
             if(flagUseEdgeScore) 
 	    {
-                tempScore *= pG->getEdgeScore(u, *vt);
+		tempScore *= pG->getEdgeScore(u, *vt);
             }
-	    scores.push_back(tempScore);
+	    sumScore += tempScore;
+	    i += 1;
 	    if(flagVerbose)
-		std::cout << "--Score of neighbor " << pG->getVertexName(*vt) << ": " << tempScore << std::endl; 
+		std::cout << "--Score of random neighbor " << pG->getVertexName(*vt) << ": " << tempScore << std::endl; 
 	}
+	tempScore = sumScore / i;
+	if(flagVerbose)
+	    std::cout << "-Average score of random neighbors " << tempScore << std::endl; 
+	scores.push_back(tempScore);
     }
+    sumScore = 0.0;
     tempScore = 0.0;
     i = 0;
     for(boost::tie(vt, vtEnd) = getNetwork().getAdjacentVertexIteratorOfVertex(v); vt != vtEnd; ++vt) 
     {
+	tempScore = getNetwork().getVertexScore(*vt);
 	if(flagUseEdgeScore) 
 	{
-	    tempScore += getNetwork().getEdgeScore(v, *vt) * getNetwork().getVertexScore(*vt);
+	    tempScore *= getNetwork().getEdgeScore(v, *vt);
 	} 
-	else 
-	{
-	    tempScore += getNetwork().getVertexScore(*vt);
-	}
+	sumScore += tempScore;
 	i += 1;
+	if(flagVerbose)
+	    std::cout << "--Score of neighbor " << getNetwork().getVertexName(*vt) << ": " << tempScore << std::endl; 
     }
-    tempScore /= i;
+    tempScore = sumScore / i;
+    if(flagVerbose)
+	std::cout << "-Average score of neighbors " << tempScore << std::endl; 
     tempPair = calculateMeanAndSigma(scores.begin(), scores.end());
     //std::cout << "s: " << tempScore << " m: " << tempPair.first << " sig: " << tempPair.second << std::endl;
     if(tempPair.second == 0) //(isnan(tempScore))
     {
 	std::cout << "Zero variance!" << std::endl;	
-	tempScore = 0.0;
+	//tempScore = 0.0;
+	tempScore = getNetwork().getVertexScore(v);
     } 
     else 
     {
@@ -150,7 +162,7 @@ void Netzcore::updateNodeScore(Vertex v)
     // Update scoreUpdated (for error calculation)
     setVertexScoreUpdated(v, tempScore);
     if(flagVerbose)
-	std::cout << "Score calculated for " << getNetwork().getVertexName(v) << ": " << tempScore << " after iteration " << iterationCounter << std::endl;
+	std::cout << "Score calculated for " << getNetwork().getVertexName(v) << ": " << tempScore << std::endl; // << " after iteration " << iterationCounter << std::endl;
 }
 
 template <class InputIterator>

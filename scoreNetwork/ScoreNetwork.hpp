@@ -31,7 +31,8 @@ public:
     */
 
 protected:
-    int nIteration;
+    //int nIteration;
+    int repeatCounter;
     int iterationCounter;
     //float minScore;
     //float maxScore;

@@ -64,6 +64,9 @@ void Netscore::initializeRepeatition()
 	//mapMessage = getNetwork().getVertexMessageMap(*it); 
 	//mapMessage[getNetwork().getVertexIndex(*it)] = std::pair<float, int>(1.0, 0);
 	pMapMessage = getVertexMessageMap(*it); 
+	if(repeatCounter != 1) {
+	    pMapMessage->clear();
+	}
 	(*pMapMessage)[getNetwork().getVertexIndex(*it)] = boost::make_tuple(1.0, 0, 1); //std::pair<float, int>(1.0, 0);
 	//UIntToMessage::iterator mt, mtEnd;
 	//for(mt=mapMessage.begin(), mtEnd=mapMessage.end(); mt != mtEnd; ++mt)
@@ -92,7 +95,7 @@ void Netscore::updateNodeScore(Vertex v)
     unsigned int nMessagesRecieved = 0;
     //std::cout << "Nscore fverbose : " << flagVerbose << " fAccumulate: " << flagAccumulateToInitialNodeScore << std::endl; //<< " T F: " << true << " " << false <<std::endl;
     if(flagVerbose)
-        std::cout << "-Checking node: " << getNetwork().getVertexName(v) << std::endl;
+        std::cout << "-Checking node: " << getNetwork().getVertexName(v) << std::endl; //<<  " (iteration " << iterationCounter << ")" << std::endl;
     for(boost::tie(vt, vtEnd) = getNetwork().getAdjacentVertexIteratorOfVertex(v); vt != vtEnd; ++vt) 
     {
 	if(flagVerbose)
@@ -110,13 +113,13 @@ void Netscore::updateNodeScore(Vertex v)
 		{
 		    tempScore *= getNetwork().getEdgeScore(v, *vt);
 		}
-		if(flagVerbose)
-		    std::cout << "---message of " << it->first << " " << getNetwork().getVertexName(it->first) << " score: " << tempScore << std::endl; 
 		// Sum up messages from the same node arriving at the same time
 		itSearch = pMapMessage->find(it->first);
 		if(itSearch == pMapMessage->end())
 		{
 		    (*pMapMessage)[it->first] = boost::make_tuple(tempScore, iterationCounter, 1); //std::pair<float, int>(tempScore, iterationCounter); // iterationCounter == it->second.second + 1
+		    if(flagVerbose)
+			std::cout << "---message of " << getNetwork().getVertexName(it->first) << " scoring factor: " << tempScore << std::endl; 
 		} 
 		else 
 		{
@@ -124,12 +127,15 @@ void Netscore::updateNodeScore(Vertex v)
 		    {
 			boost::get<0>(itSearch->second) += tempScore;
 			boost::get<2>(itSearch->second) += 1;
+			if(flagVerbose)
+			    std::cout << "---message of " << getNetwork().getVertexName(it->first) << " scoring factor: " << tempScore << std::endl; 
 		    }
 		}
 	    }
 	}
     }
     tempScore = 0.0;
+    nMessagesRecieved = 0;
     for(it=pMapMessage->begin(), itEnd=pMapMessage->end(); it != itEnd; ++it)
     {
 	// Vertex score contains accumulated score over the iterations so only consider messages from that iteration
@@ -139,7 +145,7 @@ void Netscore::updateNodeScore(Vertex v)
 	    //nMessagesRecieved += 1;
 	    nMessagesRecieved += boost::get<2>(it->second);
 	    if(flagVerbose)
-		std::cout << "Evaluating message of " << it->first << " " << getNetwork().getVertexName(it->first) << " score: " << tempScore << "(+ " << boost::get<0>(it->second) << " * " << getVertexScoreInitial(getNetwork().getVertex(it->first)) <<" )" << std::endl; 
+		std::cout << "--Evaluating message of " << getNetwork().getVertexName(it->first) << ": accumulated score: " << tempScore << " (previous + " << boost::get<0>(it->second) << " * " << getVertexScoreInitial(getNetwork().getVertex(it->first)) <<" )" << std::endl; 
 	}
     }
     if(nMessagesRecieved != 0) 
@@ -155,6 +161,6 @@ void Netscore::updateNodeScore(Vertex v)
     // Update scoreUpdated (for error calculation)
     setVertexScoreUpdated(v, tempScore);
     if(flagVerbose)
-	std::cout << "Score calculated for " << getNetwork().getVertexName(v) << ": " << tempScore << " after iteration " << iterationCounter << std::endl;
+	std::cout << "Score calculated for " << getNetwork().getVertexName(v) << ": " << tempScore << std::endl; //<< " (iteration " << iterationCounter << ")" << std::endl;
 }
 

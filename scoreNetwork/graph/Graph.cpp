@@ -20,6 +20,8 @@ Graph::Graph(int n_node)
     //this->container(n_node); 
     this->container = UndirectedGraph(n_node);
     mapIndex = get(vertex_index, this->container); // get Vertex to Index mapping
+    minScore = INFINITY;
+    maxScore = -INFINITY;
 }
 
 Graph::Graph(Graph const &g) 
@@ -40,14 +42,16 @@ Edge Graph::addEdge(string const &idSource, string const &idTarget, float eData)
     //IdVertexIterator it = mapIntexToVertex.left.find(idSource), itEnd = mapIntexToVertex.left.end();
     //if(it != itEnd) u = it->second;
     //else u = addVertex(idSource, )
-    try {
+
+    //try {
 	it = mapIdToIndex.left.find(idSource);
 	u = mapIndexToVertex.at(it->second);
 	it = mapIdToIndex.left.find(idTarget);
 	v =  mapIndexToVertex.at(it->second);
-    } catch (...) {
-	cerr << "addEdge: missing node" << endl;
-    }
+    //} catch (...) {
+    //	cerr << "addEdge: missing node" << endl;
+    //}
+
     //tie(e, found) = add_edge(u, v, EdgeProperties(eData, EdgeAttributes(eData)), this->container); // If graph defined with EdgeAttributes instead of EdgeProperties
     //tie(e, found) = add_edge(u, v, eData, this->container); // If graph defined with EdgeProperties - with edge_weight_t
     //tie(e, found) = add_edge(u, v, this->container); // If graph defined with EdgeProperties - edge_index_t instead of edge_weight_t
@@ -406,14 +410,14 @@ void test_boost_create_and_iterate()
     VertexIterator it, itEnd;
     OutEdgeIterator out, out_end;
 
-    const int V = 10;
+    const unsigned int V = 10;
 
     UndirectedGraph undigraph(0);
     bool firstTime = true;
 
     clock_t t1 = clock();
 
-    float score = 0.2, weight = 0.5;
+    //float score = 0.2, weight = 0.5;
     string s = "a";
     
     property_map<UndirectedGraph, vertex_index_t>::type v_index = get(vertex_index, undigraph); 

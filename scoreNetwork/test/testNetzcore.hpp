@@ -53,7 +53,6 @@ public:
     void test_initialScores()
     {
 	float vertex_scores[] = { 0.0, 1.0, 1.0, 0.0, 0.0 };
-	std::size_t n_vertex = sizeof(vertex_scores)/sizeof(float);
 
 	VertexIterator it, itEnd;
 	for(boost::tie(it, itEnd) = _sNetwork.getNetwork().getVertexIterator(); it != itEnd; it++) 
@@ -77,8 +76,7 @@ public:
     void test_calculatedScores()
     {	
 	std::cout << "\ntestNetzcore: Ignoring calculatedScores() test \n" << std::endl;
-	float vertex_scores[] = { 0.75, 4.0/3, 1.5, 1.0/3, 0.005 };
-	std::size_t n_vertex = sizeof(vertex_scores)/sizeof(float);
+	//float vertex_scores[] = { 0.75, 4.0/3, 1.5, 1.0/3, 0.005 };
 
 	VertexIterator it, itEnd;
 	//for(boost::tie(it, itEnd) = _sNetwork.getNetwork().getVertexIterator(); it != itEnd; it++) 

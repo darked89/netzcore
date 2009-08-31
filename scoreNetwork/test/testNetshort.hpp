@@ -30,7 +30,6 @@ public:
     void test_initialScores()
     {
 	float vertex_scores[] = { 0.0, 1.0, 1.0, 0.0, 0.0 };
-	std::size_t n_vertex = sizeof(vertex_scores)/sizeof(float);
 
 	VertexIterator it, itEnd;
 	for(boost::tie(it, itEnd) = _sNetwork.getNetwork().getVertexIterator(); it != itEnd; it++) 
@@ -43,7 +42,6 @@ public:
     {	
 	float d = 1.0;
 	float vertex_scores[] = { d/113, d/107, d/108, d/108, d/408 };
-	std::size_t n_vertex = sizeof(vertex_scores)/sizeof(float);
 
 	_sNetwork.run();
 	VertexIterator it, itEnd;

@@ -4,26 +4,28 @@
 # eg 25/06/2009
 #########################################################################
 
-from biana.utilities import biana_output_converter as biana_output_converter 
-from biana.utilities import graph_utilities as network_utilities
 import prepare_data
-import score_network
 import analyze_results
 import os, os.path
 from string import Template
+
+# obsolete
+import score_network # obsolete
+from biana.utilities import biana_output_converter as biana_output_converter 
+from biana.utilities import graph_utilities as network_utilities 
 
 
 # Scoring related parameters 
 MODE = "all" # prepare, score, analyze
 
-PPI = "biana" 
+#PPI = "biana" 
 #PPI = "goh" 
-#PPI = "rhodes"
+PPI = "rhodes"
 
 #SCORING = "ns" #"netscore"
 #SCORING = "nz" #"netzcore"
-#SCORING = "nd" # "netshort"
-SCORING = "nr" #"netrank"
+SCORING = "nd" # "netshort"
+#SCORING = "nr" #"netrank"
 #SCORING = "nx" #"netrandom"
 
 N_REPEATITION = 3
@@ -33,6 +35,7 @@ DEFAULT_NON_SEED_SCORE = 0.01
 ALLOWED_MAX_DEGREE = 100000 #175 #90
 N_SAMPLE_GRAPH = 100
 N_X_VAL = 5
+N_RANDOM_NEGATIVE_FOLDS = 10
 
 # Data directory of the project
 data_dir = ".." + os.sep + "data" + os.sep
@@ -126,6 +129,9 @@ output_scores_file = output_dir + "node_scores.sif" # "_r%dn%d.sif" % (N_REPEATI
 log_file = output_dir + "log.txt" # "_r%dn%d.txt" % (N_REPEATITION, N_ITERATION)
 sampled_file_prefix = sampling_dir + "sampled_graph"
 
+predictions_file = output_dir + "predictions.txt"
+labels_file = output_dir + "labels.txt"
+r_script_file = output_dir + "results.r"
 
 score_xval_commands = { "ns": Template("scoreNetwork/scoreN -s s -n %s.$fold -e %s -o %s.$fold -r %d -i %d &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_REPEATITION, N_ITERATION, log_file)),
 			"nz": Template("scoreNetwork/scoreN -s z -n %s.$fold -e %s -o %s.$fold -i %d -x %d -d %s &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, log_file)),
@@ -164,9 +170,7 @@ def prepare():
     """
     if PPI == "biana":
 	create_biana_network()
-
     prepare_scoring_files()
-
     return
 
 
@@ -204,12 +208,20 @@ def score_original():
 
 
 def analyze_xval():
+
+    list_node_scores_and_labels = []
+    for k in range(1, N_X_VAL+1):
+	node_validation_data = analyze_results.get_validation_node_scores_and_labels(file_result = output_scores_file+".%d"%k, file_seed_test_scores = node_scores_file+".%d.test"%k, file_node_scores = node_scores_file, n_random_negative_folds = N_RANDOM_NEGATIVE_FOLDS)
+	list_node_scores_and_labels.append(node_validation_data)
+    analyze_results.create_ROCR_files(list_node_scores_and_labels, predictions_file, labels_file)
+    analyze_results.create_R_script(r_script_file)
+
     for tScore in [ i*0.01 for i in xrange(0, 100, 5)]:
 	print "---- t:", tScore
 	nTP_sum, nFP_sum, nFN_sum, nTN_sum = 0.0, 0.0, 0.0, 0.0
 	for k in range(1, N_X_VAL+1):
 	    #print output_scores_file+".ns.%d"%k, node_scores_file+".%d.test"%k 
-	    nTP, nFP, nFN, nTN = analyze_results.calculate_performance_metric_counts(file_result = output_scores_file+".%d" % k, file_seed_test_scores = node_scores_file+".%d.test"%k, file_seed_scores = node_scores_file, score_threshold = tScore, n_random_negative_folds = 10)
+	    nTP, nFP, nFN, nTN = analyze_results.calculate_performance_metric_counts(file_result = output_scores_file+".%d" % k, file_seed_test_scores = node_scores_file+".%d.test"%k, file_node_scores = node_scores_file, score_threshold = tScore, n_random_negative_folds = N_RANDOM_NEGATIVE_FOLDS)
 	    (acc, sens, spec, ppv) = analyze_results.calculatePerformance(nTP, nFP, nFN, nTN)
 	    #print "A:", acc, "S:", sens, "P:", ppv
 	    nTP_sum += nTP

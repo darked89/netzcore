@@ -1,15 +1,61 @@
 
 TODO:
 
-- start running netshort
-
-- add drawROC to analyze
-
-- runs on different networks (with diferent reliabilities) with different disease assoc. data and paramters and analysis
+- runs on 3 ppi with aneurysm (and possibly AES and then possibly Hefalmp & OMIM) data for preliminary analysis of programs & parameters
 
 - document all
 
 - add networks with reliability scores (using edge attributes: pubmed, method, string coexpression/colocalization, jaccard, clustering coefficient)
+
+- runs on different networks (with diferent reliabilities) with different disease assoc. data and paramters and analysis
+    - scoring
+	- netshort
+	- netrank
+	- netrandom
+	- netscore
+	    - r3 i3
+	    - r2 i3
+	    - r1 i1
+	    - r1 i3
+	    - r5 i1
+	    - r5 i2
+	    - r4 i2
+	- netzcore
+	    - i1
+	    - i3
+	    - i5
+	- netzcore + netscore
+	    - netzcore i1 + netscore (select from previous step)
+    - ppi
+	- biana
+	- goh
+	- rhodes
+    - reliability from (only for biana)
+	- string 
+	    - co-expression
+	    - co-localization
+	    - all
+	    - ? gene neighborhood / fusion / text mining / db
+	- pubmed
+	- method
+	- jaccard
+	- clust. coef.
+	- ? iterative jaccard
+    - disease association
+	- aneurysm (168, genesymbol))
+	- aes (uniprotaccession)
+	    - apoptosis (430)
+	    - inflamation (584)
+	    - anorexia (124)
+	- hefalmp (genesymbol)
+	    - alzheimer (862)
+	    - breast cancer (239)
+	- omim morbidmap
+	    - breast cancer
+	    - alzheimer
+	- phenogo
+	    - breast cancer
+	    - alzheimer
 
 - ml predictions based on feature described network
 
