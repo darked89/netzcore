@@ -15,6 +15,10 @@
 
 #include <map>
 
+#include <cmath> // for INFINITY
+
+typedef enum ScaleType { SCALE_BY_MAX_SCORE, SCALE_BETWEEN_ZERO_AND_ONE, SCALE_BETWEEN_INITIAL_MIN_AND_MAX_SCORE } ScaleType;
+
 template <class Pair>
 bool pairSortBySecondPredicate(const Pair& lhs, const Pair& rhs);
 
@@ -137,6 +141,9 @@ public:
     void calculateShortestPath(Vertex v, std::map<Vertex, float> & vertexToFloat, std::map<Vertex, Vertex> & vertexToVertex);
     //void calculatePageRank();
     void calculatePageRank(std::map<Vertex, float> & vertexToFloat, unsigned int nIteration = 1);
+    // Processing graph scores
+    void scaleVertexScores(ScaleType typeScale);
+    std::pair<float, float> getMinAndMaxNodeScores();
     // Graph outputting & printing 
     void outputScores(std::string outputFile) const throw(GenericError);
     void printAdjacencyList() const;
@@ -150,6 +157,9 @@ private:
     BiStrToUInt mapIdToIndex; // Vertex name to index bi-mapping
     UIntToVertex mapIndexToVertex; // Vertex index to descriptor mapping 
     IndexMap mapIndex; // built-in Vertex descriptor to index property map
+
+    float minScore;
+    float maxScore;
 };
 
 /*

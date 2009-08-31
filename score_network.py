@@ -7,6 +7,17 @@
 import networkx, cPickle
 from biana.utilities import graph_utilities as network_utilities
 
+
+def score_by_random_model(file_node_scores, file_edge_scores, file_output_scores, default_score = 0, max_score = 1):
+    from random import uniform
+    f = open(file_output_scores, "w")
+    setNode, setDummy, dictDummy, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_node_scores, store_edge_type = False)
+    for id in setNode:
+	f.write("%s\t%f\n" % (id, uniform(default_score, max_score)))
+    f.close()
+    return
+
+
 def create_network_from_edge_file(edge_file_weights):
     g = network_utilities.create_network_from_sif_file(network_file = edge_file_weights[:-3]+"sif", weighted=True)
     return g

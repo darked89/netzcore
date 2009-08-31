@@ -81,20 +81,25 @@ def calculate_seed_coverage_at_given_percentage(file_result, file_seed_scores, p
     setDummy, setDummy, dictNode, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_seed_scores, store_edge_type = False)
     
     result_scores = dictNodeResult.items()
-    result_scores.sort(lambda x,y: cmp(x[1], y[1]))
+    result_scores.sort(lambda x,y: cmp(y[1], x[1]))
 
     i = 0
     n = len(result_scores)*percentage/100
     n_seed = 0
-
+    
+    last_score = result_scores[0][1]
     for id, score in result_scores:
 	i+=1
 	if i>n:
-	    break
+	    if last_score != score:
+		#print "i,n:", i, n
+		#print "id,score,last:", id, score, last_score
+		break
 	# checking whether node was a seed (using initial non-seed score assumption)
 	if dictNode.has_key(id) and dictNode[id] > default_score:
 	    n_seed += 1
+	last_score = score
     
-    return n_seed, n
+    return n_seed, n, i
 
 

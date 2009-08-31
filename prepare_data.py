@@ -13,11 +13,28 @@ def get_nodes_in_network(network_file):
     return g.nodes()
 
 
-def generate_cross_validation_node_score_files(nodes, node_to_score, node_scores_file, xval = 5, default_score = 0):
-    seeds = node_to_score.keys()
+def get_edges_in_network(network_file):
+    g = network_utilities.create_network_from_sif_file(network_file)
+    return g.edges()
+
+
+def get_node_to_score_from_node_scores_file(node_scores_file):
+    nodes, set_dummy, node_to_score, dict_dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = node_scores_file, store_edge_type = False)
+    return node_to_score
+
+
+def generate_cross_validation_edge_score_as_node_score_files(edges, seed_to_score, edge_scores_file, xval = 5, default_score = 0):
+    seeds = seed_to_score.keys()
     for k, training, test in k_fold_cross_validation(seeds, xval, randomize = True, replicable = True):
-	create_node_scores_file(nodes = nodes, node_to_score = node_to_score, node_scores_file = node_scores_file+".%i"%k, ignored_nodes = test, default_score = default_score )
-	create_node_scores_file(nodes = test, node_to_score = node_to_score, node_scores_file = node_scores_file+".%i.test"%k, ignored_nodes = None, default_score = default_score )
+	create_edge_scores_as_node_scores_file(edges = edges, node_to_score = seed_to_score, edge_scores_file = edge_scores_file+".%i"%k, ignored_nodes = test, default_score = default_score)
+    return
+
+
+def generate_cross_validation_node_score_files(nodes, seed_to_score, node_scores_file, xval = 5, default_score = 0):
+    seeds = seed_to_score.keys()
+    for k, training, test in k_fold_cross_validation(seeds, xval, randomize = True, replicable = True):
+	create_node_scores_file(nodes = nodes, node_to_score = seed_to_score, node_scores_file = node_scores_file+".%i"%k, ignored_nodes = test, default_score = default_score )
+	create_node_scores_file(nodes = test, node_to_score = seed_to_score, node_scores_file = node_scores_file+".%i.test"%k, ignored_nodes = None, default_score = default_score )
     return
 
 
@@ -65,7 +82,7 @@ def create_edge_scores_file(network_file, edge_scores_file):
     return
 
 
-def create_edge_scores_file_from_node_scores(network_file, node_scores_file, edge_scores_file, ignored_nodes = None, default_score = 0):
+def old_create_edge_scores_as_node_scores_file(edges, node_to_score, edge_scores_file, ignored_nodes = None, default_score = 0):
     """
 	Creates edge score file from node association scores, intended comparing netshort with other algorithms without using other edge reliability/relevance score
     """
@@ -85,6 +102,30 @@ def create_edge_scores_file_from_node_scores(network_file, node_scores_file, edg
     f.close()
     return
 
+
+def create_edge_scores_as_node_scores_file(edges, node_to_score, edge_scores_file, ignored_nodes = None, default_score = 0):
+    """
+	Creates edge score file from node association scores, intended comparing netshort with other algorithms without using other edge reliability/relevance score
+    """
+    f = open(edge_scores_file, 'w')
+    for u,v in edges:
+	if ignored_nodes is not None and u in ignored_nodes:
+	    score_u = default_score
+	else:
+	    if node_to_score.has_key(u):
+		score_u = node_to_score[u]
+	    else:
+		score_u = default_score
+	if ignored_nodes is not None and v in ignored_nodes:
+	    score_v = default_score
+	else:
+	    if node_to_score.has_key(v):
+		score_v = node_to_score[v]
+	    else:
+		score_v = default_score
+	f.write("%s %f %s\n" % (u, (score_u + score_v) / 2, v))
+    f.close()
+    return
 
 def create_node_scores_file(nodes, node_to_score, node_scores_file, ignored_nodes = None, default_score = 0):
     """

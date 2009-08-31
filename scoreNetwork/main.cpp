@@ -4,6 +4,7 @@
 #include "Netscore.hpp"
 #include "Netrank.hpp"
 #include "Netzcore.hpp"
+#include "Netrandom.hpp"
 
 #include <iostream>
 #include <ctime>
@@ -15,13 +16,14 @@ void runNetshort(string, string, string);
 void runNetscore(string, string, string, unsigned int, unsigned int);
 void runNetrank(string, string, string);
 void runNetzcore(string, string, string, string, unsigned int, unsigned int, unsigned int);
+void runNetrandom(string, string, string );
 
 int main(int argc, char **argv)
 {
     static const char *optString = "n:e:i:s:o:r:x:d:h?";
     int opt = 0;
     string fileNode, fileEdge, fileOutput, dirSampling;
-    enum ScoringMethod { NETSHORT = 'd', NETSCORE = 's', NETRANK = 'r', NETZCORE = 'z' };
+    enum ScoringMethod { NETSHORT = 'd', NETSCORE = 's', NETRANK = 'r', NETZCORE = 'z', NETRANDOM = 'x' };
     unsigned int nIteration = 1, nRepetition = 1, nSampled = 0;  
     char scoring = 's';
 
@@ -59,7 +61,7 @@ int main(int argc, char **argv)
                 break;
 	    case 'h':
 	    case '?':
-		cout << "-n <node_file> -e <edge_file> -s <scoring_method>{NETSHORT:d|NETSCORE:s|NETRANK:r|NETZCORE:z}" << 
+		cout << "-n <node_file> -e <edge_file> -s <scoring_method>{NETSHORT:d|NETSCORE:s|NETRANK:r|NETZCORE:z|NETRANDOM:x}" << 
                 " -i <number_of_iteration> -o <output_file> -r <number_of_repetition> -x <number_of_sampled_graphs>" <<
 	        " -d <sampling_graph_directory> " << endl;
                 return 0;
@@ -79,6 +81,8 @@ int main(int argc, char **argv)
 	runNetrank(fileNode, fileEdge, fileOutput);
     else if (scoring == NETZCORE)
 	runNetzcore(fileNode, fileEdge, fileOutput, dirSampling + string("sampled_graph.sif."), nSampled, nRepetition, nIteration); 
+    else if (scoring == NETRANDOM)
+	runNetrandom(fileNode, fileEdge, fileOutput); 
     else
 	//runScoreNetwork();
 	cerr << "Unrecognized scoring type!" << endl;
@@ -104,7 +108,8 @@ void runNetscore(string fileNode, string fileEdge, string fileOutput, unsigned i
 void runNetshort(string fileNode, string fileEdge, string fileOutput) 
 {
     //clock_t t1 = clock();
-    Netshort sN(fileNode, fileEdge, fileOutput);
+    // flagAccumulateToInitialNodeScore
+    Netshort sN(fileNode, fileEdge, fileOutput, false);
     //clock_t t2 = clock();
     //cout << "Time to load graph: " << (t2-t1) << " (" << (t2-t1)/(double)CLOCKS_PER_SEC << "s)" << endl;
     sN.run();
@@ -113,7 +118,14 @@ void runNetshort(string fileNode, string fileEdge, string fileOutput)
 
 void runNetrank(string fileNode, string fileEdge, string fileOutput) 
 {
-    Netrank sN(fileNode, fileEdge, fileOutput);
+    // flagAccumulateToInitialNodeScore
+    Netrank sN(fileNode, fileEdge, fileOutput, false);
+    sN.run();
+}
+
+void runNetrandom(string fileNode, string fileEdge, string fileOutput) 
+{
+    Netrandom sN(fileNode, fileEdge, fileOutput);
     sN.run();
 }
 

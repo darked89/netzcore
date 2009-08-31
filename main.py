@@ -10,6 +10,8 @@ import prepare_data
 import score_network
 import analyze_results
 import os, os.path
+from string import Template
+
 
 # Scoring related parameters 
 MODE = "all" # prepare, score, analyze
@@ -17,6 +19,12 @@ MODE = "all" # prepare, score, analyze
 PPI = "biana" 
 #PPI = "goh" 
 #PPI = "rhodes"
+
+#SCORING = "ns" #"netscore"
+#SCORING = "nz" #"netzcore"
+#SCORING = "nd" # "netshort"
+SCORING = "nr" #"netrank"
+#SCORING = "nx" #"netrandom"
 
 N_REPEATITION = 3
 N_ITERATION = 3
@@ -26,7 +34,7 @@ ALLOWED_MAX_DEGREE = 100000 #175 #90
 N_SAMPLE_GRAPH = 100
 N_X_VAL = 5
 
-# Project directory structure
+# Data directory of the project
 data_dir = ".." + os.sep + "data" + os.sep
 
 # BIANA node & network files
@@ -61,38 +69,78 @@ if PPI == "biana":
     node_description_file = biana_node_file_prefix + ".tsv"
     network_file = biana_network_file_filtered_by_method
     network_file_filtered = biana_network_file_filtered_by_degree 
-    input_dir = data_dir + "input_biana" + os.sep
-    output_dir = data_dir + "output_biana" + os.sep
     network_file_identifier_type = "user entity id"
 # Goh ppi
 elif PPI == "goh":
     node_description_file = gene_info_file 
     network_file = goh_network_file
     network_file_filtered = goh_network_file_filtered_by_degree 
-    input_dir = data_dir + "input_goh" + os.sep
-    output_dir = data_dir + "output_goh" + os.sep
     network_file_identifier_type = "geneid"
 # Rhodes ppi
 elif PPI == "rhodes":
     node_description_file = gene_info_file 
     network_file = rhodes_network_file
     network_file_filtered = rhodes_network_file_filtered_by_degree 
-    input_dir = data_dir + "input_rhodes" + os.sep
-    output_dir = data_dir + "output_rhodes" + os.sep
     network_file_identifier_type = "geneid"
 else:
     raise ValueError("Unrecognized ppi!")
 
 # Common to all ppi networks
+
+# Project directory structure
+input_dir = data_dir + "input_" + PPI + os.sep
+sampling_dir = input_dir + "sampled_graphs" + os.sep
+output_base_dir = data_dir + "output_" + PPI + os.sep
+output_dir = output_base_dir + SCORING + os.sep
+
+# Create directory hirerarchy
+if not os.path.exists(input_dir): 
+    os.mkdir(input_dir)
+if not os.path.exists(sampling_dir): 
+    os.mkdir(sampling_dir)
+if not os.path.exists(output_base_dir): 
+    os.mkdir(output_base_dir)
+if not os.path.exists(output_dir): 
+    os.mkdir(output_dir)
+
+if SCORING == "ns":
+    output_dir = output_dir + "r%di%d" % (N_REPEATITION, N_ITERATION) + os.sep
+    if not os.path.exists(output_dir): 
+	os.mkdir(output_dir)
+elif SCORING == "nz":
+    output_dir = output_dir + "i%d" % (N_REPEATITION, N_ITERATION) + os.sep
+    if not os.path.exists(output_dir): 
+	os.mkdir(output_dir)
+
+
+# Association data to be used
 association_scores_file = aneurysm_scores_all_equal_file
 association_scores_file_identifier_type = "genesymbol"
 
+# Input/Output score file
+seed_scores_file = input_dir + "seed_scores.sif"
 node_scores_file = input_dir + "node_scores.sif"
 edge_scores_file = input_dir + "edge_scores.sif"
-sampling_dir = input_dir + "sampled_graphs" + os.sep
-output_scores_file = output_dir + "node_scores_r%dn%d.sif" % (N_REPEATITION, N_ITERATION)
-log_file = output_dir + "log_r%dn%d.txt" % (N_REPEATITION, N_ITERATION)
+edge_scores_as_node_scores_file = input_dir + "edge_scores_as_node_scores.sif"
+output_scores_file = output_dir + "node_scores.sif" # "_r%dn%d.sif" % (N_REPEATITION, N_ITERATION)
+log_file = output_dir + "log.txt" # "_r%dn%d.txt" % (N_REPEATITION, N_ITERATION)
 sampled_file_prefix = sampling_dir + "sampled_graph"
+
+
+score_xval_commands = { "ns": Template("scoreNetwork/scoreN -s s -n %s.$fold -e %s -o %s.$fold -r %d -i %d &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_REPEATITION, N_ITERATION, log_file)),
+			"nz": Template("scoreNetwork/scoreN -s z -n %s.$fold -e %s -o %s.$fold -i %d -x %d -d %s &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, log_file)),
+			"nd": Template("scoreNetwork/scoreN -s d -n %s.$fold -e %s.$fold -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_as_node_scores_file, output_scores_file, log_file)),
+			"nr": Template("scoreNetwork/scoreN -s r -n %s.$fold -e %s -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, log_file)),
+			"nx": Template("scoreNetwork/scoreN -s x -n %s.$fold -e %s -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, log_file)),
+		      }
+
+score_commands = { "ns": "scoreNetwork/scoreN -s s -n %s -e %s -o %s -r %d -i %d &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPEATITION, N_ITERATION, log_file),
+		   "nz": "scoreNetwork/scoreN -s z -n %s -e %s -o %s -i %d -x %d -d %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, log_file), 
+		   "nd": "scoreNetwork/scoreN -s d -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, log_file),
+		   "nr": "scoreNetwork/scoreN -s r -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, log_file),
+		   "nx": "scoreNetwork/scoreN -s x -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, log_file),
+		 }
+
 
 def main():
     if MODE == "prepare":
@@ -114,13 +162,6 @@ def prepare():
     """
 	Creates necessary files for scoring
     """
-    if not os.path.exists(input_dir): 
-	os.mkdir(input_dir)
-    if not os.path.exists(sampling_dir): 
-	os.mkdir(sampling_dir)
-    if not os.path.exists(output_dir): 
-	os.mkdir(output_dir)
-
     if PPI == "biana":
 	create_biana_network()
 
@@ -128,53 +169,58 @@ def prepare():
 
     return
 
+
 def score():
-    #score_original()
+    score_original()
     score_xval()
     return
 
+
 def analyze():
-    #analyze_original()
+    analyze_original()
     analyze_xval_percentage()
-    analyze_xval()
+    analyze_xval() 
     return
+
+
+def generate_score_xval_command(k):
+    #return score_xval_command % (node_scores_file, k, edge_scores_file, output_scores_file, k, N_REPEATITION, N_ITERATION, log_file, k)
+    return score_xval_commands[SCORING].substitute(fold = '%d' % k)
 
 
 def score_xval():
-    score_command = "scoreNetwork/scoreN -s s -n %s.%d -e %s -o %s.ns.%d -r %d -i %d &> %s.ns.%d" 
-    for k in range(1, N_X_VAL+1):
-	print score_command % (node_scores_file, k, edge_scores_file, output_scores_file, k, N_REPEATITION, N_ITERATION, log_file, k)
-	os.system( score_command % (node_scores_file, k, edge_scores_file, output_scores_file, k, N_REPEATITION, N_ITERATION, log_file, k) )
-    return
+    if not os.path.exists(output_scores_file + ".1"):
+	for k in range(1, N_X_VAL+1):
+	    print generate_score_xval_command(k)
+	    os.system( generate_score_xval_command(k) )
+	return
 
 
 def score_original():
-    netscore_command = "scoreNetwork/scoreN -s s -n %s -e %s -o %s.ns -r %d -i %d &> %s.ns" % (node_scores_file, edge_scores_file, output_scores_file, N_REPEATITION, N_ITERATION, log_file)
-    netzcore_command = "scoreNetwork/scoreN -s z -n %s -e %s -o %s.nz -i %d -x %d -d %s &> %s.nz" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, log_file)
-    if not os.path.exists(output_scores_file+".ns"):
-	print netscore_command
-	os.system(netscore_command)
-    if not os.path.exists(output_scores_file+".nz"):
-	pass
-	#print netzcore_command
-	#os.system(netzcore_command)
+    if not os.path.exists(output_scores_file):
+	print score_commands[SCORING]
+	os.system(score_commands[SCORING])
     return
 
 
 def analyze_xval():
-    for tScore in [ i*0.1 for i in xrange(0, 10,1)]:
-	print "t:", tScore
+    for tScore in [ i*0.01 for i in xrange(0, 100, 5)]:
+	print "---- t:", tScore
 	nTP_sum, nFP_sum, nFN_sum, nTN_sum = 0.0, 0.0, 0.0, 0.0
 	for k in range(1, N_X_VAL+1):
-	    print output_scores_file+".ns.%d"%k, node_scores_file+".%d.test"%k 
-	    nTP, nFP, nFN, nTN = analyze_results.calculate_performance_metric_counts(file_result = output_scores_file+".ns.%d"%k, file_seed_test_scores = node_scores_file+".%d.test"%k, file_seed_scores = node_scores_file, score_threshold = tScore, n_random_negative_folds = 10)
+	    #print output_scores_file+".ns.%d"%k, node_scores_file+".%d.test"%k 
+	    nTP, nFP, nFN, nTN = analyze_results.calculate_performance_metric_counts(file_result = output_scores_file+".%d" % k, file_seed_test_scores = node_scores_file+".%d.test"%k, file_seed_scores = node_scores_file, score_threshold = tScore, n_random_negative_folds = 10)
 	    (acc, sens, spec, ppv) = analyze_results.calculatePerformance(nTP, nFP, nFN, nTN)
-	    print "A:", acc, "S:", sens, "P:", ppv
+	    #print "A:", acc, "S:", sens, "P:", ppv
 	    nTP_sum += nTP
 	    nFP_sum += nFP
 	    nFN_sum += nFN
 	    nTN_sum += nTN
 	# Calculate Sensitivity (TP/T[TP+FN]) (aka TPR) & Calculate PPV (TP/P[TP+FP]) (use randomly selected non-seed nodes as negatives [average w.r.t. n different random selection results])
+	nTP = nTP_sum / N_X_VAL
+	nFP = nFP_sum / N_X_VAL
+	nFN = nFN_sum / N_X_VAL
+	nTN = nTN_sum / N_X_VAL
 	(acc, sens, spec, ppv) = analyze_results.calculatePerformance(nTP, nFP, nFN, nTN)
 	print "Avg. A:", acc, "S:", sens, "P:", ppv
 	# Calculate 1-Specificity (1-TN/N[FP+TN] = FP/N) (aka FPR) 
@@ -184,16 +230,23 @@ def analyze_xval():
 
 def analyze_xval_percentage():
     for percentage in (10, 25, 50):
-	print "---- %s:" % percentage
+	print "---- %s%%:" % percentage
+	n_seed_sum = 0.0
 	for k in range(1, N_X_VAL+1):
-	    print output_scores_file+".ns.%d"%k, node_scores_file+".%d.test"%k 
-	    print analyze_results.calculate_seed_coverage_at_given_percentage(output_scores_file+".ns.%d"%k, node_scores_file+".%d.test"%k, percentage, DEFAULT_NON_SEED_SCORE)
+	    #print output_scores_file+".%s.%d" % (SCORING, k), node_scores_file+".%d.test"%k 
+	    n_seed, n, i = analyze_results.calculate_seed_coverage_at_given_percentage(output_scores_file + ".%d" % k, node_scores_file+".%d.test" % k, percentage, DEFAULT_NON_SEED_SCORE)
+	    #print n_seed, n, i
+	    if i > n+1:
+		print "Warning: Real coverage percentage is disputed due to equal scores!", i, n
+	    n_seed_sum += n_seed
+	n_seed = n_seed_sum / N_X_VAL
+	print "Avg:", n_seed, "over", n
     return
 
 
 def analyze_original():
     #result_files = [ output_scores_file+".ns", output_scores_file+".nz" ]
-    result_files = [ output_scores_file+".ns" ]
+    result_files = [ output_scores_file ]
     for percentage in (10, 25, 50):
 	print "---- %s:" % percentage
 	for result_file in result_files:
@@ -222,16 +275,27 @@ def prepare_scoring_files_from_network_and_association_files(network_file, netwo
 	prepare_data.create_degree_filtered_network_file(network_file, network_file_filtered, ALLOWED_MAX_DEGREE)
 
     # Create node scores file and check how many of the seed genes we cover in the network
+    if not os.path.exists(seed_scores_file): 
+	print "Creating seed scores file", node_scores_file
+	nodes = prepare_data.get_nodes_in_network(network_file = network_file_filtered)
+	seed_to_score = prepare_data.get_node_association_score_mapping(network_file = network_file_filtered, network_file_identifier_type = network_file_identifier_type, node_description_file = node_description_file, association_scores_file = association_scores_file, association_scores_file_identifier_type = association_scores_file_identifier_type)
+	seeds = seed_to_score.keys()
+	prepare_data.create_node_scores_file(nodes = seeds, node_to_score = seed_to_score, node_scores_file = seed_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
     if not os.path.exists(node_scores_file): 
-	print "Creating node scores file(s)", node_scores_file
+	print "Creating node score files", node_scores_file
+	nodes = prepare_data.get_nodes_in_network(network_file = network_file_filtered)
+	seed_to_score = prepare_data.get_node_to_score_from_node_scores_file(seed_scores_file)
 	#prepare_data.create_node_scores_file(network_file = network_file_filtered, network_file_identifier_type = network_file_identifier_type, node_description_file = node_description_file, association_scores_file = association_scores_file, association_scores_file_identifier_type = association_scores_file_identifier_type, node_scores_file = node_scores_file, ignored_seed_nodes = None, default_non_seed_score = DEFAULT_NON_SEED_SCORE)
-	nodes = prepare_data.get_nodes_in_network(network_file =  network_file_filtered)
-	node_to_score = prepare_data.get_node_association_score_mapping(network_file = network_file_filtered, network_file_identifier_type = network_file_identifier_type, node_description_file = node_description_file, association_scores_file = association_scores_file, association_scores_file_identifier_type = association_scores_file_identifier_type)
-	prepare_data.create_node_scores_file(nodes = nodes, node_to_score = node_to_score, node_scores_file = node_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
-	prepare_data.generate_cross_validation_node_score_files(nodes = nodes, node_to_score = node_to_score, node_scores_file = node_scores_file, xval = 5, default_score = DEFAULT_NON_SEED_SCORE)
+	prepare_data.create_node_scores_file(nodes = nodes, node_to_score = seed_to_score, node_scores_file = node_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
+	prepare_data.generate_cross_validation_node_score_files(nodes = nodes, seed_to_score = seed_to_score, node_scores_file = node_scores_file, xval = N_X_VAL, default_score = DEFAULT_NON_SEED_SCORE)
     if not os.path.exists(edge_scores_file): 
-	print "Creating edge scores file", edge_scores_file
+	print "Creating edge score files", edge_scores_file
 	prepare_data.create_edge_scores_file(network_file = network_file_filtered, edge_scores_file = edge_scores_file)
+	#prepare_data.old_create_edge_scores_as_node_scores_file(network_file = network_file_filtered, edge_scores_file = edge_scores_as_node_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
+	edges = prepare_data.get_edges_in_network(network_file = network_file_filtered)
+	seed_to_score = prepare_data.get_node_to_score_from_node_scores_file(seed_scores_file)
+	prepare_data.create_edge_scores_as_node_scores_file(edges = edges, node_to_score = seed_to_score, edge_scores_file = edge_scores_as_node_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
+	prepare_data.generate_cross_validation_edge_score_as_node_score_files(edges = edges, seed_to_score = seed_to_score, edge_scores_file = edge_scores_as_node_scores_file, xval = N_X_VAL, default_score = DEFAULT_NON_SEED_SCORE)
     if not os.path.exists(sampled_file_prefix + ".sif.1"): 
 	print "Creating sampled networks"
 	prepare_data.sample_network_preserving_topology(edge_scores_file, N_SAMPLE_GRAPH, sampled_file_prefix + ".sif.")
@@ -240,6 +304,13 @@ def prepare_scoring_files_from_network_and_association_files(network_file, netwo
 
 def prepare_scoring_files():
     prepare_scoring_files_from_network_and_association_files(network_file, network_file_filtered, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, node_scores_file, edge_scores_file, sampled_file_prefix)
+    return
+
+
+def old_score_xval_random():
+    if not os.path.exists(output_scores_file+"random.1"):
+	for k in range(1, N_X_VAL+1):
+	    score_network.score_by_random_model(node_scores_file + ".%d" % k, edge_scores_file, output_scores_file + ".random.%d" % k)
     return
 
 

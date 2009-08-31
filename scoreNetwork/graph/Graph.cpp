@@ -96,6 +96,9 @@ void Graph::loadNodes(string const &fileName) throw(GenericError)
 	addVertex(name, value);
     }
     file.close();
+    pair<float,float> tempPair = getMinAndMaxNodeScores();
+    minScore = tempPair.first;
+    maxScore = tempPair.second;
 }
 
 void Graph::loadEdges(string const &fileName, bool flagInverseWeights) throw(GenericError) 
@@ -236,6 +239,63 @@ void Graph::calculatePageRank(map<Vertex, float> & vertexToFloat)
     return;
 }
 */
+
+pair<float, float> Graph::getMinAndMaxNodeScores()
+{
+    VertexIterator it, itEnd;
+    float value = 0;
+    pair<float, float> result(INFINITY, -INFINITY);
+    for(boost::tie(it, itEnd) = getVertexIterator(); it != itEnd; ++it) 
+    {
+	value = getVertexScore(*it);
+	result.second = (value > result.second)?value:result.second;
+	result.first = (value < result.first)?value:result.first;
+    }
+    return result;
+}
+
+void Graph::scaleVertexScores(ScaleType typeScale) {
+    VertexIterator it, itEnd;
+    float value = 0;
+    pair<float, float> result;
+    switch(typeScale)
+    {
+	case SCALE_BY_MAX_SCORE:
+	    result = getMinAndMaxNodeScores();
+	    break;
+	case SCALE_BETWEEN_ZERO_AND_ONE:
+	    result = getMinAndMaxNodeScores();
+	    break;
+	case SCALE_BETWEEN_INITIAL_MIN_AND_MAX_SCORE:
+	    scaleVertexScores(SCALE_BETWEEN_ZERO_AND_ONE);
+	    result = make_pair(minScore, maxScore);
+	    break;
+	default:
+	    cerr << "Unrecognized scaling type" << endl;
+	    return;
+    }
+    for(boost::tie(it, itEnd) = getVertexIterator(); it != itEnd; ++it) 
+    {
+	value = getVertexScore(*it);
+	switch(typeScale)
+	{
+	    case SCALE_BY_MAX_SCORE:
+		value /= result.second;
+		break;
+	    case SCALE_BETWEEN_ZERO_AND_ONE:
+		value = (value - result.first) / (result.second - result.first);
+		break;
+	    case SCALE_BETWEEN_INITIAL_MIN_AND_MAX_SCORE :
+		value = result.first + value * (result.second - result.first);
+		break;
+	    default:
+		cerr << "Unrecognized scaling type" << endl;
+		return;
+	}
+	setVertexScore(*it, value);
+    }
+    return;
+}
 
 void Graph::outputScores(string fileName) const throw(GenericError)
 {

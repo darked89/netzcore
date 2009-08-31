@@ -33,6 +33,7 @@ void Netrank::run(unsigned int nIteration)
 	score += vt->second;
 	getNetwork().setVertexScore(vt->first, score);
     }
+    getNetwork().scaleVertexScores(SCALE_BETWEEN_ZERO_AND_ONE);
     getNetwork().outputScores(outputFile);
     return;
 }

@@ -1,0 +1,18 @@
+
+TODO:
+
+- start running netshort
+
+- add drawROC to analyze
+
+- runs on different networks (with diferent reliabilities) with different disease assoc. data and paramters and analysis
+
+- document all
+
+- add networks with reliability scores (using edge attributes: pubmed, method, string coexpression/colocalization, jaccard, clustering coefficient)
+
+- ml predictions based on feature described network
+
+- comparison with other methods in the literature
+
+

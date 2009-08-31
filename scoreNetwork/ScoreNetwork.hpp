@@ -14,8 +14,6 @@
 //typedef std::map<Vertex, float> VertexToFloat;
 typedef boost::unordered_map<Vertex, float> VertexToFloat;
 
-typedef enum ScaleType { SCALE_BY_MAX_SCORE, SCALE_BETWEEN_ZERO_AND_ONE, SCALE_BETWEEN_INITIAL_MIN_AND_MAX_SCORE } ScaleType;
-
 class ScoreNetwork {
 public:
     ScoreNetwork(); 
@@ -35,8 +33,8 @@ public:
 protected:
     int nIteration;
     int iterationCounter;
-    float minScore;
-    float maxScore;
+    //float minScore;
+    //float maxScore;
     bool flagUseEdgeScore;
     bool flagAccumulateToInitialNodeScore;
     bool flagResetSeedScoresToInitial;
@@ -58,8 +56,7 @@ protected:
 
     float calculateErrorAndUpdateScores();
     void updateNetwork();
-    void scaleNodeScores(ScaleType typeScale);
-    std::pair<float, float> getMinAndMaxNodeScores();
+    void scaleNodeScores(ScaleType typeScale) { getNetwork().scaleVertexScores(typeScale); };
     float transferScore(float score, float a = 0.5, float b = 0.1); 
 
     float getVertexScoreUpdated(Vertex const v) const { return mapScoreUpdated.at(v); };

@@ -10,8 +10,8 @@ using namespace std;
 ScoreNetwork::ScoreNetwork() 
 {
     typeTransfer = IDENTITY;
-    minScore = INFINITY;
-    maxScore = -INFINITY;
+    //minScore = INFINITY;
+    //maxScore = -INFINITY;
     nIteration = 0;
     iterationCounter = 0;
     flagVerbose = false;
@@ -37,7 +37,7 @@ ScoreNetwork::ScoreNetwork(string fileNode, string fileEdge, string fileOutput, 
     //cout << "Snet file:" << fileOutput << " " << outputFile << endl;
     //cout << "Snet fverbose:" << fVerbose << " " << flagVerbose << endl;
     //cout << "Snet fAccumulate: " << this->flagAccumulateToInitialNodeScore << endl;
-    boost::tie(minScore, maxScore) = getMinAndMaxNodeScores();
+    //boost::tie(minScore, maxScore) = getMinAndMaxNodeScores();
 }
 
 ScoreNetwork::~ScoreNetwork() {
@@ -155,63 +155,6 @@ float ScoreNetwork::transferScore(float score, float a, float b) {
 	throw new TypeException(); //typeEx;
         return 0.0;
     }
-}
-
-void ScoreNetwork::scaleNodeScores(ScaleType typeScale) {
-    VertexIterator it, itEnd;
-    float value = 0;
-    pair<float, float> result;
-    switch(typeScale)
-    {
-	case SCALE_BY_MAX_SCORE:
-	    result = getMinAndMaxNodeScores();
-	    break;
-	case SCALE_BETWEEN_ZERO_AND_ONE:
-	    result = getMinAndMaxNodeScores();
-	    break;
-	case SCALE_BETWEEN_INITIAL_MIN_AND_MAX_SCORE :
-	    scaleNodeScores(SCALE_BETWEEN_ZERO_AND_ONE);
-	    result = make_pair(minScore, maxScore);
-	    break;
-	default:
-	    cerr << "Unrecognized scaling type" << endl;
-	    return;
-    }
-    for(boost::tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) 
-    {
-	value = getNetwork().getVertexScore(*it);
-	switch(typeScale)
-	{
-	    case SCALE_BY_MAX_SCORE:
-		value /= result.second;
-		break;
-	    case SCALE_BETWEEN_ZERO_AND_ONE:
-		value = (value - result.first) / (result.second - result.first);
-		break;
-	    case SCALE_BETWEEN_INITIAL_MIN_AND_MAX_SCORE :
-		value = result.first + value * (result.second - result.first);
-		break;
-	    default:
-		cerr << "Unrecognized scaling type" << endl;
-		return;
-	}
-	getNetwork().setVertexScore(*it, value);
-    }
-    return;
-}
-
-pair<float, float> ScoreNetwork::getMinAndMaxNodeScores()
-{
-    VertexIterator it, itEnd;
-    float value = 0;
-    pair<float, float> result(INFINITY, -INFINITY);
-    for(boost::tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) 
-    {
-	value = getNetwork().getVertexScore(*it);
-	result.second = (value > result.second)?value:result.second;
-	result.first = (value < result.first)?value:result.first;
-    }
-    return result;
 }
 
 
