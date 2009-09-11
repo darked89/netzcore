@@ -18,13 +18,16 @@ from biana.utilities import graph_utilities as network_utilities
 # Scoring related parameters 
 MODE = "all" # prepare, score, analyze
 
-#PPI = "biana" 
+PPI = "biana" 
 #PPI = "goh" 
-PPI = "rhodes"
+#PPI = "rhodes"
 
-#SCORING = "ns" #"netscore"
+ASSOCIATION = "aneurysm"
+#ASSOCIATION = "apoptosis"
+
+SCORING = "ns" #"netscore"
 #SCORING = "nz" #"netzcore"
-SCORING = "nd" # "netshort"
+#SCORING = "nd" # "netshort"
 #SCORING = "nr" #"netrank"
 #SCORING = "nx" #"netrandom"
 
@@ -39,6 +42,7 @@ N_RANDOM_NEGATIVE_FOLDS = 10
 
 # Data directory of the project
 data_dir = ".." + os.sep + "data" + os.sep
+data_dir = os.path.abspath(data_dir) + os.sep
 
 # BIANA node & network files
 biana_node_file_prefix = data_dir + "human_interactome_biana" + os.sep + "human_nodes"
@@ -90,40 +94,69 @@ else:
 
 # Common to all ppi networks
 
+# Human readable title for the run
+title = "%s - %s - %s" % (PPI, ASSOCIATION, SCORING)
+
 # Project directory structure
-input_dir = data_dir + "input_" + PPI + os.sep
-sampling_dir = input_dir + "sampled_graphs" + os.sep
-output_base_dir = data_dir + "output_" + PPI + os.sep
-output_dir = output_base_dir + SCORING + os.sep
+#input_dir = data_dir + "input_" + PPI + os.sep
+input_base_dir = data_dir + "input" + os.sep
+input_base_dir_network = input_base_dir + PPI + os.sep
+input_base_dir_association = input_base_dir_network + ASSOCIATION + os.sep
+input_dir = input_base_dir_association + os.sep
+sampling_dir = input_base_dir_network + "sampled_graphs" + os.sep
+#output_base_dir = data_dir + "output_" + PPI + os.sep
+output_base_dir = data_dir + "output" + os.sep
+output_base_dir_network = output_base_dir + PPI + os.sep
+output_base_dir_association = output_base_dir_network + ASSOCIATION + os.sep
+output_dir = output_base_dir_association + SCORING + os.sep
 
 # Create directory hirerarchy
+if not os.path.exists(input_base_dir): 
+    os.mkdir(input_base_dir)
+if not os.path.exists(input_base_dir_network): 
+    os.mkdir(input_base_dir_network)
+if not os.path.exists(input_base_dir_association): 
+    os.mkdir(input_base_dir_association)
 if not os.path.exists(input_dir): 
     os.mkdir(input_dir)
 if not os.path.exists(sampling_dir): 
     os.mkdir(sampling_dir)
 if not os.path.exists(output_base_dir): 
     os.mkdir(output_base_dir)
+if not os.path.exists(output_base_dir_network): 
+    os.mkdir(output_base_dir_network)
+if not os.path.exists(output_base_dir_association): 
+    os.mkdir(output_base_dir_association)
 if not os.path.exists(output_dir): 
     os.mkdir(output_dir)
 
 if SCORING == "ns":
+    title += " - r%d i%d" % (N_REPEATITION, N_ITERATION)
     output_dir = output_dir + "r%di%d" % (N_REPEATITION, N_ITERATION) + os.sep
     if not os.path.exists(output_dir): 
 	os.mkdir(output_dir)
 elif SCORING == "nz":
-    output_dir = output_dir + "i%d" % (N_REPEATITION, N_ITERATION) + os.sep
+    title += " - i%d" % N_ITERATION
+    output_dir = output_dir + "i%d" % N_ITERATION + os.sep
     if not os.path.exists(output_dir): 
 	os.mkdir(output_dir)
 
 
 # Association data to be used
-association_scores_file = aneurysm_scores_all_equal_file
-association_scores_file_identifier_type = "genesymbol"
+if ASSOCIATION == "aneurysm":
+    association_scores_file = aneurysm_scores_all_equal_file
+    association_scores_file_identifier_type = "genesymbol"
+elif ASSOCIATION == "apoptosis":
+    association_scores_file = apoptosis_scores_all_equal_file
+    association_scores_file_identifier_type = "uniprotaccession"
+else:
+    raise ValueError("Unrecognized association!")
 
 # Input/Output score file
 seed_scores_file = input_dir + "seed_scores.sif"
 node_scores_file = input_dir + "node_scores.sif"
-edge_scores_file = input_dir + "edge_scores.sif"
+#edge_scores_file = input_dir + "edge_scores.sif"
+edge_scores_file = input_base_dir_network + "edge_scores.sif"
 edge_scores_as_node_scores_file = input_dir + "edge_scores_as_node_scores.sif"
 output_scores_file = output_dir + "node_scores.sif" # "_r%dn%d.sif" % (N_REPEATITION, N_ITERATION)
 log_file = output_dir + "log.txt" # "_r%dn%d.txt" % (N_REPEATITION, N_ITERATION)
@@ -132,6 +165,7 @@ sampled_file_prefix = sampling_dir + "sampled_graph"
 predictions_file = output_dir + "predictions.txt"
 labels_file = output_dir + "labels.txt"
 r_script_file = output_dir + "results.r"
+tex_script_file = output_dir + "results.tex"
 
 score_xval_commands = { "ns": Template("scoreNetwork/scoreN -s s -n %s.$fold -e %s -o %s.$fold -r %d -i %d &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_REPEATITION, N_ITERATION, log_file)),
 			"nz": Template("scoreNetwork/scoreN -s z -n %s.$fold -e %s -o %s.$fold -i %d -x %d -d %s &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, log_file)),
@@ -208,15 +242,17 @@ def score_original():
 
 
 def analyze_xval():
-
     list_node_scores_and_labels = []
     for k in range(1, N_X_VAL+1):
 	node_validation_data = analyze_results.get_validation_node_scores_and_labels(file_result = output_scores_file+".%d"%k, file_seed_test_scores = node_scores_file+".%d.test"%k, file_node_scores = node_scores_file, n_random_negative_folds = N_RANDOM_NEGATIVE_FOLDS)
 	list_node_scores_and_labels.append(node_validation_data)
     analyze_results.create_ROCR_files(list_node_scores_and_labels, predictions_file, labels_file)
-    analyze_results.create_R_script(r_script_file)
+    analyze_results.create_R_script(r_script_file, output_dir, title) # os.path.basename(output_dir))
+    os.system("R CMD BATCH %s" % (r_script_file))
+    analyze_results.create_tex_script(tex_script_file, output_dir, title)
 
-    for tScore in [ i*0.01 for i in xrange(0, 100, 5)]:
+    #for tScore in [ i*0.01 for i in xrange(0, 100, 5)]:
+    for tScore in [ 0.5 ]:
 	print "---- t:", tScore
 	nTP_sum, nFP_sum, nFN_sum, nTN_sum = 0.0, 0.0, 0.0, 0.0
 	for k in range(1, N_X_VAL+1):

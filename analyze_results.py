@@ -9,21 +9,33 @@ from biana.utilities import graph_utilities as network_utilities
 #def generate_xval_ROCR_files():
 #    return
 
-def create_R_script(fileName):
+def create_tex_script(fileName, absolute_dir, title):
     f = open(fileName, "w")
-    f.write("library(ROCR)\n\n") 
-    f.write("v<-read.table(\"predictions.txt\")\n") 
-    f.write("l<-read.table(\"labels.txt\")\n")
+    f.write("\\frame {\n") 
+    f.write("\\frametitle{%s}\n" % title) 
+    #\vspace{-0.35cm}
+    f.write("\\begin{figure}\n") 
+    f.write("\t\\includegraphics[scale=0.9]{%sperformance.eps}\n" % absolute_dir)
+    f.write("\\end{figure}\n") 
+    f.write("}\n") 
+    f.close()
+    return
+
+def create_R_script(fileName, absolute_dir, title):
+    f = open(fileName, "w")
+    f.write("library(ROCR)\n") 
+    f.write("v<-read.table(\"%spredictions.txt\")\n" % absolute_dir) 
+    f.write("l<-read.table(\"%slabels.txt\")\n" % absolute_dir)
     f.write("pred<-prediction(v, l)\n")
-    f.write("postscript(\"performance.eps\", width = 6, height = 6, horizontal = FALSE, onefile = FALSE, paper = \"special\")\n")
+    f.write("postscript(\"%sperformance.eps\", width = 6, height = 6, horizontal = FALSE, onefile = FALSE, paper = \"special\", title = \"%s\")\n" % (absolute_dir, title))
     f.write("par(mfrow=c(2,2))\n")
     f.write("perfROC<-performance(pred, \"tpr\", \"fpr\")\n")
-    f.write("plot(perfROC, lwd=2, col=2, xlab=\"FPR\", ylab=\"TPR\", main=\"ROC curve (averaged over xval folds)\", plotCI.col=2, avg=\"vertical\", spread.estimate=\"stddev\", show.spread.at=seq(0,1,by=0.20))\n")
+    f.write("plot(perfROC, lwd=2, col=2, xlab=\"False Positive Rate\", ylab=\"True Positive Rate\", main=\"ROC curve\", plotCI.col=2, avg=\"vertical\", spread.estimate=\"stddev\", show.spread.at=seq(0,1,by=0.20))\n")
     #f.write("title(\"ROC\")\n")
-    f.write("legend(\"topright\", c(\"Scoring\"), lty=c(1), col=c(2))\n") 
+    f.write("legend(\"bottomright\", c(\"(Avg. over xval folds)\"), lty=c(1), col=c(2))\n") 
     f.write("perfPPV<-performance(pred, \"ppv\")\n")
     f.write("perfSens<-performance(pred, \"sens\")\n")
-    f.write("plot(perfPPV, lwd=2, col=2, ylab=\"PPV/Sens\", main=\"PPV vs Sensitivity (averaged over xval folds)\", plotCI.col=2, avg=\"vertical\", spread.estimate=\"stddev\", show.spread.at=seq(0,1,by=0.20))\n")        
+    f.write("plot(perfPPV, lwd=2, col=2, ylab=\"PPV & Sens\", main=\"PPV vs Sensitivity\", plotCI.col=2, avg=\"vertical\", spread.estimate=\"stddev\", show.spread.at=seq(0,1,by=0.20))\n")        
     f.write("plot(perfSens, lwd=2, col=3, plotCI.col=3, avg=\"vertical\", spread.estimate=\"stddev\", show.spread.at=seq(0,1,by=0.15), add=TRUE)\n") 
     f.write("legend(\"bottomright\", c(\"PPV\", \"Sens\"), lty=c(1,1), col=c(2,3))\n") 
     f.write("perfAUC<-performance(pred, \"auc\")\n")
@@ -32,6 +44,7 @@ def create_R_script(fileName):
     f.write("perfRMSE<-performance(pred, \"rmse\")\n")
     f.write("e=c(); n=c(); x=0; for ( i in perfRMSE@y.values ) { x<-x+1;  e[x] <- i; n[x]<-x }; barplot(e, names=n, ylim=c(0,1),ylab= \"RMSE\",xlab=\"Fold\"); title(\"Root mean square error (RMSE)\")\n")
     f.write("legend(\"topright\", c(paste(\"(Avg: \", mean(e), \")\", sep=\"\")), lty=c(), col=c())\n") 
+    f.write("mtext(\'%s\', outer=TRUE, line=-1)\n" % title) 
     f.write("dev.off()\n")
     f.close()
     #os.system("R CMD BATCH %s" % "*.R") 
