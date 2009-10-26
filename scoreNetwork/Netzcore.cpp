@@ -5,6 +5,9 @@
 
 Netzcore::Netzcore() : ScoreNetwork()
 {
+    nSampledGraphs = 0;
+    mean = 0;
+    sigma = 0;
 }
 
 Netzcore::Netzcore(std::string fileNode, std::string fileEdge, std::string fileOutput, std::string prefixSampled, unsigned int nSampled, bool fUseEdgeScore, bool fAccumulateToInitialNodeScore, bool fResetSeedScoresToInitial, bool fVerbose) : ScoreNetwork(fileNode, fileEdge, fileOutput, fUseEdgeScore, fAccumulateToInitialNodeScore, fResetSeedScoresToInitial, fVerbose)
@@ -12,6 +15,8 @@ Netzcore::Netzcore(std::string fileNode, std::string fileEdge, std::string fileO
     prefixSampledGraphs = prefixSampled;
     nodeFileName = fileNode;
     nSampledGraphs = nSampled;
+    mean = 0;
+    sigma = 0;
 }
 
 Netzcore::~Netzcore()
@@ -83,6 +88,49 @@ void Netzcore::finalizeScoring()
     scaleNodeScores(SCALE_BETWEEN_INITIAL_MIN_AND_MAX_SCORE);
 }
 
+void Netzcore::initializeIteration()
+{
+    std::list<Graph*>::iterator it, itEnd;
+    Graph* pG;
+    Vertex u;
+    AdjVertexIterator vt, vtEnd;
+    VertexIterator t, tEnd;
+    float tempScore = 0.0, sumScore = 0.0;
+    unsigned int i = 0;
+
+    std::list<float> scores;
+    for(it=sampledGraphs.begin(), itEnd=sampledGraphs.end(); it != itEnd; ++it) {	
+	pG = *it;
+	for(boost::tie(t, tEnd) = pG->getVertexIterator(); t != tEnd; ++t) {
+	    u = *t;
+	    if(flagVerbose)
+		std::cout << "Checking neighbors of node: " << pG->getVertexName(u) << std::endl;
+	    sumScore = 0.0;
+	    tempScore = 0.0;
+	    i = 0;
+	    for(boost::tie(vt, vtEnd) = pG->getAdjacentVertexIteratorOfVertex(u); vt != vtEnd; ++vt) 
+	    {
+		tempScore = pG->getVertexScore(*vt);
+		if(flagUseEdgeScore) 
+		{
+		    tempScore *= pG->getEdgeScore(u, *vt);
+		}
+		sumScore += tempScore;
+		i += 1;
+		if(flagVerbose)
+		    std::cout << "--Score of random neighbor " << pG->getVertexName(*vt) << ": " << tempScore << std::endl; 
+	    }
+	    tempScore = sumScore / i;
+	    if(flagVerbose)
+		std::cout << "-Average score of random neighbors " << tempScore << std::endl; 
+	    scores.push_back(tempScore);
+	}
+    }
+    boost::tie(this->mean, this->sigma) = calculateMeanAndSigma(scores.begin(), scores.end());
+    if(flagVerbose)
+	std::cout << "Mean: " << this->mean << " sigma: " << this->sigma << std::endl; 
+}
+
 void Netzcore::finalizeIteration()
 {
     scaleNodeScores(SCALE_BETWEEN_ZERO_AND_ONE);
@@ -101,6 +149,8 @@ void Netzcore::updateNodeScore(Vertex v)
     if(flagVerbose)
         std::cout << "Checking node: " << getNetwork().getVertexName(v) << std::endl;
 
+    // Before local mean & sigma was considered
+    /*
     std::list<float> scores;
     for(it=sampledGraphs.begin(), itEnd=sampledGraphs.end(); it != itEnd; ++it)
     {	
@@ -127,6 +177,11 @@ void Netzcore::updateNodeScore(Vertex v)
 	    std::cout << "-Average score of random neighbors " << tempScore << std::endl; 
 	scores.push_back(tempScore);
     }
+    tempPair = calculateMeanAndSigma(scores.begin(), scores.end());
+    */
+    // Now considering global mean and sigma
+    tempPair = std::make_pair(this->mean, this->sigma);
+
     sumScore = 0.0;
     tempScore = 0.0;
     i = 0;
@@ -145,20 +200,30 @@ void Netzcore::updateNodeScore(Vertex v)
     tempScore = sumScore / i;
     if(flagVerbose)
 	std::cout << "-Average score of neighbors " << tempScore << std::endl; 
-    tempPair = calculateMeanAndSigma(scores.begin(), scores.end());
     //std::cout << "s: " << tempScore << " m: " << tempPair.first << " sig: " << tempPair.second << std::endl;
+    tempScore = tempScore - tempPair.first;
+    if(tempScore == 0 && tempPair.second == 0) {
+	std::cout << "0/0 due to Zero variance!" << std::endl;	
+	tempScore = 0.0;
+    } else {
+	tempScore = tempScore / tempPair.second;
+    }
+    /*
     if(tempPair.second == 0) //(isnan(tempScore))
     {
 	std::cout << "Zero variance!" << std::endl;	
-	//tempScore = 0.0;
-	tempScore = getNetwork().getVertexScore(v);
+	//tempScore = getNetwork().getVertexScore(v);
+	if(tempScore == 0) {
+	    tempScore = 0.0;
+	} else {
+	    tempScore = tempScore / tempPair.second;
+	}
     } 
     else 
     {
-	tempScore = tempScore-tempPair.first;
-	if(tempScore != 0)
-	    tempScore /= tempPair.second;
+	tempScore = tempScore / tempPair.second;
     }
+    */
     // Update scoreUpdated (for error calculation)
     setVertexScoreUpdated(v, tempScore);
     if(flagVerbose)

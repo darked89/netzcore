@@ -1,20 +1,17 @@
 
 TODO:
 
-- runs on 3 ppi with aneurysm (and possibly AES and then possibly Hefalmp & OMIM) data for preliminary analysis of programs & parameters
-biana
-* ns
-* nz
+- adding fflow and baldo netzscore; need to change fflow so that seeds are not INF at the end, also it could incorporated using boost flow
 
-goh & rhodes
-* ns
-* nz
-* nx
-* nr
+- select r2i3 high scoring proteins and GO analysis
 
 - document all
 
 - add networks with reliability scores (using edge attributes: pubmed, method, string coexpression/colocalization, jaccard, clustering coefficient)
+
+- add networks with co-expression data from tissue info, localization data from locate
+
+- runs for possibly AES and then possibly Hefalmp & OMIM data
 
 - runs on different networks (with diferent reliabilities) with different disease assoc. data and paramters and analysis
     - scoring
@@ -22,17 +19,7 @@ goh & rhodes
 	- netrank
 	- netrandom
 	- netscore
-	    - r3 i3
-	    - r2 i3
-	    - r1 i1
-	    - r1 i3
-	    - r5 i1
-	    - r5 i2
-	    - r4 i2
 	- netzcore
-	    - i1
-	    - i3
-	    - i5
 	- netzcore + netscore
 	    - netzcore i1 + netscore (select from previous step)
     - ppi
@@ -69,5 +56,48 @@ goh & rhodes
 - ml predictions based on feature described network
 
 - comparison with other methods in the literature
+
+
+NOTES:
+
+- nz sucks when self score is assigned in case of 0 division (due to 0 variance), changed to assign inf/-inf. z-scoring in netzcore is contraversial, since it compares scores coming from different distributions (local neighborhood for each node), now assigning scores based on global distribution of neighboring scores.
+
+- runs on 3 ppi with aneurysm data for preliminary analysis of programs & parameters
+
+aneurysim
+
+* biana
+** ns
+*** r2i2 75.2
+*** r2i3 77.1
+*** r3i2 73.7
+*** r3i3 76.8
+*** r4i2 73.5
+*** r4i3 76.5
+** nd 75.3
+** nr 55.6
+
+* goh
+** ns
+*** r2i2 74.8
+*** r2i3 75.6
+*** r3i2 73.0
+*** r3i3 76.6
+*** r4i2 73.2
+*** r4i3 76.1
+** nd 77.5
+** nr 55.0
+
+* rhodes
+** ns
+*** r2i2 75.8
+*** r2i3 75.4
+*** r3i2 77.5
+*** r3i3 73.4
+*** r4i2 75.4 
+*** r4i3 72.8
+** nd 76.0
+** nr 49.8
+
 
 

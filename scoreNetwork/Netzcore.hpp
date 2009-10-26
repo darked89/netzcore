@@ -22,6 +22,7 @@ public:
 private:
     void initializeScoring();
     void finalizeScoring();
+    void initializeIteration();
     void finalizeIteration();
     void updateNodeScore(Vertex v);
 
@@ -42,6 +43,8 @@ private:
     std::string nodeFileName;
     std::string prefixSampledGraphs;
     unsigned int nSampledGraphs;
+    float mean;
+    float sigma;
 };
 
 #endif // NETZCORE_HPP_

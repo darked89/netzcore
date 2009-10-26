@@ -146,7 +146,7 @@ def create_node_scores_file(nodes, node_to_score, node_scores_file, ignored_node
     return 
 
 
-def get_node_association_score_mapping(network_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type):
+def get_node_association_score_mapping(network_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, log_file = None):
     """
 	Maps genes and their scores to nodes in the network using given association_scores_file, correspondance identifiers
     """
@@ -157,6 +157,10 @@ def get_node_association_score_mapping(network_file, network_file_identifier_typ
     covered_genes = set()
     seeds = set()
     node_to_score = {}
+    if log_file is not None:
+	log_fd = open(log_file, "a")
+    else:
+	log_fd = None
     for v in nodes: 
 	gene_with_score = setNode & node_to_genes[v]
 	covered_genes |= gene_with_score
@@ -164,7 +168,9 @@ def get_node_association_score_mapping(network_file, network_file_identifier_typ
 	if len(gene_with_score) > 0:
 	    seeds.add(v)
 	    if len(gene_with_score) > 1:
-		print "More than one gene:", gene_with_score, "for", v
+		#print "More than one gene:", gene_with_score, "for", v
+		if log_fd is not None:
+		    log_fd.write("More than one gene: %s for %s" % (gene_with_score, v))
 	    i=0
 	    score = 0
 	    for gene in covered_genes:
@@ -172,14 +178,20 @@ def get_node_association_score_mapping(network_file, network_file_identifier_typ
 		score += float(dictNode[gene])
 	    score /= i
 	    if score <= 0:
-		print "non-positive seed score", v, score, "genes:", node_to_genes[v]
+		#print "non-positive seed score", v, score, "genes:", node_to_genes[v]
+		if log_fd is not None:
+		    log_fd.write("non-positive seed score %s %s genes: %s" % (v, score, node_to_genes[v]))
 	    node_to_score[v] = score
 	#else:
 	#    score = default_score
 	#node_to_score[v] = score
 
-    print "Covered genes (seed genes):", len(covered_genes), "among", len(setNode)
-    print "Covered gene products (seed nodes):", len(seeds), "among", g.number_of_nodes()
+    #print "Covered genes (seed genes):", len(covered_genes), "among", len(setNode)
+    #print "Covered gene products (seed nodes):", len(seeds), "among", g.number_of_nodes()
+    if log_fd is not None:
+	log_fd.write("Covered genes (seed genes): %s among %s" % (len(covered_genes), len(setNode)))
+	log_fd.write("Covered gene products (seed nodes): %s among %s" % (len(seeds), g.number_of_nodes()))
+	log_fd.close()
     return node_to_score
 
 
