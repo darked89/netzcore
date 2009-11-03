@@ -14,27 +14,28 @@ import score_network # obsolete
 from biana.utilities import biana_output_converter as biana_output_converter 
 from biana.utilities import graph_utilities as network_utilities 
 
+only_print_command = True
 
 # Scoring related parameters 
 MODE = "all" # prepare, score, analyze
 
 #PPI = "biana" 
-#PPI = "goh" 
-PPI = "rhodes"
+PPI = "goh" 
+#PPI = "rhodes"
 
 ASSOCIATION = "aneurysm"
 #ASSOCIATION = "apoptosis"
 
 #SCORING = "ns" #"netscore"
-SCORING = "nz" #"netzcore"
+#SCORING = "nz" #"netzcore"
 #SCORING = "nd" # "netshort"
 #SCORING = "nr" #"netrank"
 #SCORING = "nx" #"netrandom"
-#SCORING = "nb" #"netZscore" (cortesy of baldo)
+SCORING = "nb" #"netZscore" (cortesy of baldo)
 #SCORING = "ff" #"FunctionalFlow" 
 
 N_REPEATITION = 1
-N_ITERATION = 5
+N_ITERATION = 7
 
 DEFAULT_NON_SEED_SCORE = 0.01
 ALLOWED_MAX_DEGREE = 100000 #175 #90
@@ -178,7 +179,7 @@ score_xval_commands = { "ns": Template("scoreNetwork/scoreN -s s -n %s.$fold -e 
 			"nd": Template("scoreNetwork/scoreN -s d -n %s.$fold -e %s.$fold -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_as_node_scores_file, output_scores_file, score_log_file)),
 			"nr": Template("scoreNetwork/scoreN -s r -n %s.$fold -e %s -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
 			"nx": Template("scoreNetwork/scoreN -s x -n %s.$fold -e %s -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
-			"nb": Template("scoreNetwork/netscore -c %s.$fold -i %s -o %s.$fold -t 0 -z 0 -nr 100 -r 1 -n 5 -mx 1 -ms 1.5 -mn 0.5 -dn 1 -de 1 -xn 1 -xe 1 -e 0.001 &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
+			"nb": Template("scoreNetwork/netscore -c %s.$fold -i %s -o %s.$fold -t 0 -z 0 -nr 100 -r 1 -n 5 -mx 10 -ms 50 -mn 0 -dn 5 -de 5 -xn 0 -xe 0 -e 0.0000001 &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
 			"ff": Template("scoreNetwork/fflow %s.$fold %s %d &> %s.$fold" % (node_scores_file, edge_scores_file, N_ITERATION, output_scores_file)),
 		      }
 
@@ -187,7 +188,7 @@ score_commands = { "ns": "scoreNetwork/scoreN -s s -n %s -e %s -o %s -r %d -i %d
 		   "nd": "scoreNetwork/scoreN -s d -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file),
 		   "nr": "scoreNetwork/scoreN -s r -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file),
 		   "nx": "scoreNetwork/scoreN -s x -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file),
-		   "nb": "scoreNetwork/netscore -c %s -i %s -o %s -t 0 -z 0 -nr 100 -r 1 -n 5 -mx 1 -ms 1.5 -mn 0.5 -dn 1 -de 1 -xn 1 -xe 1 -e 0.001 &> %s" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file),
+		   "nb": "scoreNetwork/netscore -c %s -i %s -o %s -t 0 -z 0 -nr 100 -r 1 -n 5 -mx 10 -ms 50 -mn 0 -dn 5 -de 5 -xn 0 -xe 0 -e 0.0000001 &> %s" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file),
 		   "ff": "scoreNetwork/fflow %s %s %d &> %s" % (node_scores_file, edge_scores_file, N_ITERATION, output_scores_file),
 		 }
 
@@ -240,9 +241,11 @@ def score_xval():
     if not os.path.exists(output_scores_file + ".1"):
 	f = open(log_file, "a")
 	for k in range(1, N_X_VAL+1):
-	    #print generate_score_xval_command(k)
-	    f.write("%s\n" % generate_score_xval_command(k))
-	    os.system( generate_score_xval_command(k) )
+	    if only_print_command:
+		print generate_score_xval_command(k)
+	    else:
+		f.write("%s\n" % generate_score_xval_command(k))
+		os.system( generate_score_xval_command(k) )
 	f.close()
     return
 
@@ -251,8 +254,11 @@ def score_original():
     if not os.path.exists(output_scores_file):
 	f = open(log_file, "a")
 	#print score_commands[SCORING]
-	f.write("%s\n" % score_commands[SCORING])
-	os.system(score_commands[SCORING])
+	if only_print_command:
+	    print score_commands[SCORING]
+	else:
+	    f.write("%s\n" % score_commands[SCORING])
+	    os.system(score_commands[SCORING])
 	f.close()
     return
 

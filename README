@@ -3,6 +3,8 @@ TODO:
 
 - adding fflow and baldo netzscore; need to change fflow so that seeds are not INF at the end, also it could incorporated using boost flow
 
+- check the most suboptimal way for netzcore i1 + netscore 
+
 - select r2i3 high scoring proteins and GO analysis
 
 - document all
@@ -75,6 +77,7 @@ aneurysim
 *** r4i2 73.5
 *** r4i3 76.5
 ** nd 75.3
+** nz i5 73.8
 ** nr 55.6
 
 * goh
@@ -86,6 +89,7 @@ aneurysim
 *** r4i2 73.2
 *** r4i3 76.1
 ** nd 77.5
+** nz i5 74.7
 ** nr 55.0
 
 * rhodes
@@ -97,6 +101,7 @@ aneurysim
 *** r4i2 75.4 
 *** r4i3 72.8
 ** nd 76.0
+** nz i5 74.3
 ** nr 49.8
 
 
