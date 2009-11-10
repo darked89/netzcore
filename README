@@ -1,7 +1,7 @@
 
 TODO:
 
-- adding fflow and baldo netzscore; need to change fflow so that seeds are not INF at the end, also it could incorporated using boost flow
+- runs of fflow and baldo netzscore
 
 - check the most suboptimal way for netzcore i1 + netscore 
 

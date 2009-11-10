@@ -14,7 +14,8 @@ import score_network # obsolete
 from biana.utilities import biana_output_converter as biana_output_converter 
 from biana.utilities import graph_utilities as network_utilities 
 
-only_print_command = True
+#only_print_command = True
+only_print_command = False
 
 # Scoring related parameters 
 MODE = "all" # prepare, score, analyze
@@ -35,7 +36,7 @@ SCORING = "nb" #"netZscore" (cortesy of baldo)
 #SCORING = "ff" #"FunctionalFlow" 
 
 N_REPEATITION = 1
-N_ITERATION = 7
+N_ITERATION = 3
 
 DEFAULT_NON_SEED_SCORE = 0.01
 ALLOWED_MAX_DEGREE = 100000 #175 #90
@@ -143,6 +144,16 @@ elif SCORING == "nz":
     output_dir = output_dir + "i%d" % N_ITERATION + os.sep
     if not os.path.exists(output_dir): 
 	os.mkdir(output_dir)
+elif SCORING == "ff":
+    title += " - i%d" % N_ITERATION
+    output_dir = output_dir + "i%d" % N_ITERATION + os.sep
+    if not os.path.exists(output_dir): 
+	os.mkdir(output_dir)
+elif SCORING == "nb":
+    title += " - i%d" % N_ITERATION
+    output_dir = output_dir + "i%d" % N_ITERATION + os.sep
+    if not os.path.exists(output_dir): 
+	os.mkdir(output_dir)
 
 
 # Association data to be used
@@ -179,8 +190,8 @@ score_xval_commands = { "ns": Template("scoreNetwork/scoreN -s s -n %s.$fold -e 
 			"nd": Template("scoreNetwork/scoreN -s d -n %s.$fold -e %s.$fold -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_as_node_scores_file, output_scores_file, score_log_file)),
 			"nr": Template("scoreNetwork/scoreN -s r -n %s.$fold -e %s -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
 			"nx": Template("scoreNetwork/scoreN -s x -n %s.$fold -e %s -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
-			"nb": Template("scoreNetwork/netscore -c %s.$fold -i %s -o %s.$fold -t 0 -z 0 -nr 100 -r 1 -n 5 -mx 10 -ms 50 -mn 0 -dn 5 -de 5 -xn 0 -xe 0 -e 0.0000001 &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
-			"ff": Template("scoreNetwork/fflow %s.$fold %s %d &> %s.$fold" % (node_scores_file, edge_scores_file, N_ITERATION, output_scores_file)),
+			"nb": Template("./netscore -c %s.$fold -i %s -o %s.$fold -t 0 -z 0 -nr 100 -r 1 -n 5 -mx 10 -ms 50 -mn 0 -dn 5 -de 5 -xn 0 -xe 0 -e 0.0000001 &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
+			"ff": Template("./fFlow %s.$fold %s %s.$fold %d &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, score_log_file)),
 		      }
 
 score_commands = { "ns": "scoreNetwork/scoreN -s s -n %s -e %s -o %s -r %d -i %d &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPEATITION, N_ITERATION, score_log_file),
@@ -188,8 +199,8 @@ score_commands = { "ns": "scoreNetwork/scoreN -s s -n %s -e %s -o %s -r %d -i %d
 		   "nd": "scoreNetwork/scoreN -s d -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file),
 		   "nr": "scoreNetwork/scoreN -s r -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file),
 		   "nx": "scoreNetwork/scoreN -s x -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file),
-		   "nb": "scoreNetwork/netscore -c %s -i %s -o %s -t 0 -z 0 -nr 100 -r 1 -n 5 -mx 10 -ms 50 -mn 0 -dn 5 -de 5 -xn 0 -xe 0 -e 0.0000001 &> %s" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file),
-		   "ff": "scoreNetwork/fflow %s %s %d &> %s" % (node_scores_file, edge_scores_file, N_ITERATION, output_scores_file),
+		   "nb": "./netscore -c %s -i %s -o %s -t 0 -z 0 -nr 100 -r 1 -n 5 -mx 10 -ms 50 -mn 0 -dn 5 -de 5 -xn 0 -xe 0 -e 0.0000001 &> %s" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file),
+		   "ff": "./fFlow %s %s %s %d &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, score_log_file),
 		 }
 
 
@@ -328,6 +339,8 @@ def analyze_xval_percentage():
 def analyze_original():
     #result_files = [ output_scores_file+".ns", output_scores_file+".nz" ]
     result_files = [ output_scores_file ]
+    if not os.path.exists(output_scores_file):
+	raise Exception("Output score file does not exist!")
     f = open(log_file, "a")
     for percentage in (10, 25, 50):
 	#print "---- %s:" % percentage
