@@ -32,7 +32,7 @@ private:
 
     void updateEdgeScore(Edge e) {}; 
     void finalizeScoring() {};
-    void finalizeRepeatition() {};
+    void finalizeRepetition() {};
     void initializeIteration() {};
     void finalizeIteration() {}; 
 
@@ -47,7 +47,7 @@ private:
     
  
     void initializeScoring();
-    void initializeRepeatition();
+    void initializeRepetition();
     void updateNodeScore(Vertex v);
 };
 

@@ -15,19 +15,21 @@ typedef boost::unordered_map<Vertex, UIntToMessage* > VertexToMessageMap;
 class Netscore: public ScoreNetwork {
 public:
     Netscore(); 
+    Netscore(std::string fileOutput, bool fUseEdgeScore = true, bool fAccumulateToInitialNodeScore = true, bool fResetSeedScoresToInitial = false, bool fVerbose = false); 
     Netscore(std::string fileNode, std::string fileEdge, std::string fileOutput, bool fUseEdgeScore = true, bool fAccumulateToInitialNodeScore = true, bool fResetSeedScoresToInitial = false, bool fVerbose = false); 
     ~Netscore();
+    //setNetwork(const Graph * g);
 
-private:
+    // methods below were protected before, made public to be able to use netzcore & netscore in combination
     void initializeScoring();
     void finalizeScoring();
-    void initializeRepeatition();
+    void initializeRepetition();
     void finalizeIteration();
     void updateNodeScore(Vertex v);
 
+private:
     UIntToMessage * getVertexMessageMap(Vertex const v) { return messageMaps[v]; };
     void createVertexMessageMap(Vertex const v) { messageMaps[v] = new UIntToMessage(); };
-
     float getVertexScoreInitial(Vertex const v) const { return mapScoreInitial.at(v); };
     void setVertexScoreInitial(Vertex const v, float vData) { mapScoreInitial[v] = vData; };
 

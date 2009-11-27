@@ -8,7 +8,7 @@
 #include "Exceptions.hpp"
 
 //#define CONTROL 0
-#define sq(x) (x*x)
+#define sq(x) ((x)*(x))
 
 //typedef boost::unordered_map<Vertex, float> VertexToFloat;
 //typedef std::map<Vertex, float> VertexToFloat;
@@ -17,9 +17,14 @@ typedef boost::unordered_map<Vertex, float> VertexToFloat;
 class ScoreNetwork {
 public:
     ScoreNetwork(); 
+    ScoreNetwork(std::string fileOutput, bool fUseEdgeScore = true, bool fAccumulateToInitialNodeScore = true, bool fResetSeedScoresToInitial = false, bool fVerbose = false);
     ScoreNetwork(std::string fileNode, std::string fileEdge, std::string fileOutput, bool fUseEdgeScore = true, bool fAccumulateToInitialNodeScore = true, bool fResetSeedScoresToInitial = false, bool fVerbose = false);
     virtual ~ScoreNetwork();
-    Graph & getNetwork() { return network; };
+    //Graph & getNetwork() { return network; };
+    Graph & getNetwork() { return *pNetwork; };
+    Graph * getPNetwork() { return pNetwork; };
+    void setPNetwork(Graph * pG) { pNetwork = pG; };
+    void deletePNetwork() { delete pNetwork; };
     void run(int nRepetition, int nIteration, float tError = PRECISION); 
     void scaleNodeScoresWrapper(ScaleType type) { scaleNodeScores(type); }
     static const float getPrecision() { return PRECISION; }
@@ -29,7 +34,7 @@ public:
     void printNetwork(std::string explanation = "");
     void printGraph(Graph const & g, std::string explanation = "");
     */
-
+    
 protected:
     //int nIteration;
     int repeatCounter;
@@ -46,15 +51,6 @@ protected:
     //void scaleScores(float scoreAllowedMaxNode = INFINITY, float scoreAllowedEdgeMax = INFINITY, bool flagUseZScoring = false);
     //void resetScores();
 
-    virtual void updateNodeScore(Vertex v) {}; // = 0; // not making it abstract (interface) for testing purposes
-    virtual void updateEdgeScore(Edge e) {}; 
-    virtual void initializeScoring() {}; //= 0;
-    virtual void finalizeScoring() {};
-    virtual void initializeRepeatition() {}; // = 0; 
-    virtual void finalizeRepeatition() {};
-    virtual void initializeIteration() {};
-    virtual void finalizeIteration() {}; 
-
     float calculateErrorAndUpdateScores();
     void updateNetwork();
     void scaleNodeScores(ScaleType typeScale) { getNetwork().scaleVertexScores(typeScale); };
@@ -62,6 +58,16 @@ protected:
 
     float getVertexScoreUpdated(Vertex const v) const { return mapScoreUpdated.at(v); };
     void setVertexScoreUpdated(Vertex const v, float vData) { mapScoreUpdated[v] = vData; };
+
+    virtual void updateNodeScore(Vertex v) {}; // = 0; // not making it abstract (interface) for testing purposes
+    virtual void updateEdgeScore(Edge e) {}; 
+    virtual void initializeScoring() {}; //= 0;
+    virtual void finalizeScoring() {};
+    virtual void initializeRepetition() {}; // = 0; 
+    virtual void finalizeRepetition() {};
+    virtual void initializeIteration() {};
+    virtual void finalizeIteration() {}; 
+
 
 private:
     // CONSTANTS (MACROS)
@@ -72,7 +78,8 @@ private:
     enum TransferType { IDENTITY, POLYNOMIAL, LOGARITHMIC, EXPONENTIAL } typeTransfer;
     
     // MEMBERS
-    Graph network;
+    //Graph network;
+    Graph *pNetwork;
     //unordered_set<string> setSource;
     VertexToFloat mapScoreUpdated;
 };

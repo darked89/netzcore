@@ -80,16 +80,16 @@ def create_ROCR_files(list_node_scores_and_labels, file_predictions, file_labels
     return
 
 
-def get_validation_node_scores_and_labels(file_result, file_seed_test_scores, file_node_scores, n_random_negative_folds = 1):
+def get_validation_node_scores_and_labels(file_result, file_seed_test_scores, file_node_scores, n_random_negative_folds = 1, default_score = 0):
     setNodeResult, setDummy, dictNodeResult, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_result, store_edge_type = False)
     setNodeTest, setDummy, dictNodeTest, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_seed_test_scores, store_edge_type = False)
-    non_seeds = get_non_seeds_from_node_scores_file(file_node_scores, default_score = 0)
+    non_seeds = get_non_seeds_from_node_scores_file(file_node_scores, default_score = default_score)
     #node_to_validation_data = dict([ (id, (dictNodeResult[id], 1)) for id in setNodeTest ])
     node_validation_data = [ (dictNodeResult[id], 1) for id in setNodeTest ]
 
     n_actual_folds = 0
     negative_scores = [ 0 ] * len(setNodeTest)
-    for sample in generate_samples_from_list_without_replacement(non_seeds, len(setNodeTest), n_random_negative_folds):
+    for sample in generate_samples_from_list_without_replacement(non_seeds, len(setNodeTest), n_random_negative_folds, replicable=True):
 	for i, id in enumerate(sample):
 	    negative_scores[i] += dictNodeResult[id] 
 	n_actual_folds += 1
@@ -97,8 +97,10 @@ def get_validation_node_scores_and_labels(file_result, file_seed_test_scores, fi
     return node_validation_data
 
 
-def generate_samples_from_list_without_replacement(elements, sample_size, n_folds):
-    from random import shuffle
+def generate_samples_from_list_without_replacement(elements, sample_size, n_folds, replicable = False):
+    from random import shuffle, seed
+    if replicable:
+	seed(123)
     shuffle(elements)
     for i in range(n_folds):
 	if (i+1)*sample_size < len(elements):
@@ -111,7 +113,7 @@ def get_non_seeds_from_node_scores_file(file_node_scores, default_score = 0):
 	file_node_scores: initial node/seed scores
     """
     setNode, setDummy, dictNode, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_node_scores, store_edge_type = False)
-    non_seeds = [ id for id, score in dictNode.iteritems() if score > default_score ]
+    non_seeds = [ id for id, score in dictNode.iteritems() if score <= default_score ]
     return non_seeds
 
 
@@ -126,7 +128,7 @@ def calculate_performance_metric_counts(file_result, file_seed_test_scores, file
     """
     setNodeResult, setDummy, dictNodeResult, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_result, store_edge_type = False)
     setNodeTest, setDummy, dictNodeTest, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_seed_test_scores, store_edge_type = False)
-    non_seeds = get_non_seeds_from_node_scores_file(file_node_scores, default_score = 0)
+    non_seeds = get_non_seeds_from_node_scores_file(file_node_scores, default_score = default_score)
 
     (nTP, nFP, nFN, nTN) = (0.0, 0.0, 0.0, 0.0)
     for id, score in dictNodeResult.iteritems():
@@ -137,7 +139,7 @@ def calculate_performance_metric_counts(file_result, file_seed_test_scores, file
                 nFN += 1
 
     n_actual_folds = 0
-    for sample in generate_samples_from_list_without_replacement(non_seeds, len(setNodeTest), n_random_negative_folds):
+    for sample in generate_samples_from_list_without_replacement(non_seeds, len(setNodeTest), n_random_negative_folds, replicable=True):
 	setNegative = set(sample)
 	n_actual_folds += 1
 	for id, score in dictNodeResult.iteritems():
@@ -203,5 +205,4 @@ def calculate_seed_coverage_at_given_percentage(file_result, file_seed_scores, p
 	last_score = score
     
     return n_seed, n, i
-
 

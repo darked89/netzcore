@@ -37,21 +37,21 @@ Netscore2::~Netscore2()
 {
 }
 
-void Netscore2::run(int nRepeatition, int nIteration, float tError) 
+void Netscore2::run(int nRepetition, int nIteration, float tError) 
 { 
     nIteration = nIteration;
     float error = INFINITY;
     initializeScoring();
     //cout << "Snet fAccumulate in run: " << flagAccumulateToInitialNodeScore << endl;
-    for(int repeatCounter = 1; repeatCounter<=nRepeatition and error > tError; ++repeatCounter) {
-	initializeRepeatition();
+    for(int repeatCounter = 1; repeatCounter<=nRepetition and error > tError; ++repeatCounter) {
+	initializeRepetition();
 	for(iterationCounter = 1; iterationCounter<=nIteration and error > tError; ++iterationCounter) {
 	    initializeIteration();
 	    updateNetwork();
 	    error = calculateErrorAndUpdateScores();
 	    finalizeIteration();
 	} 
-	finalizeRepeatition();
+	finalizeRepetition();
     }
     finalizeScoring();
     //cout << "Snet run file: " << this->outputFile << endl;
@@ -67,7 +67,7 @@ void Netscore2::initializeScoring() {
     }
 }
 
-void Netscore2::initializeRepeatition()
+void Netscore2::initializeRepetition()
 {
     VertexIterator it, itEnd;
     UIntToMessage * pMapMessage;

@@ -19,6 +19,24 @@ ScoreNetwork::ScoreNetwork()
     flagUseEdgeScore = true;
     flagAccumulateToInitialNodeScore = true;
     flagResetSeedScoresToInitial = false;
+    outputFile = "";
+    pNetwork = 0;
+}
+
+ScoreNetwork::ScoreNetwork(std::string fileOutput, bool fUseEdgeScore, bool fAccumulateToInitialNodeScore, bool fResetSeedScoresToInitial, bool fVerbose) 
+{
+    typeTransfer = IDENTITY;
+    //minScore = INFINITY;
+    //maxScore = -INFINITY;
+    //nIteration = 0;
+    repeatCounter = 0;
+    iterationCounter = 0;
+    flagVerbose = fVerbose;
+    flagUseEdgeScore = fUseEdgeScore; // should? be in updateEdgeScore
+    flagAccumulateToInitialNodeScore = fAccumulateToInitialNodeScore; // should? be in updateNodeScore
+    flagResetSeedScoresToInitial = fResetSeedScoresToInitial; 
+    outputFile = fileOutput;
+    pNetwork = 0;
 }
 
 ScoreNetwork::ScoreNetwork(string fileNode, string fileEdge, string fileOutput, bool fUseEdgeScore, bool fAccumulateToInitialNodeScore, bool fResetSeedScoresToInitial, bool fVerbose) 
@@ -34,8 +52,9 @@ ScoreNetwork::ScoreNetwork(string fileNode, string fileEdge, string fileOutput, 
     flagAccumulateToInitialNodeScore = fAccumulateToInitialNodeScore; // should? be in updateNodeScore
     flagResetSeedScoresToInitial = fResetSeedScoresToInitial; 
     outputFile = fileOutput;
-    network.loadNodes(fileNode); 
-    network.loadEdges(fileEdge); 
+    pNetwork = new Graph();
+    getNetwork().loadNodes(fileNode); 
+    getNetwork().loadEdges(fileEdge); 
     //cout << "Snet file:" << fileOutput << " " << outputFile << endl;
     //cout << "Snet fverbose:" << fVerbose << " " << flagVerbose << endl;
     //cout << "Snet fAccumulate: " << this->flagAccumulateToInitialNodeScore << endl;
@@ -45,15 +64,15 @@ ScoreNetwork::ScoreNetwork(string fileNode, string fileEdge, string fileOutput, 
 ScoreNetwork::~ScoreNetwork() {
 }
 
-void ScoreNetwork::run(int nRepeatition, int nIteration, float tError) 
+void ScoreNetwork::run(int nRepetition, int nIteration, float tError) 
 { 
     float error = INFINITY;
     initializeScoring();
     //cout << "Snet fAccumulate in run: " << flagAccumulateToInitialNodeScore << endl;
-    for(repeatCounter = 1; repeatCounter<=nRepeatition and error > tError; ++repeatCounter) {
+    for(repeatCounter = 1; repeatCounter<=nRepetition and error > tError; ++repeatCounter) {
 	if(flagVerbose)
-	    cout << "((repeatition " << repeatCounter << "))" << std::endl;
-	initializeRepeatition();
+	    cout << "((repetition " << repeatCounter << "))" << std::endl;
+	initializeRepetition();
 	for(iterationCounter = 1; iterationCounter<=nIteration and error > tError; ++iterationCounter) {
 	    if(flagVerbose)
 		cout << "(iteration " << iterationCounter << ")" << std::endl;
@@ -62,7 +81,7 @@ void ScoreNetwork::run(int nRepeatition, int nIteration, float tError)
 	    error = calculateErrorAndUpdateScores();
 	    finalizeIteration();
 	} 
-	finalizeRepeatition();
+	finalizeRepetition();
     }
     finalizeScoring();
     //cout << "Snet run file: " << this->outputFile << endl;

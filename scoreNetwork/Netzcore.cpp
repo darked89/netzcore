@@ -10,6 +10,15 @@ Netzcore::Netzcore() : ScoreNetwork()
     sigma = 0;
 }
 
+Netzcore::Netzcore(std::string fileNode, std::string fileOutput, std::string prefixSampled, unsigned int nSampled, bool fUseEdgeScore, bool fAccumulateToInitialNodeScore, bool fResetSeedScoresToInitial, bool fVerbose) : ScoreNetwork(fileOutput, fUseEdgeScore, fAccumulateToInitialNodeScore, fResetSeedScoresToInitial, fVerbose)
+{ 
+    prefixSampledGraphs = prefixSampled;
+    nodeFileName = fileNode;
+    nSampledGraphs = nSampled;
+    mean = 0;
+    sigma = 0;
+}
+
 Netzcore::Netzcore(std::string fileNode, std::string fileEdge, std::string fileOutput, std::string prefixSampled, unsigned int nSampled, bool fUseEdgeScore, bool fAccumulateToInitialNodeScore, bool fResetSeedScoresToInitial, bool fVerbose) : ScoreNetwork(fileNode, fileEdge, fileOutput, fUseEdgeScore, fAccumulateToInitialNodeScore, fResetSeedScoresToInitial, fVerbose)
 { 
     prefixSampledGraphs = prefixSampled;
@@ -139,13 +148,13 @@ void Netzcore::finalizeIteration()
 
 void Netzcore::updateNodeScore(Vertex v) 
 {
-    Vertex u;
     AdjVertexIterator vt, vtEnd;
     std::list<Graph*>::iterator it, itEnd;
     float tempScore = 0.0, sumScore = 0.0;
     std::pair<float, float> tempPair(0.0,0.0);
     unsigned int i = 0;
-    Graph* pG;
+    //Vertex u;
+    //Graph* pG;
     if(flagVerbose)
         std::cout << "Checking node: " << getNetwork().getVertexName(v) << std::endl;
 
@@ -235,16 +244,27 @@ std::pair<float, float> calculateMeanAndSigma(InputIterator first, InputIterator
 {
     float sum = 0.0, squareSum = 0.0, mean=0.0;
     unsigned int count = 0;
+    InputIterator first2(first);
     while(first != beyond)
     {
-	//std::cout << *first << std::endl;
+	//std::cout << *first << ","; //std::endl;
 	sum += *first;
 	squareSum += sq(*first);
 	count++;
 	++first;
     }
     mean = sum/count;
-    return std::make_pair(mean, squareSum/count-sq(mean));
+    // Without Bessel's correction
+    //return std::make_pair(mean, sqrt(squareSum/count-sq(mean)));
+    // Calculate sample (unbiased) standard deviation 
+    first = first2;
+    sum = 0.0;
+    while(first != beyond)
+    {
+	sum += sq(*first-mean);
+	++first;
+    }
+    return std::make_pair(mean, sqrt(sum/(count-1)));
 }
 
 

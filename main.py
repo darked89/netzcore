@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 #########################################################################
 # Main workflow for scoring 
 #
@@ -27,15 +29,17 @@ PPI = "goh"
 ASSOCIATION = "aneurysm"
 #ASSOCIATION = "apoptosis"
 
-#SCORING = "ns" #"netscore"
+SCORING = "ns" #"netscore"
 #SCORING = "nz" #"netzcore"
+#SCORING = "nh" #"netzscore"
+#SCORING = "n1" #"netz1score"
 #SCORING = "nd" # "netshort"
 #SCORING = "nr" #"netrank"
 #SCORING = "nx" #"netrandom"
-SCORING = "nb" #"netZscore" (cortesy of baldo)
+#SCORING = "nb" #"netZscore" (cortesy of baldo)
 #SCORING = "ff" #"FunctionalFlow" 
 
-N_REPEATITION = 1
+N_REPETITION = 3
 N_ITERATION = 3
 
 DEFAULT_NON_SEED_SCORE = 0.01
@@ -69,9 +73,10 @@ rhodes_network_file_filtered_by_degree = rhodes_network_file[:-4] + "_degree_fil
 gene_info_file = data_dir + "gene_info" + os.sep + "genes.tsv"
 
 # Disease association files
-aneurysm_scores_file = data_dir + "aneurist" + os.sep + "aneurysm_associated_genes.txt"
-aneurysm_scores_all_equal_file = data_dir + "aneurist" + os.sep + "aneurysm_associated_genes_all_equal.txt"
-
+association_dir = data_dir + "aneurist" + os.sep
+aneurysm_scores_file = association_dir + "aneurysm_associated_genes.txt"
+aneurysm_scores_all_equal_file = association_dir + "aneurysm_associated_genes_all_equal.txt"
+aneurysm_scores_validation_file = association_dir + "aneurysm_new_9.txt"
 
 # Network specific
 
@@ -134,32 +139,23 @@ if not os.path.exists(output_base_dir_association):
 if not os.path.exists(output_dir): 
     os.mkdir(output_dir)
 
-if SCORING == "ns":
-    title += " - r%d i%d" % (N_REPEATITION, N_ITERATION)
-    output_dir = output_dir + "r%di%d" % (N_REPEATITION, N_ITERATION) + os.sep
+if SCORING == "ns" or SCORING == "nh" or SCORING == "n1":
+    title += " - r%d i%d" % (N_REPETITION, N_ITERATION)
+    output_dir = output_dir + "r%di%d" % (N_REPETITION, N_ITERATION) + os.sep
     if not os.path.exists(output_dir): 
 	os.mkdir(output_dir)
-elif SCORING == "nz":
-    title += " - i%d" % N_ITERATION
-    output_dir = output_dir + "i%d" % N_ITERATION + os.sep
-    if not os.path.exists(output_dir): 
-	os.mkdir(output_dir)
-elif SCORING == "ff":
-    title += " - i%d" % N_ITERATION
-    output_dir = output_dir + "i%d" % N_ITERATION + os.sep
-    if not os.path.exists(output_dir): 
-	os.mkdir(output_dir)
-elif SCORING == "nb":
+elif SCORING == "nz" or SCORING == "ff" or SCORING == "nb":
     title += " - i%d" % N_ITERATION
     output_dir = output_dir + "i%d" % N_ITERATION + os.sep
     if not os.path.exists(output_dir): 
 	os.mkdir(output_dir)
 
-
+association_scores_validation_file = None
 # Association data to be used
 if ASSOCIATION == "aneurysm":
     association_scores_file = aneurysm_scores_all_equal_file
     association_scores_file_identifier_type = "genesymbol"
+    association_scores_validation_file = aneurysm_scores_validation_file 
 elif ASSOCIATION == "apoptosis":
     association_scores_file = apoptosis_scores_all_equal_file
     association_scores_file_identifier_type = "uniprotaccession"
@@ -172,8 +168,8 @@ node_scores_file = input_dir + "node_scores.sif"
 #edge_scores_file = input_dir + "edge_scores.sif"
 edge_scores_file = input_base_dir_network + "edge_scores.sif"
 edge_scores_as_node_scores_file = input_dir + "edge_scores_as_node_scores.sif"
-output_scores_file = output_dir + "node_scores.sif" # "_r%dn%d.sif" % (N_REPEATITION, N_ITERATION)
-score_log_file = output_dir + "log.txt" # "_r%dn%d.txt" % (N_REPEATITION, N_ITERATION)
+output_scores_file = output_dir + "node_scores.sif" # "_r%dn%d.sif" % (N_REPETITION, N_ITERATION)
+score_log_file = output_dir + "log.txt" # "_r%dn%d.txt" % (N_REPETITION, N_ITERATION)
 sampled_file_prefix = sampling_dir + "sampled_graph"
 
 # Log (README) files 
@@ -185,21 +181,25 @@ labels_file = output_dir + "labels.txt"
 r_script_file = output_dir + "results.r"
 tex_script_file = output_dir + "results.tex"
 
-score_xval_commands = { "ns": Template("scoreNetwork/scoreN -s s -n %s.$fold -e %s -o %s.$fold -r %d -i %d &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_REPEATITION, N_ITERATION, score_log_file)),
+score_xval_commands = { "ns": Template("scoreNetwork/scoreN -s s -n %s.$fold -e %s -o %s.$fold -r %d -i %d &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, score_log_file)),
 			"nz": Template("scoreNetwork/scoreN -s z -n %s.$fold -e %s -o %s.$fold -i %d -x %d -d %s &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file)),
+			"nh": Template("scoreNetwork/scoreN -s h -n %s.$fold -e %s -o %s.$fold -r %d -i %d -x %d -d %s &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file)),
+			"n1": Template("scoreNetwork/scoreN -s 1 -n %s.$fold -e %s -o %s.$fold -r %d -i %d -x %d -d %s &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file)),
 			"nd": Template("scoreNetwork/scoreN -s d -n %s.$fold -e %s.$fold -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_as_node_scores_file, output_scores_file, score_log_file)),
 			"nr": Template("scoreNetwork/scoreN -s r -n %s.$fold -e %s -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
 			"nx": Template("scoreNetwork/scoreN -s x -n %s.$fold -e %s -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
-			"nb": Template("./netscore -c %s.$fold -i %s -o %s.$fold -t 0 -z 0 -nr 100 -r 1 -n 5 -mx 10 -ms 50 -mn 0 -dn 5 -de 5 -xn 0 -xe 0 -e 0.0000001 &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
+			"nb": Template("./netscore -c %s.$fold -i %s -o %s.$fold -t 0 -z 0 -nr 100 -r 1 -zp 0 -n %d -nd 2 -mx 1 -ms 3 -mn 0 -dn 2 -de 2 -mxe 0 -mne 0.00000001 -mnd 0.0000001 -mnde 0.0000001 -mnst 20 -mnste 20 -dxi 1 -dxn 0 -dxe 0 -e 0.0000001 &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, score_log_file)),
 			"ff": Template("./fFlow %s.$fold %s %s.$fold %d &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, score_log_file)),
 		      }
 
-score_commands = { "ns": "scoreNetwork/scoreN -s s -n %s -e %s -o %s -r %d -i %d &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPEATITION, N_ITERATION, score_log_file),
+score_commands = { "ns": "scoreNetwork/scoreN -s s -n %s -e %s -o %s -r %d -i %d &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, score_log_file),
 		   "nz": "scoreNetwork/scoreN -s z -n %s -e %s -o %s -i %d -x %d -d %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file), 
+		   "nh": "scoreNetwork/scoreN -s h -n %s -e %s -o %s -r %d -i %d -x %d -d %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file), 
+		   "n1": "scoreNetwork/scoreN -s 1 -n %s -e %s -o %s -r %d -i %d -x %d -d %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file), 
 		   "nd": "scoreNetwork/scoreN -s d -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file),
 		   "nr": "scoreNetwork/scoreN -s r -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file),
 		   "nx": "scoreNetwork/scoreN -s x -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file),
-		   "nb": "./netscore -c %s -i %s -o %s -t 0 -z 0 -nr 100 -r 1 -n 5 -mx 10 -ms 50 -mn 0 -dn 5 -de 5 -xn 0 -xe 0 -e 0.0000001 &> %s" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file),
+		   "nb": "./netscore -c %s -i %s -o %s -t 0 -z 0 -nr 100 -r 1 -zp 0 -n %d -nd 2 -mx 1 -ms 3 -mn 0 -dn 2 -de 2 -mxe 0 -mne 0.00000001 -mnd 0.0000001 -mnde 0.0000001 -mnst 20 -mnste 20 -dxi 1 -dxn 0 -dxe 0 -e 0.0000001 &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, score_log_file),
 		   "ff": "./fFlow %s %s %s %d &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, score_log_file),
 		 }
 
@@ -244,7 +244,7 @@ def analyze():
 
 
 def generate_score_xval_command(k):
-    #return score_xval_command % (node_scores_file, k, edge_scores_file, output_scores_file, k, N_REPEATITION, N_ITERATION, score_log_file, k)
+    #return score_xval_command % (node_scores_file, k, edge_scores_file, output_scores_file, k, N_REPETITION, N_ITERATION, score_log_file, k)
     return score_xval_commands[SCORING].substitute(fold = '%d' % k)
 
 
@@ -279,7 +279,7 @@ def analyze_xval():
 	return
     list_node_scores_and_labels = []
     for k in range(1, N_X_VAL+1):
-	node_validation_data = analyze_results.get_validation_node_scores_and_labels(file_result = output_scores_file+".%d"%k, file_seed_test_scores = node_scores_file+".%d.test"%k, file_node_scores = node_scores_file, n_random_negative_folds = N_RANDOM_NEGATIVE_FOLDS)
+	node_validation_data = analyze_results.get_validation_node_scores_and_labels(file_result = output_scores_file+".%d"%k, file_seed_test_scores = node_scores_file+".%d.test"%k, file_node_scores = node_scores_file, n_random_negative_folds = N_RANDOM_NEGATIVE_FOLDS, default_score = DEFAULT_NON_SEED_SCORE)
 	list_node_scores_and_labels.append(node_validation_data)
     analyze_results.create_ROCR_files(list_node_scores_and_labels, predictions_file, labels_file)
     analyze_results.create_R_script(r_script_file, output_dir, title) # os.path.basename(output_dir))
@@ -294,7 +294,7 @@ def analyze_xval():
 	nTP_sum, nFP_sum, nFN_sum, nTN_sum = 0.0, 0.0, 0.0, 0.0
 	for k in range(1, N_X_VAL+1):
 	    ##print output_scores_file+".ns.%d"%k, node_scores_file+".%d.test"%k 
-	    nTP, nFP, nFN, nTN = analyze_results.calculate_performance_metric_counts(file_result = output_scores_file+".%d" % k, file_seed_test_scores = node_scores_file+".%d.test"%k, file_node_scores = node_scores_file, score_threshold = tScore, n_random_negative_folds = N_RANDOM_NEGATIVE_FOLDS)
+	    nTP, nFP, nFN, nTN = analyze_results.calculate_performance_metric_counts(file_result = output_scores_file+".%d" % k, file_seed_test_scores = node_scores_file+".%d.test"%k, file_node_scores = node_scores_file, score_threshold = tScore, n_random_negative_folds = N_RANDOM_NEGATIVE_FOLDS, default_score = DEFAULT_NON_SEED_SCORE)
 	    (acc, sens, spec, ppv) = analyze_results.calculatePerformance(nTP, nFP, nFN, nTN)
 	    ##print "A:", acc, "S:", sens, "P:", ppv
 	    nTP_sum += nTP
@@ -337,19 +337,23 @@ def analyze_xval_percentage():
 
 
 def analyze_original():
-    #result_files = [ output_scores_file+".ns", output_scores_file+".nz" ]
-    result_files = [ output_scores_file ]
+    
     if not os.path.exists(output_scores_file):
 	raise Exception("Output score file does not exist!")
     f = open(log_file, "a")
     for percentage in (10, 25, 50):
 	#print "---- %s:" % percentage
 	f.write("---- %s:\n" % percentage)
-	for result_file in result_files:
-	    #print result_file
-	    f.write("%s\n" % result_file)
-	    #print analyze_results.calculate_seed_coverage_at_given_percentage(result_file, node_scores_file, percentage, DEFAULT_NON_SEED_SCORE)
-	    f.write("%s\n" % str(analyze_results.calculate_seed_coverage_at_given_percentage(result_file, node_scores_file, percentage, DEFAULT_NON_SEED_SCORE)))
+	f.write("%s\n" % output_scores_file)
+	f.write("%s\n" % str(analyze_results.calculate_seed_coverage_at_given_percentage(output_scores_file, node_scores_file, percentage, DEFAULT_NON_SEED_SCORE)))
+	if PPI == "biana":
+	    prepare_data.convert_file_using_new_id_mapping(output_scores_file, node_description_file, network_file_identifier_type, "geneid", output_scores_file+".geneid")
+	    prepare_data.convert_file_using_new_id_mapping(output_scores_file+".geneid", gene_info_file, "geneid", association_scores_file_identifier_type, output_scores_file+"."+association_scores_file_identifier_type)
+	else:
+	    prepare_data.convert_file_using_new_id_mapping(output_scores_file, node_description_file, network_file_identifier_type, association_scores_file_identifier_type, output_scores_file+"."+association_scores_file_identifier_type)
+	if association_scores_validation_file is not None:
+	    f.write("Validation seed coverage:")
+	    f.write("%s\n" % str(analyze_results.calculate_seed_coverage_at_given_percentage(output_scores_file+"."+association_scores_file_identifier_type, association_scores_validation_file, percentage, DEFAULT_NON_SEED_SCORE)))
     f.close()
     return
 
@@ -375,7 +379,7 @@ def prepare_scoring_files_from_network_and_association_files(network_file, netwo
 
     # Create node scores file and check how many of the seed genes we cover in the network
     if not os.path.exists(seed_scores_file): 
-	print "Creating seed scores file", node_scores_file
+	print "Creating seed scores file", seed_scores_file
 	nodes = prepare_data.get_nodes_in_network(network_file = network_file_filtered)
 	seed_to_score = prepare_data.get_node_association_score_mapping(network_file = network_file_filtered, network_file_identifier_type = network_file_identifier_type, node_description_file = node_description_file, association_scores_file = association_scores_file, association_scores_file_identifier_type = association_scores_file_identifier_type, log_file = input_log_file)
 	seeds = seed_to_score.keys()

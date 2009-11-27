@@ -5,6 +5,7 @@
 #########################################################################
 
 from biana.utilities import biana_output_converter
+from biana.utilities import TsvReader
 from biana.utilities import graph_utilities as network_utilities
 
 
@@ -145,6 +146,43 @@ def create_node_scores_file(nodes, node_to_score, node_scores_file, ignored_node
     f.close()
     return 
 
+def convert_file_using_new_id_mapping(file_to_be_converted, node_description_file, from_id_type, to_id_type, new_file):
+    """
+	Maps nodes given as from_id_type to their correspondants in to_id_type using node_description_file
+	Can convert node / network file in sif format (node file with data, network file with data in the middle)
+    """
+    nodes, edges, node_to_data, edge_to_data = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_to_be_converted, store_edge_type = True)
+
+    #node_id_to_new_ids, dummy = biana_output_converter.get_attribute_to_attribute_mapping(node_description_file, from_id_type, to_id_type, keys_to_include=nodes, include_inverse_mapping = False)
+    reader = TsvReader.TsvReader(node_description_file, inner_delim = ",")
+    columns, node_id_to_new_ids = reader.read(fields_to_include = [from_id_type, to_id_type], keys_to_include=nodes, merge_inner_values = True)
+
+    f = open(new_file, 'w')
+    if edges is None:
+	for v in nodes:
+	    if node_to_data.has_key(v):
+		if node_id_to_new_ids.has_key(v):
+		    vals = reduce(lambda x,y: x+y, node_id_to_new_ids[v])
+		    for id in vals:
+			f.write("%s %s\n" % (id, node_to_data[v]))
+	    else:
+		if node_id_to_new_ids.has_key(v):
+		    vals = reduce(lambda x,y: x+y, node_id_to_new_ids[v])
+		    for id in vals:
+			f.write("%s\n", id)
+    else:
+	for e in edges:
+	    u,v = e
+	    if edge_to_data.has_key(e):
+		if node_id_to_new_ids.has_key(u):
+		    vals = reduce(lambda x,y: x+y, node_id_to_new_ids[u])
+		    for id in vals:
+			if node_id_to_new_ids.has_key(v):
+			    vals2 = reduce(lambda x,y: x+y, node_id_to_new_ids[v])
+			    for id2 in vals2:
+				f.write("%s %s %s\n" % (id, edge_to_data[e], id2))
+    f.close()
+    return
 
 def get_node_association_score_mapping(network_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, log_file = None):
     """

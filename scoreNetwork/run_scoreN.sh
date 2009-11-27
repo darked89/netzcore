@@ -11,5 +11,10 @@
 #./scoreN -n ../../data/toy_data/test_proteins_small.txt -e ../../data/toy_data/test_interactions_small.txt -o ../../data/output/test.txt -s z 
 
 #./scoreN -n ../../data/toy_data/test_proteins_small.sif -e ../../data/toy_data/test_interactions_small_with_scores.sif -o test.txt -d ../../data/toy_data/sampled_graphs_toy/ -x 4 -s z -i 1
-./scoreN -n ../../data/toy_data/test_proteins_small.sif -e ../../data/toy_data/test_interactions_small.sif -o test.txt -d ../../data/toy_data/sampled_graphs_toy/ -x 4 -s z -i 1
-./scoreN -n ../../data/toy_data/test_proteins_middle.sif -e ../../data/toy_data/test_interactions_middle.sif -o test.txt -d ../../data/toy_data/sampled_graphs_toy_middle/ -x 4 -s z -i 1
+#./scoreN -n ../../data/toy_data/test_proteins_middle.sif -e ../../data/toy_data/test_interactions_middle.sif -o test.txt -d ../../data/toy_data/sampled_graphs_toy_middle/ -x 4 -s z -i 1
+
+./scoreN -n ../../data/toy_data/test_proteins_small.sif -e ../../data/toy_data/test_interactions_small.sif -o test_netscore.txt -d ../../data/toy_data/sampled_graphs_toy/ -x 4 -s z -r 1 -i 1
+./scoreN -n ../../data/toy_data/test_proteins_small.sif -e ../../data/toy_data/test_interactions_small.sif -o test_netzcore.txt -d ../../data/toy_data/sampled_graphs_toy/ -x 4 -s z -r 1 -i 1
+./scoreN -n ../../data/toy_data/test_proteins_small.sif -e ../../data/toy_data/test_interactions_small.sif -o test_netzscore.txt -d ../../data/toy_data/sampled_graphs_toy/ -x 4 -s h -r 1 -i 1
+./scoreN -n ../../data/toy_data/test_proteins_small.sif -e ../../data/toy_data/test_interactions_small.sif -o test_netz1score.txt -d ../../data/toy_data/sampled_graphs_toy/ -x 4 -s 1 -r 1 -i 1
+

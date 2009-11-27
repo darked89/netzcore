@@ -7,6 +7,10 @@ Netscore::Netscore() : ScoreNetwork()
 {
 }
 
+Netscore::Netscore(std::string fileOutput, bool fUseEdgeScore, bool fAccumulateToInitialNodeScore, bool fResetSeedScoresToInitial, bool fVerbose) : ScoreNetwork(fileOutput, fUseEdgeScore, fAccumulateToInitialNodeScore, fResetSeedScoresToInitial, fVerbose)
+{
+}
+
 Netscore::Netscore(std::string fileNode, std::string fileEdge, std::string fileOutput, bool fUseEdgeScore, bool fAccumulateToInitialNodeScore, bool fResetSeedScoresToInitial, bool fVerbose) : ScoreNetwork(fileNode, fileEdge, fileOutput, fUseEdgeScore, fAccumulateToInitialNodeScore, fResetSeedScoresToInitial, fVerbose)
 {
     //std::cout << "Nscore fAccumulate: " << flagAccumulateToInitialNodeScore << std::endl;
@@ -33,9 +37,9 @@ void Netscore::initializeScoring() {
     for(boost::tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) 
     {
 	createVertexMessageMap(*it);
-	// Moved below to initializeRepeatition
+	setVertexScoreUpdated(*it, 0.0);
+	// Moved below to initializeRepetition
 	//setVertexScoreInitial(*it, getNetwork().getVertexScore(*it)); // storing scaled (between 0 and 1) initial scores
-	//setVertexScoreUpdated(*it, 0.0);
 	//getNetwork().setVertexScore(*it, 0.0);
     }
 }
@@ -54,7 +58,7 @@ void Netscore::finalizeScoring()
     scaleNodeScores(SCALE_BETWEEN_INITIAL_MIN_AND_MAX_SCORE);
 }
 
-void Netscore::initializeRepeatition()
+void Netscore::initializeRepetition()
 {
     VertexIterator it, itEnd;
     UIntToMessage * pMapMessage;
@@ -74,8 +78,8 @@ void Netscore::initializeRepeatition()
 	//mapMessage = getNetwork().getVertexMessageMap(*it); 
 	//for(mt=mapMessage.begin(), mtEnd=mapMessage.end(); mt != mtEnd; ++mt)
 	//    std::cout << mt->first << " " << mt->second.second << std::endl;
-	setVertexScoreInitial(*it, getNetwork().getVertexScore(*it)); // storing scaled (between 0 and 1) scores from the last repeatition's iteration or initial scores 
-	setVertexScoreUpdated(*it, 0.0);
+	setVertexScoreInitial(*it, getNetwork().getVertexScore(*it)); // storing scaled (between 0 and 1) scores from the last repetition's iteration or initial scores 
+	//setVertexScoreUpdated(*it, 0.0); // moved back to initializeScoring()
 	getNetwork().setVertexScore(*it, 0.0);
     }
 }
@@ -139,6 +143,7 @@ void Netscore::updateNodeScore(Vertex v)
     for(it=pMapMessage->begin(), itEnd=pMapMessage->end(); it != itEnd; ++it)
     {
 	// Vertex score contains accumulated score over the iterations so only consider messages from that iteration
+	// Initial scores of all nodes are used while calculating node score based on the messages in the message array
 	if(boost::get<1>(it->second) == iterationCounter) 
 	{
 	    tempScore += boost::get<0>(it->second) * getVertexScoreInitial(getNetwork().getVertex(it->first));

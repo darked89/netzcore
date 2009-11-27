@@ -1,19 +1,27 @@
 
 TODO:
 
-- runs of fflow and baldo netzscore
+- shortest path network inclusion count method implementation
 
-- check the most suboptimal way for netzcore i1 + netscore 
+- filter networks with reliability scores (using edge attributes: pubmed, method, string coexpression/colocalization, jaccard, clustering coefficient)
 
-- select r2i3 high scoring proteins and GO analysis
+- add edge relevance to networks with co-expression data from tissue info, (? localization data from locate)
+
+- runs for possibly AES and then possibly Hefalmp & OMIM data
 
 - document all
 
-- add networks with reliability scores (using edge attributes: pubmed, method, string coexpression/colocalization, jaccard, clustering coefficient)
+- ml predictions based on feature described network
 
-- add networks with co-expression data from tissue info, localization data from locate
+- comparison with other methods in the literature
+    - FunctionalFlow
+    - MetaCore topological score using shortest paths on psoriasis data
+    - InfoFlow, lethality data on S. cervaise
 
-- runs for possibly AES and then possibly Hefalmp & OMIM data
+
+NOTES:
+
+- ns r2i3, r3i3, nz i5, n1 r3i3, nh r3i3, nd, nb i5 check 18 new protein scores & select high scoring proteins and GO analysis
 
 - runs on different networks (with diferent reliabilities) with different disease assoc. data and paramters and analysis
     - scoring
@@ -22,23 +30,27 @@ TODO:
 	- netrandom
 	- netscore
 	- netzcore
-	- netzcore + netscore
-	    - netzcore i1 + netscore (select from previous step)
+	- netz1core
+	- netzscore
+	- fflow
+	- netZscoreExp
+	- netween
     - ppi
 	- biana
 	- goh
 	- rhodes
     - reliability from (only for biana)
-	- string 
-	    - co-expression
-	    - co-localization
-	    - all
-	    - ? gene neighborhood / fusion / text mining / db
 	- pubmed
 	- method
 	- jaccard
 	- clust. coef.
 	- ? iterative jaccard
+    - edge relevance 
+	- string 
+	    - co-expression
+	    - co-localization (should be in realiability?)
+	    - all
+	    - ? gene neighborhood / fusion / text mining / db
     - disease association
 	- aneurysm (168, genesymbol))
 	- aes (uniprotaccession)
@@ -55,12 +67,6 @@ TODO:
 	    - breast cancer
 	    - alzheimer
 
-- ml predictions based on feature described network
-
-- comparison with other methods in the literature
-
-
-NOTES:
 
 - nz sucks when self score is assigned in case of 0 division (due to 0 variance), changed to assign inf/-inf. z-scoring in netzcore is contraversial, since it compares scores coming from different distributions (local neighborhood for each node), now assigning scores based on global distribution of neighboring scores.
 
