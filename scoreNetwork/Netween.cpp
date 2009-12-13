@@ -33,128 +33,188 @@ Netween::~Netween() {
 }
 
 
-void Netween::run() 
-{ 
-    VertexIterator it, itEnd;
-    unordered_set<Vertex> setIncluded;
-    unordered_map<Vertex, int> mapVertexToLocalCount;
-    unordered_map<Vertex, int> mapVertexToGlobalCount;
+void Netween::run() { 
 
     // Initialize node involvement counts
-    for(tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) 
-    {
+    initializeNodeCounts();
+
+    // Get nodes included in the possible shortest paths of seed pairs 
+    getIncludedNodes();
+
+    // Get node involvement counts
+    getNodeCounts();
+
+    // Calculate scores
+    calculateScores();
+
+    // Output scores
+    getNetwork().scaleVertexScores(SCALE_BETWEEN_ZERO_AND_ONE);
+    getNetwork().outputScores(outputFile);
+
+    return;
+}
+
+
+void Netween::initializeNodeCounts() {
+    VertexIterator it, itEnd;
+    for(tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) {
 	mapVertexToLocalCount[*it] = 0;
 	mapVertexToGlobalCount[*it] = 0;
     }
+}
 
-    //map<Vertex, float> mapDistance;
-    map<Vertex, vector<Vertex> > mapPredecessors;
 
+void Netween::getIncludedNodes() {
     unordered_set<Vertex>::iterator seedIt, seedItEnd;
     unordered_set<Vertex>::iterator setIt, setItEnd;
-    map<Vertex, vector<Vertex> >::iterator preIt, preItEnd;
     Vertex v, v_prev;
+    PredecessorList * pMapPredecessors;
 
     // For each seed find shortest paths: Ps,t (s € seeds, t € nodes)
-    for(seedIt = setSeed.begin(), seedItEnd = setSeed.end(); seedIt != seedItEnd; ++seedIt) 
-    {
+    for(seedIt = setSeed.begin(), seedItEnd = setSeed.end(); seedIt != seedItEnd; ++seedIt) {
+	pMapPredecessors = new PredecessorList();
 	if(flagVerbose)
 	    cout << "Checking seed " << getNetwork().getVertexName(*seedIt) << endl;
-	mapPredecessors = getNetwork().getAllShortestPaths(*seedIt); 
+	getNetwork().getAllShortestPaths(*seedIt, *pMapPredecessors); 
+	vertexToMapPredecessors[*seedIt] = pMapPredecessors;
 	// Record nodes (I) involved in Ps,s' (s, s' € seeds) where P denotes shortest path
-	for(preIt = mapPredecessors.begin(), preItEnd = mapPredecessors.end(); preIt != preItEnd; ++preIt)
-	    if(setSeed.find(preIt->first) != seedItEnd)
-		for(unsigned int i=0; i < (preIt->second).size(); ++i)
-		    setIncluded.insert((preIt->second)[i]);
-	
-	//! check if included contains all and all needed -> seems to insert everything on the path without checking s'
-
-	// For each i € I, check how many times i is involved in all possible Ps,t (s € seeds, t € nodes) 
-	//! Count only once i for all possible distinct Ps,t for a given pair s,t
-	//for(setIt = setIncluded.begin(), setItEnd = setIncluded.end(); setIt != setItEnd; ++setIt) {
-	for(tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) {
-	    //for(preIt = mapPredecessors.begin(), preItEnd = mapPredecessors.end(); preIt != preItEnd; ++preIt) {
-		//v = preIt->first;
-		v = *it;
-		if(setIncluded.find(v) != setIncluded.end())
-		    continue;
-		if(flagVerbose)
-		    cout << "- Checking shortest path to " << getNetwork().getVertexName(v) << endl;
-		v_prev = mapPredecessors[v][0];
-		while(v_prev != v) { 
-		    for(unsigned int i=0; i < mapPredecessors[v].size(); ++i) {
-			if(setIncluded.find(v) != setIncluded.end()) {
-			    if(flagVerbose)
-				cout << "-- Counting " << getNetwork().getVertexName(v) << endl;
-			    if(setSeed.find(*it) != seedItEnd) {
-				mapVertexToLocalCount[v] += 1;
-			    }
-			    mapVertexToGlobalCount[v] += 1;
-			}
-			//v_prev = mapPredecessors[v][i];
-		    }
-		    v_prev = v;
-		    v = mapPredecessors[v][0];
+	for(setIt = setSeed.begin(), setItEnd = setSeed.end(); setIt != setItEnd; ++setIt) {
+	    v = *setIt;
+	    // Skip the node if it is the seed itself
+	    if(v == *seedIt)
+		continue;
+	    v_prev = (*pMapPredecessors)[v][0];
+	    //cout << "v " << getNetwork().getVertexName(v) << ", v_prev " << getNetwork().getVertexName(v_prev) << endl;
+	    // Add all nodes in the (all possible) shortest path(s) Ps,s'
+	    if(flagVerbose)
+		cout << "- Including " << getNetwork().getVertexName(v) << endl;
+	    setIncluded.insert(v);
+	    while(v_prev != v) { 
+		// Need not to continue checking if initial seed node is reached
+		if(v_prev == *seedIt) 
+		    break;
+		for(unsigned int i=0; i < (*pMapPredecessors)[v].size(); ++i) {
+		    if(flagVerbose)
+			cout << "- Including " << getNetwork().getVertexName((*pMapPredecessors)[v][i]) << endl;
+		    setIncluded.insert((*pMapPredecessors)[v][i]);
 		}
-	    //} 
-	}
-	setIncluded.clear();
-    }
-
-	    /*
-    Vertex ut, ut_prev;
-    for(tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) 
-    {
-	//getNetwork().calculateShortestPath(*it, mapDistance, mapPredecessor); 
-	mapPredecessors = getNetwork().getAllShortestPaths(*it); 
-	//cout << score << endl;
-	cout << getNetwork().getVertexName(*it) << endl;
-	//for(vt = mapDistance.begin(), vtEnd = mapDistance.end(); vt != vtEnd; ++vt) 
-	for(vt = mapPredecessors.begin(), vtEnd = mapPredecessors.end(); vt != vtEnd; ++vt) 
-	{
-	    //cout << getNetwork().getVertexName(vt->first) << " " << getNetwork().getVertexName(vt->second) << endl;
-	    cout << getNetwork().getVertexName(vt->first) << ": ";
-	    for(unsigned int i=0; i<((vector<Vertex>)(vt->second)).size(); ++i)
-	       cout << getNetwork().getVertexName(vt->second[i]) << " ";
-	    cout << endl;
-	    //cout << vt->second << " ";
-	    if(setSeed.find(vt->first) != setSeed.end()) {
-		ut = vt->first;
-		ut_prev = mapPredecessor[ut];
-		while(ut_prev != ut) { 
-		    mapVertexToLocalCount[ut_prev] += 1;
-		    ut = ut_prev;
-		    ut_prev = mapPredecessor[ut];
-		}
-	    } else {
-		ut = vt->first;
-		ut_prev = mapPredecessor[ut];
-		while(ut_prev != ut) { 
-		    mapVertexToGlobalCount[ut_prev] += 1;
-		    ut = ut_prev;
-		    ut_prev = mapPredecessor[ut];
-		}
+		v_prev = v;
+		v = (*pMapPredecessors)[v][0];
 	    }
 	}
     }
-	    */
 
+    return;
+}
+	
+
+void Netween::getNodeCounts() {
+    unordered_set<Vertex>::iterator seedIt, seedItEnd;
+    unordered_set<Vertex>::iterator setIt, setItEnd;
+    VertexIterator it, itEnd;
+    Vertex vTarget;
+    PredecessorList * pMapPredecessors;
+
+    // For each i € I, check how many times i is involved in all possible Ps,t (s € seeds, t € nodes) 
+    // Count i only once for all possible distinct Ps,t for a given pair s,t
+    for(setIt = setIncluded.begin(), setItEnd = setIncluded.end(); setIt != setItEnd; ++setIt) {
+	if(flagVerbose)
+	    cout << "Checking included node " << getNetwork().getVertexName(*setIt) << endl;
+	for(seedIt = setSeed.begin(), seedItEnd = setSeed.end(); seedIt != seedItEnd; ++seedIt) {
+	    pMapPredecessors = vertexToMapPredecessors[*seedIt];
+	    if(flagVerbose)
+		cout << "- Checking seed " << getNetwork().getVertexName(*seedIt) << endl;
+	    for(tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) {
+		vTarget = *it;
+		if(flagVerbose)
+		    cout << "- Checking shortest path to " << getNetwork().getVertexName(vTarget) << endl;
+		// If accumulate to initial nodes is true count the seed node on the path of all targets in inclusion analysis
+		if(*seedIt == *setIt) 
+		    if(flagAccumulateToInitialNodeScore) {
+			mapVertexToLocalCount[vTarget] += 1;
+			mapVertexToGlobalCount[vTarget] += 1;
+		    }
+		else
+		    if(isVertexIncludedInsideThePathOfGivenVertex(*setIt, vTarget, *pMapPredecessors)) {
+			if(flagVerbose)
+			    cout << "-- Counting " << getNetwork().getVertexName(*setIt) << endl;
+			if(setSeed.find(vTarget) != seedItEnd) {
+			    mapVertexToLocalCount[vTarget] += 1;
+			}
+			mapVertexToGlobalCount[vTarget] += 1;
+		    }
+	    }
+	}
+    }
+
+    return;
+}
+
+
+bool Netween::isVertexIncludedInsideThePathOfGivenVertex(Vertex vToBeChecked, Vertex vTarget, PredecessorList & mapPredecessors) {
+    Vertex v=vTarget, v_prev;
+    v_prev = mapPredecessors[v][0];
+    // The target vertex is not checked intentionaly, trying to see if it is on the path to the target
+    while(v_prev != v) { 
+	for(unsigned int i=0; i < mapPredecessors[v].size(); ++i) {
+	    if(vToBeChecked == mapPredecessors[v][i])
+		return true;
+	}
+	v_prev = v;
+	v = mapPredecessors[v][0];
+    }
+    return false;
+}
+
+    /*
+	// Below code fails in the following setting (was called after each seed's shortest path calculation with newly included nodes):
+	// Let x a node included in a shortest path of sw,sv but not in su,sv and su,sw
+	// then global counts of x when x is on su, t may be ignored because at the time of checking su it was not in setIncluded
+	for(tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) {
+	    v = *it;
+	    // Skip the check if it is the seed node itself or the node is not in the included set
+	    if(v == *seedIt || setIncluded.find(v) != setIncluded.end())
+		continue;
+	    if(flagVerbose)
+		cout << "- Checking shortest path to " << getNetwork().getVertexName(v) << endl;
+	    v_prev = mapPredecessors[v][0];
+	    while(v_prev != v) { 
+		for(unsigned int i=0; i < mapPredecessors[v].size(); ++i) {
+		    if(setIncluded.find(v) != setIncluded.end()) {
+			if(flagVerbose)
+			    cout << "-- Counting " << getNetwork().getVertexName(v) << endl;
+			if(setSeed.find(*it) != seedItEnd) {
+			    mapVertexToLocalCount[v] += 1;
+			}
+			mapVertexToGlobalCount[v] += 1;
+		    }
+		}
+		v_prev = v;
+		v = mapPredecessors[v][0];
+	    }
+	}
+	setIncluded.clear();
+	//mapPredecessors.clear();
+    */
+
+
+void Netween::calculateScores() {
+    VertexIterator it, itEnd;
     float score = 0;
-    for(tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) 
-    {
+
+    // ! may need to divide local scores by 2 since a node should be counted only once for each pair s,s'
+    for(tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) {
 	cout << getNetwork().getVertexName(*it)  << ": " << mapVertexToLocalCount[*it] << " " << mapVertexToGlobalCount[*it] << endl;
 	if(mapVertexToLocalCount[*it] == 0) 
 	    score = 0;
 	else
 	    score = float(mapVertexToLocalCount[*it]) / mapVertexToGlobalCount[*it]; 
-	if(flagAccumulateToInitialNodeScore) 
-	{
-	    score += getNetwork().getVertexScore(*it);
-	}
+	//if(flagAccumulateToInitialNodeScore) {
+	//    score += getNetwork().getVertexScore(*it);
+	//}
 	getNetwork().setVertexScore(*it, score);
     }
-    getNetwork().scaleVertexScores(SCALE_BETWEEN_ZERO_AND_ONE);
-    getNetwork().outputScores(outputFile);
+
     return;
 }
 

@@ -210,13 +210,16 @@ void Graph::bfsSearch(Vertex v, Visitor bfsVisitor)
 }
 
 
-map<Vertex, vector<Vertex> > Graph::getAllShortestPaths(Vertex v) 
+PredecessorList Graph::getAllShortestPaths(Vertex v) 
 {
-    typedef map<Vertex, vector<Vertex> > PredecessorList;
     PredecessorList vertexToVertices;
     associative_property_map< PredecessorList > mapPredecessorList(vertexToVertices);
     map<Vertex, float> vertexToFloat;
     associative_property_map< map<Vertex, float> > mapDistance(vertexToFloat);
+
+    getAllShortestPaths(v, vertexToFloat, vertexToVertices);
+
+    /*
     map<Vertex, Vertex> vertexToVertex;
     associative_property_map< map<Vertex, Vertex> > mapPredecessor(vertexToVertex);
 
@@ -232,13 +235,26 @@ map<Vertex, vector<Vertex> > Graph::getAllShortestPaths(Vertex v)
     map<Vertex, Vertex>::iterator it, itEnd;
     for(it=vertexToVertex.begin(), itEnd=vertexToVertex.end(); it != itEnd; ++it)
 	vertexToVertices[it->first].push_back(it->second);
+
+    */
+
     return vertexToVertices;
 }
 
 
-void Graph::getAllShortestPaths(Vertex v, map<Vertex, float> & vertexToFloat, map<Vertex, vector<Vertex> > & vertexToVertices) 
+void Graph::getAllShortestPaths(Vertex v, PredecessorList & vertexToVertices) 
 {
-    typedef map<Vertex, vector<Vertex> > PredecessorList;
+    map<Vertex, float> vertexToFloat;
+    associative_property_map< map<Vertex, float> > mapDistance(vertexToFloat);
+
+    getAllShortestPaths(v, vertexToFloat, vertexToVertices);
+
+    return;
+}
+
+
+void Graph::getAllShortestPaths(Vertex v, map<Vertex, float> & vertexToFloat, PredecessorList & vertexToVertices) 
+{
     associative_property_map< PredecessorList > mapPredecessorList(vertexToVertices);
     associative_property_map< map<Vertex, float> > mapDistance(vertexToFloat);
     map<Vertex, Vertex> vertexToVertex;

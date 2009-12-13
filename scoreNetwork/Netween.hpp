@@ -14,6 +14,17 @@ private:
     bool flagVerbose;
     boost::unordered_set<Vertex> setSeed;
 
+    boost::unordered_set<Vertex> setIncluded;
+    boost::unordered_map<Vertex, int> mapVertexToLocalCount;
+    boost::unordered_map<Vertex, int> mapVertexToGlobalCount;
+    boost::unordered_map<Vertex, PredecessorList*> vertexToMapPredecessors;
+
+    void initializeNodeCounts();
+    void getIncludedNodes();
+    void getNodeCounts();
+    void calculateScores();
+    bool isVertexIncludedInsideThePathOfGivenVertex(Vertex vToBeChecked, Vertex vTarget, PredecessorList & mapPredecessors); 
+
 public:
     Netween(); 
     Netween(std::string fileNode, std::string fileEdge, std::string fileOutput, bool flagAccumulateToInitialNodeScore = false, bool flagVerbose = false);

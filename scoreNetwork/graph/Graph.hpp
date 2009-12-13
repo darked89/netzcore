@@ -14,6 +14,7 @@
 #include "../Exceptions.hpp"
 
 #include <map>
+#include <vector>
 
 #include <cmath> // for INFINITY
 
@@ -87,6 +88,8 @@ typedef BiStrToUInt::right_value_type UIntToStr;
 typedef BiStrToUInt::left_const_iterator IdUIntIterator;
 typedef BiStrToUInt::right_const_iterator UIntIdIterator;
 
+typedef std::map<Vertex, std::vector<Vertex> > PredecessorList;
+
 class Graph {
     //friend ostream& operator<<(ostream& output, const Graph& g);
 public:
@@ -144,8 +147,9 @@ public:
     std::map<Vertex, float> calculateShortestPath(Vertex v);
     void calculateShortestPath(Vertex v, std::map<Vertex, float> & vertexToFloat, std::map<Vertex, Vertex> & vertexToVertex);
     template <class Visitor> void bfsSearch(Vertex v, Visitor bfsVisitor); 
-    std::map<Vertex, std::vector<Vertex> > getAllShortestPaths(Vertex v);
-    void getAllShortestPaths(Vertex v, std::map<Vertex, float> & vertexToFloat, std::map<Vertex, std::vector<Vertex> > & vertexToVertices);
+    PredecessorList getAllShortestPaths(Vertex v);
+    void getAllShortestPaths(Vertex v, PredecessorList & vertexToVertices);
+    void getAllShortestPaths(Vertex v, std::map<Vertex, float> & vertexToFloat, PredecessorList & vertexToVertices);
     //void calculatePageRank();
     void calculatePageRank(std::map<Vertex, float> & vertexToFloat, unsigned int nIteration = 1);
     // Processing graph scores
