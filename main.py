@@ -20,10 +20,10 @@ from biana.utilities import graph_utilities as network_utilities
 only_print_command = False
 
 # Scoring related parameters 
-MODE = "all" # prepare, score, analyze
+MODE = "prepare" #"all" # prepare, score, analyze
 
-#PPI = "biana" 
-PPI = "goh" 
+PPI = "biana" 
+#PPI = "goh" 
 #PPI = "rhodes"
 
 ASSOCIATION = "aneurysm"
@@ -113,6 +113,7 @@ input_base_dir_network = input_base_dir + PPI + os.sep
 input_base_dir_association = input_base_dir_network + ASSOCIATION + os.sep
 input_dir = input_base_dir_association
 sampling_dir = input_base_dir_network + "sampled_graphs" + os.sep
+reliability_filtered_sampling_dir = input_base_dir_network + "reliability_filtered_sampled_graphs" + os.sep
 #output_base_dir = data_dir + "output_" + PPI + os.sep
 output_base_dir = data_dir + "output" + os.sep
 output_base_dir_network = output_base_dir + PPI + os.sep
@@ -130,6 +131,8 @@ if not os.path.exists(input_dir):
     os.mkdir(input_dir)
 if not os.path.exists(sampling_dir): 
     os.mkdir(sampling_dir)
+if not os.path.exists(reliability_filtered_sampling_dir): 
+    os.mkdir(reliability_filtered_sampling_dir)
 if not os.path.exists(output_base_dir): 
     os.mkdir(output_base_dir)
 if not os.path.exists(output_base_dir_network): 
@@ -168,9 +171,11 @@ node_scores_file = input_dir + "node_scores.sif"
 #edge_scores_file = input_dir + "edge_scores.sif"
 edge_scores_file = input_base_dir_network + "edge_scores.sif"
 edge_scores_as_node_scores_file = input_dir + "edge_scores_as_node_scores.sif"
+reliability_filtered_edge_scores_file = input_base_dir_network + "reliability_filtered_edge_scores.sif"
 output_scores_file = output_dir + "node_scores.sif" # "_r%dn%d.sif" % (N_REPETITION, N_ITERATION)
 score_log_file = output_dir + "log.txt" # "_r%dn%d.txt" % (N_REPETITION, N_ITERATION)
 sampled_file_prefix = sampling_dir + "sampled_graph"
+reliability_filtered_sampled_file_prefix = reliability_filtered_sampling_dir + "sampled_graph"
 
 # Log (README) files 
 log_file = output_dir + "README"
@@ -367,7 +372,7 @@ def create_biana_network():
     # Filter by detection method (non-tap interactions)
     if not os.path.exists(biana_network_file_filtered_by_method): 
 	print "Creating method filtered files",  biana_network_file_prefix + ".sif", "->", biana_network_file_filtered_by_method
-	prepare_data.create_method_filtered_network_files(network_file_method_attribute = biana_network_file_prefix + "_method_id.eda", network_file_method_filtered_prefix = biana_network_file_prefix)
+	prepare_data.create_method_filtered_network_files(network_file_method_attribute = biana_network_file_method_attribute, network_file_method_filtered_prefix = biana_network_file_prefix)
     return
 
 
@@ -402,6 +407,12 @@ def prepare_scoring_files_from_network_and_association_files(network_file, netwo
     if not os.path.exists(sampled_file_prefix + ".sif.1"): 
 	print "Creating sampled networks"
 	prepare_data.sample_network_preserving_topology(edge_scores_file, N_SAMPLE_GRAPH, sampled_file_prefix + ".sif.")
+    if not os.path.exists(reliability_filtered_edge_scores_file): 
+	print "Creating reliability filtered edge score files", reliability_filtered_edge_scores_file
+	prepare_data.create_edge_reliability_filtered_network_file(network_file = edge_scores_file, network_file_method_attribute = biana_network_file_method_attribute, network_file_source_attribute = biana_network_file_source_attribute, network_file_pubmed_attribute = biana_network_file_pubmed_attribute, out_file = reliability_filtered_edge_scores_file)
+    if not os.path.exists(reliability_filtered_sampled_file_prefix + ".sif.1"): 
+	print "Creating reliability filtered sampled networks"
+	prepare_data.sample_network_preserving_topology(reliability_filtered_edge_scores_file, N_SAMPLE_GRAPH, reliability_filtered_sampled_file_prefix + ".sif.")
     return
 
 

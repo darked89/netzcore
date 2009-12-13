@@ -11,6 +11,8 @@
 #include <boost/graph/betweenness_centrality.hpp>
 //#include <boost/graph/page_rank.hpp>
 
+#include <boost/graph/dijkstra_shortest_paths.hpp>
+
 using namespace boost; 
 using namespace std; 
 
@@ -199,6 +201,67 @@ map<Vertex, float> Graph::calculateShortestPath(Vertex v)
     return vertexToFloat;
 }
 
+
+template <class Visitor>
+void Graph::bfsSearch(Vertex v, Visitor bfsVisitor) 
+{
+    breadth_first_search(container, v, visitor(bfsVisitor));
+    return;
+}
+
+
+map<Vertex, vector<Vertex> > Graph::getAllShortestPaths(Vertex v) 
+{
+    typedef map<Vertex, vector<Vertex> > PredecessorList;
+    PredecessorList vertexToVertices;
+    associative_property_map< PredecessorList > mapPredecessorList(vertexToVertices);
+    map<Vertex, float> vertexToFloat;
+    associative_property_map< map<Vertex, float> > mapDistance(vertexToFloat);
+    map<Vertex, Vertex> vertexToVertex;
+    associative_property_map< map<Vertex, Vertex> > mapPredecessor(vertexToVertex);
+
+    dijkstra_shortest_paths(container, v, 
+				    predecessor_map(mapPredecessor)
+				    .distance_map(mapDistance)
+				    .weight_map(get(&EdgeProperties::score, container))
+				    .visitor(make_dijkstra_visitor(
+						record_all_predecessors(mapPredecessorList, 
+								mapDistance, 
+								get(&EdgeProperties::score, container),
+								on_edge_not_relaxed()))));
+    map<Vertex, Vertex>::iterator it, itEnd;
+    for(it=vertexToVertex.begin(), itEnd=vertexToVertex.end(); it != itEnd; ++it)
+	vertexToVertices[it->first].push_back(it->second);
+    return vertexToVertices;
+}
+
+
+void Graph::getAllShortestPaths(Vertex v, map<Vertex, float> & vertexToFloat, map<Vertex, vector<Vertex> > & vertexToVertices) 
+{
+    typedef map<Vertex, vector<Vertex> > PredecessorList;
+    associative_property_map< PredecessorList > mapPredecessorList(vertexToVertices);
+    associative_property_map< map<Vertex, float> > mapDistance(vertexToFloat);
+    map<Vertex, Vertex> vertexToVertex;
+    associative_property_map< map<Vertex, Vertex> > mapPredecessor(vertexToVertex);
+
+    dijkstra_shortest_paths(container, v, 
+				    predecessor_map(mapPredecessor)
+				    .distance_map(mapDistance)
+				    .weight_map(get(&EdgeProperties::score, container))
+				    .visitor(make_dijkstra_visitor(
+						record_all_predecessors(mapPredecessorList, 
+								mapDistance, 
+								get(&EdgeProperties::score, container),
+								on_edge_not_relaxed()))));
+
+    map<Vertex, Vertex>::iterator it, itEnd;
+    for(it=vertexToVertex.begin(), itEnd=vertexToVertex.end(); it != itEnd; ++it)
+	vertexToVertices[it->first].push_back(it->second);
+
+    return;
+}
+
+
 void Graph::calculatePageRank(map<Vertex, float> & vertexToFloat, unsigned int nIteration) 
 {
     map<Vertex, float> vertexToNormalizedScore;
@@ -249,7 +312,7 @@ pair<float, float> Graph::getMinAndMaxNodeScores()
     VertexIterator it, itEnd;
     float value = 0;
     pair<float, float> result(INFINITY, -INFINITY);
-    for(boost::tie(it, itEnd) = getVertexIterator(); it != itEnd; ++it) 
+    for(tie(it, itEnd) = getVertexIterator(); it != itEnd; ++it) 
     {
 	value = getVertexScore(*it);
 	result.second = (value > result.second)?value:result.second;
@@ -278,7 +341,7 @@ void Graph::scaleVertexScores(ScaleType typeScale) {
 	    cerr << "Unrecognized scaling type" << endl;
 	    return;
     }
-    for(boost::tie(it, itEnd) = getVertexIterator(); it != itEnd; ++it) 
+    for(tie(it, itEnd) = getVertexIterator(); it != itEnd; ++it) 
     {
 	value = getVertexScore(*it);
 	switch(typeScale)
@@ -341,13 +404,13 @@ void Graph::print(bool includeScores) const
     VertexIterator it, itEnd;
     AdjVertexIterator vt, vtEnd;
 
-    for(boost::tie(it, itEnd) = getVertexIterator(); it != itEnd; ++it) 
+    for(tie(it, itEnd) = getVertexIterator(); it != itEnd; ++it) 
     {
         u = *it;
 	cout << getVertexName(u);
 	if(includeScores) 
 	  cout << "(" << getVertexScore(u) << "):";
-	for(boost::tie(vt, vtEnd) = getAdjacentVertexIteratorOfVertex(u); vt != vtEnd; ++vt) 
+	for(tie(vt, vtEnd) = getAdjacentVertexIteratorOfVertex(u); vt != vtEnd; ++vt) 
 	{
 	    cout << "\t" << getVertexName(*vt);
 	    if(includeScores)

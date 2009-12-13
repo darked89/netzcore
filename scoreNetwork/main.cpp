@@ -6,6 +6,7 @@
 #include "Netzcore.hpp"
 #include "Netrandom.hpp"
 #include "Netzscore.hpp"
+#include "Netween.hpp"
 
 #include <iostream>
 #include <ctime>
@@ -20,9 +21,10 @@ void runNetzcore(string, string, string, string, unsigned int, unsigned int, uns
 void runNetrandom(string, string, string );
 void runNetzscore(string fileNode, string fileEdge, string fileOutput, string prefixSampledGraphs, unsigned int nSampled, unsigned int nRepetition, unsigned int nIteration); 
 void runNetz1score(string fileNode, string fileEdge, string fileOutput, string prefixSampledGraphs, unsigned int nSampled, unsigned int nRepetition, unsigned int nIteration); 
+void runNetween(string fileNode, string fileEdge, string fileOutput);
 
 void printHelp() {
-    cout << "-n <node_file> -e <edge_file> -s <scoring_method>{NETSHORT:d|NETSCORE:s|NETRANK:r|NETZCORE:z|NETRANDOM:x|NETZSCORE:h|NETZ1SCORE:1}" << 
+    cout << "-n <node_file> -e <edge_file> -s <scoring_method>{NETSHORT:d|NETSCORE:s|NETRANK:r|NETZCORE:z|NETRANDOM:x|NETZSCORE:h|NETZ1SCORE:1|NETWEEN:w}" << 
     " -i <number_of_iteration> -o <output_file> -r <number_of_repetition> -x <number_of_sampled_graphs>" <<
     " -d <sampling_graph_directory> " << endl;
 }
@@ -32,7 +34,7 @@ int main(int argc, char **argv)
     static const char *optString = "n:e:i:s:o:r:x:d:h?";
     int opt = 0;
     string fileNode, fileEdge, fileOutput, dirSampling;
-    enum ScoringMethod { NETSHORT = 'd', NETSCORE = 's', NETRANK = 'r', NETZCORE = 'z', NETRANDOM = 'x', NETZSCORE = 'h', NETZ1SCORE = '1' };
+    enum ScoringMethod { NETSHORT = 'd', NETSCORE = 's', NETRANK = 'r', NETZCORE = 'z', NETRANDOM = 'x', NETZSCORE = 'h', NETZ1SCORE = '1', NETWEEN = 'w' };
     unsigned int nIteration = 1, nRepetition = 1, nSampled = 0;  
     char scoring = 's';
 
@@ -98,12 +100,21 @@ int main(int argc, char **argv)
 	runNetzscore(fileNode, fileEdge, fileOutput, dirSampling + string("sampled_graph.sif."), nSampled, nRepetition, nIteration); 
     else if (scoring == NETZ1SCORE)
 	runNetz1score(fileNode, fileEdge, fileOutput, dirSampling + string("sampled_graph.sif."), nSampled, nRepetition, nIteration); 
+    else if (scoring == NETWEEN)
+	runNetween(fileNode, fileEdge, fileOutput); 
     else
 	//runScoreNetwork();
 	cerr << "Unrecognized scoring type!" << endl;
     clock_t t2 = clock();
     cout << "Time: " << (t2-t1) << " (" << (t2-t1)/(double)CLOCKS_PER_SEC << "s)" << endl;
     return 0;
+}
+
+void runNetween(string fileNode, string fileEdge, string fileOutput) 
+{
+    // flagUseEdgeScore, flagAccumulateToInitialNodeScore, flagVerbose
+    Netween sN(fileNode, fileEdge, fileOutput, false, true);
+    sN.run();
 }
 
 void runNetz1score(string fileNode, string fileEdge, string fileOutput, string prefixSampledGraphs, unsigned int nSampled, unsigned int nRepetition, unsigned int nIteration) 

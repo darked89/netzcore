@@ -17,6 +17,9 @@
 
 #include <cmath> // for INFINITY
 
+#include <boost/graph/visitors.hpp>
+#include <boost/graph/graph_traits.hpp>
+
 typedef enum ScaleType { SCALE_BY_MAX_SCORE, SCALE_BETWEEN_ZERO_AND_ONE, SCALE_BETWEEN_INITIAL_MIN_AND_MAX_SCORE } ScaleType;
 
 template <class Pair>
@@ -140,6 +143,9 @@ public:
     std::map<Vertex, float> calculateClusteringCoefficient();
     std::map<Vertex, float> calculateShortestPath(Vertex v);
     void calculateShortestPath(Vertex v, std::map<Vertex, float> & vertexToFloat, std::map<Vertex, Vertex> & vertexToVertex);
+    template <class Visitor> void bfsSearch(Vertex v, Visitor bfsVisitor); 
+    std::map<Vertex, std::vector<Vertex> > getAllShortestPaths(Vertex v);
+    void getAllShortestPaths(Vertex v, std::map<Vertex, float> & vertexToFloat, std::map<Vertex, std::vector<Vertex> > & vertexToVertices);
     //void calculatePageRank();
     void calculatePageRank(std::map<Vertex, float> & vertexToFloat, unsigned int nIteration = 1);
     // Processing graph scores
@@ -162,6 +168,36 @@ private:
     float minScore;
     float maxScore;
 };
+
+
+template <class PredecessorListMap, class DistanceMap, class WeightMap, class Tag>
+struct all_predecessors_recorder 
+    : public boost::base_visitor<all_predecessors_recorder < PredecessorListMap, DistanceMap, WeightMap, Tag> >
+{
+    typedef Tag event_filter;
+    
+    all_predecessors_recorder(PredecessorListMap pa, DistanceMap da, WeightMap wa) : m_predecessor(pa), m_distance(da), m_weight(wa) { }
+    template <class Edge, class Graph>
+	void operator()(Edge e, const Graph& g) {
+	    typename boost::graph_traits<Graph>::vertex_descriptor
+			    u = boost::source(e, g), v = boost::target(e, g);
+	    //put(m_distance, v, get(m_distance, u) + 1);
+	    if(boost::get(m_distance, u) + get(m_weight, e) <= boost::get(m_distance, v))
+		//put(m_predecessor, target(e, g), source(e, g));
+		(m_predecessor[target(e,g)]).push_back(source(e,g));
+	}
+private:
+    PredecessorListMap m_predecessor;
+    DistanceMap m_distance;
+    WeightMap m_weight;
+};
+
+template <class PredecessorListMap, class DistanceMap, class WeightMap, class Tag>
+all_predecessors_recorder<PredecessorListMap, DistanceMap, WeightMap, Tag>
+record_all_predecessors(PredecessorListMap pa, DistanceMap da, WeightMap wa, Tag) {
+    return all_predecessors_recorder<PredecessorListMap, DistanceMap, WeightMap, Tag> (pa, da, wa);
+}
+
 
 /*
 inline

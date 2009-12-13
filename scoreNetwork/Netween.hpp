@@ -10,12 +10,13 @@ private:
     Graph network;
     
     std::string outputFile;
-    bool flagAccumulateToInitialNodeScore; // if true, accumulated shortest path score is added to node score
-    unordered_set<Vertex> setSeed;
+    bool flagAccumulateToInitialNodeScore; 
+    bool flagVerbose;
+    boost::unordered_set<Vertex> setSeed;
 
 public:
     Netween(); 
-    Netween(std::string fileNode, std::string fileEdge, std::string fileOutput, bool flagAccumulateToInitialNodeScore = false);
+    Netween(std::string fileNode, std::string fileEdge, std::string fileOutput, bool flagAccumulateToInitialNodeScore = false, bool flagVerbose = false);
     ~Netween();
     Graph & getNetwork() { return network; };
     void run(); 

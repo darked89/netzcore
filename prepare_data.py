@@ -67,7 +67,7 @@ def k_fold_cross_validation(X, K, randomize = False, replicable = False):
 
 
 def sample_network_preserving_topology(network_sif_file, n_sample, output_prefix):
-    g = network_utilities.create_network_from_sif_file(network_file_in_sif = network_sif_file, use_edge_data = True, delim = " ")
+    g = network_utilities.create_network_from_sif_file(network_file_in_sif = network_sif_file, use_edge_data = True)#, delim = " ")
     for i in xrange(1,n_sample+1):
 	g_sampled = network_utilities.randomize_graph(graph=g, randomization_type="preserve_topology_and_node_degree")
 	network_utilities.output_network_in_sif(g_sampled, output_prefix+"%s"%i)
@@ -254,6 +254,49 @@ def create_method_filtered_network_files(network_file_method_attribute, network_
     biana_output_converter.filter_network_by_interaction_type(network_attribute_file_name = network_file_method_attribute, network_out_file_name=network_file_method_filtered_prefix+"_y2h.sif", interaction_type="y2h")
     biana_output_converter.filter_network_by_interaction_type(network_attribute_file_name = network_file_method_attribute, network_out_file_name=network_file_method_filtered_prefix+"_tap.sif", interaction_type="tap")
     biana_output_converter.filter_network_by_interaction_type(network_attribute_file_name = network_file_method_attribute, network_out_file_name=network_file_method_filtered_prefix+"_no_tap.sif", interaction_type="tap", reverse_selection=True)
+    return
+
+
+def create_edge_reliability_filtered_network_file(network_file, network_file_method_attribute, network_file_source_attribute, network_file_pubmed_attribute, out_file):
+    # linear combination of 
+    # pubmed/5
+    # db/3
+    # method/2
+    # jaccard/0.4
+    # cc1*cc2/0.4
+    edge_to_methods = network_utilities.get_edge_values_from_sif_attribute_file(file_name = network_file_method_attribute, store_edge_type = False)
+    edge_to_sources = network_utilities.get_edge_values_from_sif_attribute_file(file_name = network_file_source_attribute, store_edge_type = False)
+    edge_to_pubmeds = network_utilities.get_edge_values_from_sif_attribute_file(file_name = network_file_pubmed_attribute, store_edge_type = False)
+    #edge_to_jaccard = network_utilities.get_jaccard_index_map(g)
+    #node_to_ccoef = network_utilities.get_clustering_coefficient_map(g)
+    g = network_utilities.create_network_from_sif_file(network_file, use_edge_data = True)
+    f = open(out_file, 'w')
+    for u,v in g.edges_iter():
+	score = 0.0
+	if edge_to_methods.has_key((u,v)):
+	    score += len(edge_to_methods[(u,v)])/2.0
+	    score_method = len(edge_to_methods[(u,v)])
+	elif edge_to_methods.has_key((v,u)):
+	    score += len(edge_to_methods[(v,u)])/2.0
+	    score_method = len(edge_to_methods[(v,u)])
+	if edge_to_sources.has_key((u,v)):
+	    score += len(edge_to_sources[(u,v)])/3.0
+	    score_source = len(edge_to_sources[(u,v)])
+	elif edge_to_sources.has_key((v,u)):
+	    score += len(edge_to_sources[(v,u)])/3.0
+	    score_source = len(edge_to_sources[(v,u)])
+	if edge_to_pubmeds.has_key((u,v)):
+	    score += len(edge_to_pubmeds[(u,v)])/5.0
+	    score_pubmed = len(edge_to_pubmeds[(u,v)])
+	elif edge_to_pubmeds.has_key((v,u)):
+	    score += len(edge_to_pubmeds[(v,u)])/5.0
+	    score_pubmed = len(edge_to_pubmeds[(v,u)])
+	#score += node_to_ccoef[u]*node_to_ccoef[v]/0.4
+	#score += edge_to_jaccard[(u,v)]/0.4
+	#f.write("%s\t%s\t%f\n" % (u, v, score))
+	if score_source > 1 and score_pubmed > 2:
+	    f.write("%s\t%s\t%s\n" % (u, g.get_edge(u,v), v))
+    f.close()
     return
 
 
