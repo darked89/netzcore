@@ -129,20 +129,24 @@ void Netween::getNodeCounts() {
 		if(flagVerbose)
 		    cout << "- Checking shortest path to " << getNetwork().getVertexName(vTarget) << endl;
 		// If accumulate to initial nodes is true count the seed node on the path of all targets in inclusion analysis
-		if(*seedIt == *setIt) 
+		if(*seedIt == *setIt) {
 		    if(flagAccumulateToInitialNodeScore) {
-			mapVertexToLocalCount[vTarget] += 1;
-			mapVertexToGlobalCount[vTarget] += 1;
+			if(flagVerbose)
+			    cout << "-- Counting " << getNetwork().getVertexName(*setIt) << endl;
+			mapVertexToLocalCount[*setIt] += 1;
+			mapVertexToGlobalCount[*setIt] += 1;
 		    }
-		else
+		}
+		else {
 		    if(isVertexIncludedInsideThePathOfGivenVertex(*setIt, vTarget, *pMapPredecessors)) {
 			if(flagVerbose)
 			    cout << "-- Counting " << getNetwork().getVertexName(*setIt) << endl;
 			if(setSeed.find(vTarget) != seedItEnd) {
-			    mapVertexToLocalCount[vTarget] += 1;
+			    mapVertexToLocalCount[*setIt] += 1;
 			}
-			mapVertexToGlobalCount[vTarget] += 1;
+			mapVertexToGlobalCount[*setIt] += 1;
 		    }
+		}
 	    }
 	}
     }
@@ -202,9 +206,12 @@ void Netween::calculateScores() {
     VertexIterator it, itEnd;
     float score = 0;
 
-    // ! may need to divide local scores by 2 since a node should be counted only once for each pair s,s'
     for(tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) {
-	cout << getNetwork().getVertexName(*it)  << ": " << mapVertexToLocalCount[*it] << " " << mapVertexToGlobalCount[*it] << endl;
+	// Divide local scores by 2 since a node should be counted only once for each pair s,s'
+	mapVertexToLocalCount[*it] /= 2;
+	// Subtract duplicated local score contributions from global scores
+       	mapVertexToGlobalCount[*it] -= mapVertexToLocalCount[*it]; 
+	//cout << getNetwork().getVertexName(*it)  << ": " << mapVertexToLocalCount[*it] << " " << mapVertexToGlobalCount[*it] << endl;
 	if(mapVertexToLocalCount[*it] == 0) 
 	    score = 0;
 	else

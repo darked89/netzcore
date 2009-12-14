@@ -366,7 +366,11 @@ void Graph::scaleVertexScores(ScaleType typeScale) {
 		value /= result.second;
 		break;
 	    case SCALE_BETWEEN_ZERO_AND_ONE:
-		value = (value - result.first) / (result.second - result.first);
+		// If all scores are equal s.t. min==max assign 0.5
+		if((result.second - result.first) == 0) 
+		    value = 0.5;
+		else
+		    value = (value - result.first) / (result.second - result.first);
 		break;
 	    case SCALE_BETWEEN_INITIAL_MIN_AND_MAX_SCORE :
 		value = result.first + value * (result.second - result.first);

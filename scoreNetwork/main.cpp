@@ -113,7 +113,7 @@ int main(int argc, char **argv)
 void runNetween(string fileNode, string fileEdge, string fileOutput) 
 {
     // flagUseEdgeScore, flagAccumulateToInitialNodeScore, flagVerbose
-    Netween sN(fileNode, fileEdge, fileOutput, false, true);
+    Netween sN(fileNode, fileEdge, fileOutput, false, false);
     sN.run();
 }
 

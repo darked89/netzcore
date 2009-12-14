@@ -13,14 +13,12 @@ from string import Template
 
 # obsolete
 import score_network # obsolete
-from biana.utilities import biana_output_converter as biana_output_converter 
-from biana.utilities import graph_utilities as network_utilities 
 
 #only_print_command = True
 only_print_command = False
 
 # Scoring related parameters 
-MODE = "prepare" #"all" # prepare, score, analyze
+MODE = "all" # prepare, score, analyze
 
 PPI = "biana" 
 #PPI = "goh" 
@@ -29,11 +27,12 @@ PPI = "biana"
 ASSOCIATION = "aneurysm"
 #ASSOCIATION = "apoptosis"
 
-SCORING = "ns" #"netscore"
+#SCORING = "ns" #"netscore"
 #SCORING = "nz" #"netzcore"
 #SCORING = "nh" #"netzscore"
 #SCORING = "n1" #"netz1score"
-#SCORING = "nd" # "netshort"
+#SCORING = "nd" #"netshort"
+SCORING = "nw" #"netween"
 #SCORING = "nr" #"netrank"
 #SCORING = "nx" #"netrandom"
 #SCORING = "nb" #"netZscore" (cortesy of baldo)
@@ -191,6 +190,7 @@ score_xval_commands = { "ns": Template("scoreNetwork/scoreN -s s -n %s.$fold -e 
 			"nh": Template("scoreNetwork/scoreN -s h -n %s.$fold -e %s -o %s.$fold -r %d -i %d -x %d -d %s &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file)),
 			"n1": Template("scoreNetwork/scoreN -s 1 -n %s.$fold -e %s -o %s.$fold -r %d -i %d -x %d -d %s &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file)),
 			"nd": Template("scoreNetwork/scoreN -s d -n %s.$fold -e %s.$fold -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_as_node_scores_file, output_scores_file, score_log_file)),
+			"nw": Template("scoreNetwork/scoreN -s w -n %s.$fold -e %s.$fold -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_as_node_scores_file, output_scores_file, score_log_file)),
 			"nr": Template("scoreNetwork/scoreN -s r -n %s.$fold -e %s -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
 			"nx": Template("scoreNetwork/scoreN -s x -n %s.$fold -e %s -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
 			"nb": Template("./netscore -c %s.$fold -i %s -o %s.$fold -t 0 -z 0 -nr 100 -r 1 -zp 0 -n %d -nd 2 -mx 1 -ms 3 -mn 0 -dn 2 -de 2 -mxe 0 -mne 0.00000001 -mnd 0.0000001 -mnde 0.0000001 -mnst 20 -mnste 20 -dxi 1 -dxn 0 -dxe 0 -e 0.0000001 &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, score_log_file)),
@@ -202,6 +202,7 @@ score_commands = { "ns": "scoreNetwork/scoreN -s s -n %s -e %s -o %s -r %d -i %d
 		   "nh": "scoreNetwork/scoreN -s h -n %s -e %s -o %s -r %d -i %d -x %d -d %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file), 
 		   "n1": "scoreNetwork/scoreN -s 1 -n %s -e %s -o %s -r %d -i %d -x %d -d %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file), 
 		   "nd": "scoreNetwork/scoreN -s d -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file),
+		   "nw": "scoreNetwork/scoreN -s w -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file),
 		   "nr": "scoreNetwork/scoreN -s r -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file),
 		   "nx": "scoreNetwork/scoreN -s x -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file),
 		   "nb": "./netscore -c %s -i %s -o %s -t 0 -z 0 -nr 100 -r 1 -zp 0 -n %d -nd 2 -mx 1 -ms 3 -mn 0 -dn 2 -de 2 -mxe 0 -mne 0.00000001 -mnd 0.0000001 -mnde 0.0000001 -mnst 20 -mnste 20 -dxi 1 -dxn 0 -dxe 0 -e 0.0000001 &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, score_log_file),
@@ -439,7 +440,7 @@ def old_prepare():
     return
     
     # Create arff file for all network
-    network_utilities.create_arff_file_with_network_metrics(g, node_to_score, seeds, arff_file)
+    #network_utilities.create_arff_file_with_network_metrics(g, node_to_score, seeds, arff_file)
 
     # Generate cross validation node files
     prepare_data.generate_cross_validation_node_files(g = g, node_to_score = node_to_score, seeds = seeds, node_file_netzcore_prefix = node_file_netzcore_prefix, edge_file_netzcore_relevance_prefix =  edge_file_netzcore_relevance_prefix, arff_file_prefix = arff_file_prefix)
