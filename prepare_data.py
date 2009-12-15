@@ -208,7 +208,7 @@ def get_node_association_score_mapping(network_file, network_file_identifier_typ
 	    if len(gene_with_score) > 1:
 		#print "More than one gene:", gene_with_score, "for", v
 		if log_fd is not None:
-		    log_fd.write("More than one gene: %s for %s" % (gene_with_score, v))
+		    log_fd.write("More than one gene: %s for %s\n" % (gene_with_score, v))
 	    i=0
 	    score = 0
 	    for gene in covered_genes:
@@ -218,7 +218,7 @@ def get_node_association_score_mapping(network_file, network_file_identifier_typ
 	    if score <= 0:
 		#print "non-positive seed score", v, score, "genes:", node_to_genes[v]
 		if log_fd is not None:
-		    log_fd.write("non-positive seed score %s %s genes: %s" % (v, score, node_to_genes[v]))
+		    log_fd.write("non-positive seed score %s %s genes: %s\n" % (v, score, node_to_genes[v]))
 	    node_to_score[v] = score
 	#else:
 	#    score = default_score
@@ -227,8 +227,8 @@ def get_node_association_score_mapping(network_file, network_file_identifier_typ
     #print "Covered genes (seed genes):", len(covered_genes), "among", len(setNode)
     #print "Covered gene products (seed nodes):", len(seeds), "among", g.number_of_nodes()
     if log_fd is not None:
-	log_fd.write("Covered genes (seed genes): %s among %s" % (len(covered_genes), len(setNode)))
-	log_fd.write("Covered gene products (seed nodes): %s among %s" % (len(seeds), g.number_of_nodes()))
+	log_fd.write("Covered genes (seed genes): %s among %s\n" % (len(covered_genes), len(setNode)))
+	log_fd.write("Covered gene products (seed nodes): %s among %s\n" % (len(seeds), g.number_of_nodes()))
 	log_fd.close()
     return node_to_score
 
@@ -247,26 +247,27 @@ def create_degree_filtered_network_file(network_file, network_file_filtered, deg
     return
 
 
-def create_method_filtered_network_files(network_file_method_attribute, network_file_method_filtered_prefix):
+def create_method_filtered_network_files(network_file_prefix):
     """
 	Creates 3 new sif files from the given network file where interactions coming from non-y2h, non-tap and tap are filtered.
     """
-    biana_output_converter.filter_network_by_interaction_type(network_attribute_file_name = network_file_method_attribute, network_out_file_name=network_file_method_filtered_prefix+"_y2h.sif", interaction_type="y2h")
-    biana_output_converter.filter_network_by_interaction_type(network_attribute_file_name = network_file_method_attribute, network_out_file_name=network_file_method_filtered_prefix+"_tap.sif", interaction_type="tap")
-    biana_output_converter.filter_network_by_interaction_type(network_attribute_file_name = network_file_method_attribute, network_out_file_name=network_file_method_filtered_prefix+"_no_tap.sif", interaction_type="tap", reverse_selection=True)
+    network_file_method_attribute = network_file_prefix + "_method_id.eda"
+    biana_output_converter.filter_network_by_interaction_type(network_attribute_file_name = network_file_method_attribute, network_out_file_name = network_file_prefix + "_y2h.sif", interaction_type="y2h")
+    biana_output_converter.filter_network_by_interaction_type(network_attribute_file_name = network_file_method_attribute, network_out_file_name = network_file_prefix + "_tap.sif", interaction_type="tap")
+    biana_output_converter.filter_network_by_interaction_type(network_attribute_file_name = network_file_method_attribute, network_out_file_name = network_file_prefix + "_no_tap.sif", interaction_type="tap", reverse_selection=True)
     return
 
 
-def create_edge_reliability_filtered_network_file(network_file, network_file_method_attribute, network_file_source_attribute, network_file_pubmed_attribute, out_file):
+def create_edge_reliability_filtered_network_file(network_file, network_file_prefix, out_file):
     # linear combination of 
     # pubmed/5
     # db/3
     # method/2
     # jaccard/0.4
     # cc1*cc2/0.4
-    edge_to_methods = network_utilities.get_edge_values_from_sif_attribute_file(file_name = network_file_method_attribute, store_edge_type = False)
-    edge_to_sources = network_utilities.get_edge_values_from_sif_attribute_file(file_name = network_file_source_attribute, store_edge_type = False)
-    edge_to_pubmeds = network_utilities.get_edge_values_from_sif_attribute_file(file_name = network_file_pubmed_attribute, store_edge_type = False)
+    edge_to_methods = network_utilities.get_edge_values_from_sif_attribute_file(file_name = network_file_prefix + "_method_id.eda", store_edge_type = False)
+    edge_to_sources = network_utilities.get_edge_values_from_sif_attribute_file(file_name = network_file_prefix + "_source.eda", store_edge_type = False)
+    edge_to_pubmeds = network_utilities.get_edge_values_from_sif_attribute_file(file_name = network_file_prefix + "_pubmed.eda", store_edge_type = False)
     #edge_to_jaccard = network_utilities.get_jaccard_index_map(g)
     #node_to_ccoef = network_utilities.get_clustering_coefficient_map(g)
     g = network_utilities.create_network_from_sif_file(network_file, use_edge_data = True)
@@ -294,7 +295,7 @@ def create_edge_reliability_filtered_network_file(network_file, network_file_met
 	#score += node_to_ccoef[u]*node_to_ccoef[v]/0.4
 	#score += edge_to_jaccard[(u,v)]/0.4
 	#f.write("%s\t%s\t%f\n" % (u, v, score))
-	if score_source > 1 and score_pubmed > 2:
+	if score_source + score_pubmed > 2: # and score_pubmed > 2:
 	    f.write("%s\t%s\t%s\n" % (u, g.get_edge(u,v), v))
     f.close()
     return

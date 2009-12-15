@@ -20,7 +20,13 @@ only_print_command = False
 # Scoring related parameters 
 MODE = "all" # prepare, score, analyze
 
-PPI = "biana" 
+#PPI = "biana" # using to see results of nw for biana_no_reliability
+PPI = "biana_no_reliability" 
+#PPI = "biana_reliability" 
+#PPI = "biana_no_tap_no_reliability" 
+#PPI = "biana_no_tap_reliability" 
+#PPI = "biana_no_tap_relevance" 
+#PPI = "biana_no_tap_reliability_relevance" 
 #PPI = "goh" 
 #PPI = "rhodes"
 
@@ -28,18 +34,18 @@ ASSOCIATION = "aneurysm"
 #ASSOCIATION = "apoptosis"
 
 #SCORING = "ns" #"netscore"
-#SCORING = "nz" #"netzcore"
+SCORING = "nz" #"netzcore"
 #SCORING = "nh" #"netzscore"
 #SCORING = "n1" #"netz1score"
 #SCORING = "nd" #"netshort"
-SCORING = "nw" #"netween"
+#SCORING = "nw" #"netween"
 #SCORING = "nr" #"netrank"
 #SCORING = "nx" #"netrandom"
 #SCORING = "nb" #"netZscore" (cortesy of baldo)
 #SCORING = "ff" #"FunctionalFlow" 
 
-N_REPETITION = 3
-N_ITERATION = 3
+N_REPETITION = 1
+N_ITERATION = 5
 
 DEFAULT_NON_SEED_SCORE = 0.01
 ALLOWED_MAX_DEGREE = 100000 #175 #90
@@ -54,13 +60,6 @@ data_dir = os.path.abspath(data_dir) + os.sep
 # BIANA node & network files
 biana_node_file_prefix = data_dir + "human_interactome_biana" + os.sep + "human_nodes"
 biana_network_file_prefix = data_dir + "human_interactome_biana" + os.sep + "human_network"
-biana_network_file_filtered_by_method = biana_network_file_prefix + "_no_tap.sif"
-biana_network_file_filtered_by_degree = biana_network_file_filtered_by_method[:-4] + "_degree_filtered.sif"
-
-# Edge attribute files
-biana_network_file_method_attribute = biana_network_file_prefix + "_method_id.eda"
-biana_network_file_source_attribute = biana_network_file_prefix + "_source.eda"
-biana_network_file_pubmed_attribute = biana_network_file_prefix + "_pubmed.eda"
 
 # PPIs from existing studies
 goh_network_file = data_dir + "goh07_human_ppi" + os.sep + "ppi.sif"
@@ -80,40 +79,69 @@ aneurysm_scores_validation_file = association_dir + "aneurysm_new_9.txt"
 # Network specific
 
 # BIANA ppi
-if PPI == "biana":
+if PPI.startswith("biana"):
     node_description_file = biana_node_file_prefix + ".tsv"
-    network_file = biana_network_file_filtered_by_method
-    network_file_filtered = biana_network_file_filtered_by_degree 
     network_file_identifier_type = "user entity id"
+    if PPI == "biana_no_reliability":
+	biana_network_file_filtered_by_method = biana_network_file_prefix + ".sif"
+	biana_network_file_filtered_by_reliability = biana_network_file_filtered_by_method[:-4] + "_reliability_filtered.sif"
+	network_file = biana_network_file_filtered_by_method  
+    elif PPI == "biana_reliability":
+	biana_network_file_filtered_by_method = biana_network_file_prefix + ".sif"
+	biana_network_file_filtered_by_reliability = biana_network_file_filtered_by_method[:-4] + "_reliability_filtered.sif"
+	network_file = biana_network_file_filtered_by_reliability 
+    elif PPI.startswith("biana_no_tap"):
+	biana_network_file_filtered_by_method = biana_network_file_prefix + "_no_tap.sif"
+	biana_network_file_filtered_by_reliability = biana_network_file_filtered_by_method[:-4] + "_reliability_filtered.sif"
+	if PPI == "biana_no_tap_no_reliability":
+	    network_file = biana_network_file_filtered_by_method # Using only non-tap interactions
+	elif PPI == "biana_no_tap_reliability":
+	    network_file = biana_network_file_filtered_by_reliability # Using reliability filtered non-tap interactions
+	#elif PPI == "biana_no_tap_relevance":
+	#elif PPI == "biana_no_tap_reliability_relevance":
+	else:
+	    raise ValueError("Unrecognized ppi!")
+    else:
+	raise ValueError("Unrecognized ppi!")
+    network_file_filtered = network_file[:-4] + "_degree_filtered.sif" # Using only the largest strongly connected component
 # Goh ppi
 elif PPI == "goh":
     node_description_file = gene_info_file 
+    network_file_identifier_type = "geneid"
     network_file = goh_network_file
     network_file_filtered = goh_network_file_filtered_by_degree 
-    network_file_identifier_type = "geneid"
 # Rhodes ppi
 elif PPI == "rhodes":
     node_description_file = gene_info_file 
+    network_file_identifier_type = "geneid"
     network_file = rhodes_network_file
     network_file_filtered = rhodes_network_file_filtered_by_degree 
-    network_file_identifier_type = "geneid"
 else:
     raise ValueError("Unrecognized ppi!")
 
-# Common to all ppi networks
+
+# Association data to be used
+association_scores_validation_file = None
+if ASSOCIATION == "aneurysm":
+    association_scores_file = aneurysm_scores_all_equal_file
+    association_scores_file_identifier_type = "genesymbol"
+    association_scores_validation_file = aneurysm_scores_validation_file 
+elif ASSOCIATION == "apoptosis":
+    association_scores_file = apoptosis_scores_all_equal_file
+    association_scores_file_identifier_type = "uniprotaccession"
+else:
+    raise ValueError("Unrecognized association!")
+
 
 # Human readable title for the run
 title = "%s - %s - %s" % (PPI, ASSOCIATION, SCORING)
 
 # Project directory structure
-#input_dir = data_dir + "input_" + PPI + os.sep
 input_base_dir = data_dir + "input" + os.sep
 input_base_dir_network = input_base_dir + PPI + os.sep
 input_base_dir_association = input_base_dir_network + ASSOCIATION + os.sep
 input_dir = input_base_dir_association
 sampling_dir = input_base_dir_network + "sampled_graphs" + os.sep
-reliability_filtered_sampling_dir = input_base_dir_network + "reliability_filtered_sampled_graphs" + os.sep
-#output_base_dir = data_dir + "output_" + PPI + os.sep
 output_base_dir = data_dir + "output" + os.sep
 output_base_dir_network = output_base_dir + PPI + os.sep
 output_base_dir_association = output_base_dir_network + ASSOCIATION + os.sep
@@ -130,8 +158,6 @@ if not os.path.exists(input_dir):
     os.mkdir(input_dir)
 if not os.path.exists(sampling_dir): 
     os.mkdir(sampling_dir)
-if not os.path.exists(reliability_filtered_sampling_dir): 
-    os.mkdir(reliability_filtered_sampling_dir)
 if not os.path.exists(output_base_dir): 
     os.mkdir(output_base_dir)
 if not os.path.exists(output_base_dir_network): 
@@ -152,18 +178,6 @@ elif SCORING == "nz" or SCORING == "ff" or SCORING == "nb":
     if not os.path.exists(output_dir): 
 	os.mkdir(output_dir)
 
-association_scores_validation_file = None
-# Association data to be used
-if ASSOCIATION == "aneurysm":
-    association_scores_file = aneurysm_scores_all_equal_file
-    association_scores_file_identifier_type = "genesymbol"
-    association_scores_validation_file = aneurysm_scores_validation_file 
-elif ASSOCIATION == "apoptosis":
-    association_scores_file = apoptosis_scores_all_equal_file
-    association_scores_file_identifier_type = "uniprotaccession"
-else:
-    raise ValueError("Unrecognized association!")
-
 # Input/Output score file
 seed_scores_file = input_dir + "seed_scores.sif"
 node_scores_file = input_dir + "node_scores.sif"
@@ -174,12 +188,12 @@ reliability_filtered_edge_scores_file = input_base_dir_network + "reliability_fi
 output_scores_file = output_dir + "node_scores.sif" # "_r%dn%d.sif" % (N_REPETITION, N_ITERATION)
 score_log_file = output_dir + "log.txt" # "_r%dn%d.txt" % (N_REPETITION, N_ITERATION)
 sampled_file_prefix = sampling_dir + "sampled_graph"
-reliability_filtered_sampled_file_prefix = reliability_filtered_sampling_dir + "sampled_graph"
 
 # Log (README) files 
 log_file = output_dir + "README"
 input_log_file = input_dir + "README"
 
+# Analysis files
 predictions_file = output_dir + "predictions.txt"
 labels_file = output_dir + "labels.txt"
 r_script_file = output_dir + "results.r"
@@ -230,19 +244,33 @@ def prepare():
     """
 	Creates necessary files for scoring
     """
-    if PPI == "biana":
-	create_biana_network()
-    prepare_scoring_files()
+    # Create PPI network if necessary
+    if PPI.startswith("biana"):
+	create_biana_network_files(biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability)
+
+    # Filter network by degree and get largest connected component
+    if not os.path.exists(network_file_filtered): 
+	print "Filtering by degree", network_file, "->", network_file_filtered
+	prepare_data.create_degree_filtered_network_file(network_file, network_file_filtered, ALLOWED_MAX_DEGREE)
+
+    # Prepare scoring files
+    prepare_scoring_files(network_file_filtered, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, node_scores_file, edge_scores_file, sampled_file_prefix)
     return
 
 
 def score():
+    """
+	Runs or prints commands to run scoring method on the input files
+    """
     score_original()
     score_xval()
     return
 
 
 def analyze():
+    """
+	Does cross validation and percentage analysis on the output files
+    """
     analyze_original()
     analyze_xval_percentage()
     analyze_xval() 
@@ -343,7 +371,6 @@ def analyze_xval_percentage():
 
 
 def analyze_original():
-    
     if not os.path.exists(output_scores_file):
 	raise Exception("Output score file does not exist!")
     f = open(log_file, "a")
@@ -352,7 +379,7 @@ def analyze_original():
 	f.write("---- %s:\n" % percentage)
 	f.write("%s\n" % output_scores_file)
 	f.write("%s\n" % str(analyze_results.calculate_seed_coverage_at_given_percentage(output_scores_file, node_scores_file, percentage, DEFAULT_NON_SEED_SCORE)))
-	if PPI == "biana":
+	if PPI.startswith("biana"):
 	    prepare_data.convert_file_using_new_id_mapping(output_scores_file, node_description_file, network_file_identifier_type, "geneid", output_scores_file+".geneid")
 	    prepare_data.convert_file_using_new_id_mapping(output_scores_file+".geneid", gene_info_file, "geneid", association_scores_file_identifier_type, output_scores_file+"."+association_scores_file_identifier_type)
 	else:
@@ -364,25 +391,23 @@ def analyze_original():
     return
 
 
-def create_biana_network():
+def create_biana_network_files(biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, network_file_filtered_by_reliability):
     # Create PPI network using BIANA
     if not (os.path.exists(biana_node_file_prefix+".tsv") and os.path.exists(biana_network_file_prefix+".sif")):
 	print "Creating BIANA Human interactome", biana_node_file_prefix+".tsv", biana_network_file_prefix+".sif"
 	prepare_data.create_human_interactome_using_biana(node_file_prefix = biana_node_file_prefix, network_files_prefix = biana_network_file_prefix, network_type="functional", load_from_saved_session=False) #"experimental")  
-
     # Filter by detection method (non-tap interactions)
     if not os.path.exists(biana_network_file_filtered_by_method): 
-	print "Creating method filtered files",  biana_network_file_prefix + ".sif", "->", biana_network_file_filtered_by_method
-	prepare_data.create_method_filtered_network_files(network_file_method_attribute = biana_network_file_method_attribute, network_file_method_filtered_prefix = biana_network_file_prefix)
+	print "Creating method filtered files", biana_network_file_prefix + ".sif", "->", biana_network_file_filtered_by_method
+	prepare_data.create_method_filtered_network_files(network_file_prefix = biana_network_file_prefix)
+    # Filter by reliability based on number of detection methods & sources & pubmeds 
+    if not os.path.exists(network_file_filtered_by_reliability): 
+	print "Creating reliability filtered files", biana_network_file_filtered_by_method, "->", network_file_filtered_by_reliability
+	prepare_data.create_edge_reliability_filtered_network_file(network_file = biana_network_file_filtered_by_method, network_file_prefix = biana_network_file_prefix, out_file = network_file_filtered_by_reliability)
     return
 
 
-def prepare_scoring_files_from_network_and_association_files(network_file, network_file_filtered, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, node_scores_file, edge_scores_file, sampled_file_prefix):
-    # Filter network by degree and get largest connected component
-    if not os.path.exists(network_file_filtered): 
-	print "Filtering by degree", network_file, "->", network_file_filtered
-	prepare_data.create_degree_filtered_network_file(network_file, network_file_filtered, ALLOWED_MAX_DEGREE)
-
+def prepare_scoring_files(network_file_filtered, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, node_scores_file, edge_scores_file, sampled_file_prefix):
     # Create node scores file and check how many of the seed genes we cover in the network
     if not os.path.exists(seed_scores_file): 
 	print "Creating seed scores file", seed_scores_file
@@ -408,19 +433,11 @@ def prepare_scoring_files_from_network_and_association_files(network_file, netwo
     if not os.path.exists(sampled_file_prefix + ".sif.1"): 
 	print "Creating sampled networks"
 	prepare_data.sample_network_preserving_topology(edge_scores_file, N_SAMPLE_GRAPH, sampled_file_prefix + ".sif.")
-    if not os.path.exists(reliability_filtered_edge_scores_file): 
-	print "Creating reliability filtered edge score files", reliability_filtered_edge_scores_file
-	prepare_data.create_edge_reliability_filtered_network_file(network_file = edge_scores_file, network_file_method_attribute = biana_network_file_method_attribute, network_file_source_attribute = biana_network_file_source_attribute, network_file_pubmed_attribute = biana_network_file_pubmed_attribute, out_file = reliability_filtered_edge_scores_file)
-    if not os.path.exists(reliability_filtered_sampled_file_prefix + ".sif.1"): 
-	print "Creating reliability filtered sampled networks"
-	prepare_data.sample_network_preserving_topology(reliability_filtered_edge_scores_file, N_SAMPLE_GRAPH, reliability_filtered_sampled_file_prefix + ".sif.")
     return
 
 
-def prepare_scoring_files():
-    prepare_scoring_files_from_network_and_association_files(network_file, network_file_filtered, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, node_scores_file, edge_scores_file, sampled_file_prefix)
-    return
-
+########################### Oldies & Goldies #########################
+######################################################################
 
 def old_score_xval_random():
     if not os.path.exists(output_scores_file+"random.1"):
