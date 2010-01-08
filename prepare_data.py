@@ -23,6 +23,8 @@ def get_node_to_score_from_node_scores_file(node_scores_file):
     nodes, set_dummy, node_to_score, dict_dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = node_scores_file, store_edge_type = False)
     return node_to_score
 
+def get_edge_to_score_from_sif_attribute_file(interaction_relevance_file):
+    return network_utilities.get_edge_values_from_sif_attribute_file(file_name = interaction_relevance_file, store_edge_type = False)
 
 def generate_cross_validation_edge_score_as_node_score_files(edges, seed_to_score, edge_scores_file, xval = 5, default_score = 0):
     seeds = seed_to_score.keys()
@@ -74,11 +76,18 @@ def sample_network_preserving_topology(network_sif_file, n_sample, output_prefix
     return
 
 
-def create_edge_scores_file(network_file, edge_scores_file):
+def create_edge_scores_file(network_file, edge_scores_file, edge_to_score = None, default_score=1):
     g = network_utilities.create_network_from_sif_file(network_file)
     f = open(edge_scores_file, 'w')
     for u,v in g.edges_iter():
-	f.write("%s %d %s\n" % (u, 1, v))
+	score = default_score
+	if edge_to_score.has_key((u,v)):
+	    score = edge_to_score[(u,v)]
+	elif edge_to_score.has_key((v,u)):
+	    score = edge_to_score[(v,u)]
+	#else:
+	#    print (u,v), 
+	f.write("%s %f %s\n" % (u, score, v))
     f.close()
     return
 
@@ -325,7 +334,7 @@ def create_human_interactome_using_biana(node_file_prefix="human_nodes", network
     relation_attributes=["pubmed", "method_id"]
     if network_type == "functional":
 	relation_type_list = ["functional_association"] 
-	relation_attributes.extend(["stringscore", "stringscore_neighborhood", "stringscore_fusion", "stringscore_cooccurence", "stringscore_experimental", "stringscore_db", "stringscore_textmining"])
+	relation_attributes.extend(["stringscore", "stringscore_neighborhood", "stringscore_fusion", "stringscore_cooccurence", "stringscore_coexpression", "stringscore_experimental", "stringscore_db", "stringscore_textmining"])
 	# Uncommet below for only relations from STRING with score > 700
 	#relation_attribute_restriction_list=[("stringscore",">700")]
     elif network_type == "experimental":

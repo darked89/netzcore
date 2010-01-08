@@ -28,7 +28,10 @@ def create_R_script(fileName, absolute_dir, title):
     f.write("v<-read.table(\"%spredictions.txt\")\n" % absolute_dir) 
     f.write("l<-read.table(\"%slabels.txt\")\n" % absolute_dir)
     f.write("pred<-prediction(v, l)\n")
+    #if image_type = "eps":
     f.write("postscript(\"%sperformance.eps\", width = 6, height = 6, horizontal = FALSE, onefile = FALSE, paper = \"special\", title = \"%s\")\n" % (absolute_dir, title))
+    #else:
+    #	f.write("bitmap(\"%sperformance.jpg\", res = 1200, height = 6, width = 6, type = \"jpeg\", horizontal = FALSE, onefile = FALSE, paper = \"special\", title = \"%s\")" % (absolute_dir, title)) 
     f.write("par(mfrow=c(2,2))\n")
     f.write("perfROC<-performance(pred, \"tpr\", \"fpr\")\n")
     f.write("plot(perfROC, lwd=2, col=2, xlab=\"False Positive Rate\", ylab=\"True Positive Rate\", main=\"ROC curve\", plotCI.col=2, avg=\"vertical\", spread.estimate=\"stddev\", show.spread.at=seq(0,1,by=0.20))\n")
@@ -80,7 +83,15 @@ def create_ROCR_files(list_node_scores_and_labels, file_predictions, file_labels
     return
 
 
-def get_validation_node_scores_and_labels(file_result, file_seed_test_scores, file_node_scores, n_random_negative_folds = 1, default_score = 0):
+def get_validation_node_scores_and_labels(file_result, file_seed_test_scores, file_node_scores, n_random_negative_folds = None, default_score = 0, replicable = True):
+    """
+	Returns a list of scores and labels [ ([0-1], [01]) ] for validation
+	file_result: File to parse output scores 
+	file_seed_test_scores: File to parse test seeds
+	file_node_scores: File to parse all non seeds
+	n_random_negative_folds: Number of non-seed scores to be averaged to be assigned as negative instance, If None calculated to cover as much as non-seed scores as possible
+	default_score: All nodes that have a higher score than this score in file_node_scores will be considered as seeds
+    """
     setNodeResult, setDummy, dictNodeResult, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_result, store_edge_type = False)
     setNodeTest, setDummy, dictNodeTest, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_seed_test_scores, store_edge_type = False)
     non_seeds = get_non_seeds_from_node_scores_file(file_node_scores, default_score = default_score)
@@ -89,7 +100,7 @@ def get_validation_node_scores_and_labels(file_result, file_seed_test_scores, fi
 
     n_actual_folds = 0
     negative_scores = [ 0 ] * len(setNodeTest)
-    for sample in generate_samples_from_list_without_replacement(non_seeds, len(setNodeTest), n_random_negative_folds, replicable=True):
+    for sample in generate_samples_from_list_without_replacement(non_seeds, len(setNodeTest), n_random_negative_folds, replicable = replicable):
 	for i, id in enumerate(sample):
 	    negative_scores[i] += dictNodeResult[id] 
 	n_actual_folds += 1
@@ -97,11 +108,18 @@ def get_validation_node_scores_and_labels(file_result, file_seed_test_scores, fi
     return node_validation_data
 
 
-def generate_samples_from_list_without_replacement(elements, sample_size, n_folds, replicable = False):
+def generate_samples_from_list_without_replacement(elements, sample_size, n_folds = None, replicable = False):
+    """
+	Iteratively returns (yields) n_folds sublists of elements with a size of sample_size 
+	n_folds: If None calculated to cover as much elements as possible
+	replicable: If True uses a pre-defined constant seed
+    """
     from random import shuffle, seed
     if replicable:
 	seed(123)
     shuffle(elements)
+    if n_folds is None:
+	n_folds = len(elements) / sample_size
     for i in range(n_folds):
 	if (i+1)*sample_size < len(elements):
 	    yield elements[i*sample_size:(i+1)*sample_size]
@@ -117,7 +135,7 @@ def get_non_seeds_from_node_scores_file(file_node_scores, default_score = 0):
     return non_seeds
 
 
-def calculate_performance_metric_counts(file_result, file_seed_test_scores, file_node_scores, score_threshold, n_random_negative_folds = 1, default_score = 0):
+def calculate_performance_metric_counts(file_result, file_seed_test_scores, file_node_scores, score_threshold, n_random_negative_folds = None, default_score = 0, replicable=True):
     """
 	Calculate and return TP, FP, TN, FN (FP and TN based on random selected non-seed nodes)
 	file_result: output scores file
@@ -139,7 +157,7 @@ def calculate_performance_metric_counts(file_result, file_seed_test_scores, file
                 nFN += 1
 
     n_actual_folds = 0
-    for sample in generate_samples_from_list_without_replacement(non_seeds, len(setNodeTest), n_random_negative_folds, replicable=True):
+    for sample in generate_samples_from_list_without_replacement(non_seeds, len(setNodeTest), n_random_negative_folds, replicable = replicable):
 	setNegative = set(sample)
 	n_actual_folds += 1
 	for id, score in dictNodeResult.iteritems():

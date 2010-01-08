@@ -21,16 +21,18 @@ only_print_command = False
 MODE = "all" # prepare, score, analyze
 
 #PPI = "biana" # using to see results of nw for biana_no_reliability
-PPI = "biana_no_reliability" 
+#PPI = "biana_no_reliability" 
 #PPI = "biana_reliability" 
-#PPI = "biana_no_tap_no_reliability" 
+PPI = "biana_no_tap_no_reliability" 
 #PPI = "biana_no_tap_reliability" 
 #PPI = "biana_no_tap_relevance" 
+#PPI = "biana_no_tap_corelevance" 
 #PPI = "biana_no_tap_reliability_relevance" 
 #PPI = "goh" 
 #PPI = "rhodes"
 
-ASSOCIATION = "aneurysm"
+#ASSOCIATION = "aneurysm"
+ASSOCIATION = "breast_cancer"
 #ASSOCIATION = "apoptosis"
 
 #SCORING = "ns" #"netscore"
@@ -47,11 +49,12 @@ SCORING = "nz" #"netzcore"
 N_REPETITION = 1
 N_ITERATION = 5
 
-DEFAULT_NON_SEED_SCORE = 0.01
-ALLOWED_MAX_DEGREE = 100000 #175 #90
-N_SAMPLE_GRAPH = 100
-N_X_VAL = 5
-N_RANDOM_NEGATIVE_FOLDS = 10
+DEFAULT_NON_SEED_SCORE = 0.01 # Default score for non-seed nodes
+ALLOWED_MAX_DEGREE = 100000 #175 #90 # Max degree allowed in the graph filtering
+N_SAMPLE_GRAPH = 100 # Number of random graphs to be generated
+N_X_VAL = 5 # Number of cross validation folds
+N_RANDOM_NEGATIVE_FOLDS = None #10 # Number of non-seed scores to be averaged for negative score calculation
+REPLICABLE = True #False # Assign a predefined seed in randomization for N_RANDOM_NEGATIVE_FOLD generation
 
 # Data directory of the project
 data_dir = ".." + os.sep + "data" + os.sep
@@ -70,11 +73,26 @@ rhodes_network_file_filtered_by_degree = rhodes_network_file[:-4] + "_degree_fil
 # Gene info file 
 gene_info_file = data_dir + "gene_info" + os.sep + "genes.tsv"
 
-# Disease association files
-association_dir = data_dir + "aneurist" + os.sep
-aneurysm_scores_file = association_dir + "aneurysm_associated_genes.txt"
-aneurysm_scores_all_equal_file = association_dir + "aneurysm_associated_genes_all_equal.txt"
-aneurysm_scores_validation_file = association_dir + "aneurysm_new_9.txt"
+# Disease association files (Association data to be used)
+association_scores_validation_file = None
+if ASSOCIATION == "aneurysm":
+    association_dir = data_dir + "aneurist" + os.sep
+    #aneurysm_scores_file = association_dir + "aneurysm_associated_genes.txt"
+    association_scores_file = association_dir + "aneurysm_associated_genes_all_equal.txt"
+    association_scores_file_identifier_type = "genesymbol"
+    association_scores_validation_file = association_dir + "aneurysm_new_9.txt" 
+elif ASSOCIATION == "breast_cancer":
+    association_dir = data_dir + "osiris" + os.sep
+    association_scores_file = association_dir + "breast_cancer_genes_all_equal.txt"
+    association_scores_file_identifier_type = "genesymbol"
+#elif ASSOCIATION == "apoptosis":
+#    association_dir = data_dir + "apoptosis" + os.sep
+#    association_scores_file = apoptosis_scores_all_equal_file
+#    association_scores_file_identifier_type = "uniprotaccession"
+else:
+    raise ValueError("Unrecognized association!")
+
+
 
 # Network specific
 
@@ -82,6 +100,7 @@ aneurysm_scores_validation_file = association_dir + "aneurysm_new_9.txt"
 if PPI.startswith("biana"):
     node_description_file = biana_node_file_prefix + ".tsv"
     network_file_identifier_type = "user entity id"
+    interaction_relevance_file = None
     if PPI == "biana_no_reliability":
 	biana_network_file_filtered_by_method = biana_network_file_prefix + ".sif"
 	biana_network_file_filtered_by_reliability = biana_network_file_filtered_by_method[:-4] + "_reliability_filtered.sif"
@@ -97,8 +116,15 @@ if PPI.startswith("biana"):
 	    network_file = biana_network_file_filtered_by_method # Using only non-tap interactions
 	elif PPI == "biana_no_tap_reliability":
 	    network_file = biana_network_file_filtered_by_reliability # Using reliability filtered non-tap interactions
-	#elif PPI == "biana_no_tap_relevance":
-	#elif PPI == "biana_no_tap_reliability_relevance":
+	elif PPI == "biana_no_tap_relevance":
+	    network_file = biana_network_file_filtered_by_method 
+	    interaction_relevance_file = biana_network_file_prefix + "_stringscore.eda"
+	elif PPI == "biana_no_tap_corelevance":
+	    network_file = biana_network_file_filtered_by_method 
+	    interaction_relevance_file = biana_network_file_prefix + "_stringscore_coexpression.eda"
+	elif PPI == "biana_no_tap_reliability_relevance":
+	    network_file = biana_network_file_filtered_by_reliability 
+	    interaction_relevance_file = biana_network_file_prefix + "_stringscore.eda"
 	else:
 	    raise ValueError("Unrecognized ppi!")
     else:
@@ -118,19 +144,6 @@ elif PPI == "rhodes":
     network_file_filtered = rhodes_network_file_filtered_by_degree 
 else:
     raise ValueError("Unrecognized ppi!")
-
-
-# Association data to be used
-association_scores_validation_file = None
-if ASSOCIATION == "aneurysm":
-    association_scores_file = aneurysm_scores_all_equal_file
-    association_scores_file_identifier_type = "genesymbol"
-    association_scores_validation_file = aneurysm_scores_validation_file 
-elif ASSOCIATION == "apoptosis":
-    association_scores_file = apoptosis_scores_all_equal_file
-    association_scores_file_identifier_type = "uniprotaccession"
-else:
-    raise ValueError("Unrecognized association!")
 
 
 # Human readable title for the run
@@ -313,11 +326,12 @@ def analyze_xval():
 	return
     list_node_scores_and_labels = []
     for k in range(1, N_X_VAL+1):
-	node_validation_data = analyze_results.get_validation_node_scores_and_labels(file_result = output_scores_file+".%d"%k, file_seed_test_scores = node_scores_file+".%d.test"%k, file_node_scores = node_scores_file, n_random_negative_folds = N_RANDOM_NEGATIVE_FOLDS, default_score = DEFAULT_NON_SEED_SCORE)
+	node_validation_data = analyze_results.get_validation_node_scores_and_labels(file_result = output_scores_file+".%d"%k, file_seed_test_scores = node_scores_file+".%d.test"%k, file_node_scores = node_scores_file, n_random_negative_folds = N_RANDOM_NEGATIVE_FOLDS, default_score = DEFAULT_NON_SEED_SCORE, replicable = REPLICABLE)
 	list_node_scores_and_labels.append(node_validation_data)
     analyze_results.create_ROCR_files(list_node_scores_and_labels, predictions_file, labels_file)
     analyze_results.create_R_script(r_script_file, output_dir, title) # os.path.basename(output_dir))
     os.system("R CMD BATCH %s" % (r_script_file))
+    os.system("convert %sperformance.eps %sperformance.jpg" % (output_dir, output_dir))
     analyze_results.create_tex_script(tex_script_file, output_dir, title)
 
     #for tScore in [ i*0.01 for i in xrange(0, 100, 5)]:
@@ -328,7 +342,7 @@ def analyze_xval():
 	nTP_sum, nFP_sum, nFN_sum, nTN_sum = 0.0, 0.0, 0.0, 0.0
 	for k in range(1, N_X_VAL+1):
 	    ##print output_scores_file+".ns.%d"%k, node_scores_file+".%d.test"%k 
-	    nTP, nFP, nFN, nTN = analyze_results.calculate_performance_metric_counts(file_result = output_scores_file+".%d" % k, file_seed_test_scores = node_scores_file+".%d.test"%k, file_node_scores = node_scores_file, score_threshold = tScore, n_random_negative_folds = N_RANDOM_NEGATIVE_FOLDS, default_score = DEFAULT_NON_SEED_SCORE)
+	    nTP, nFP, nFN, nTN = analyze_results.calculate_performance_metric_counts(file_result = output_scores_file+".%d" % k, file_seed_test_scores = node_scores_file+".%d.test"%k, file_node_scores = node_scores_file, score_threshold = tScore, n_random_negative_folds = N_RANDOM_NEGATIVE_FOLDS, default_score = DEFAULT_NON_SEED_SCORE, replicable = REPLICABLE)
 	    (acc, sens, spec, ppv) = analyze_results.calculatePerformance(nTP, nFP, nFN, nTN)
 	    ##print "A:", acc, "S:", sens, "P:", ppv
 	    nTP_sum += nTP
@@ -379,11 +393,12 @@ def analyze_original():
 	f.write("---- %s:\n" % percentage)
 	f.write("%s\n" % output_scores_file)
 	f.write("%s\n" % str(analyze_results.calculate_seed_coverage_at_given_percentage(output_scores_file, node_scores_file, percentage, DEFAULT_NON_SEED_SCORE)))
-	if PPI.startswith("biana"):
-	    prepare_data.convert_file_using_new_id_mapping(output_scores_file, node_description_file, network_file_identifier_type, "geneid", output_scores_file+".geneid")
-	    prepare_data.convert_file_using_new_id_mapping(output_scores_file+".geneid", gene_info_file, "geneid", association_scores_file_identifier_type, output_scores_file+"."+association_scores_file_identifier_type)
-	else:
-	    prepare_data.convert_file_using_new_id_mapping(output_scores_file, node_description_file, network_file_identifier_type, association_scores_file_identifier_type, output_scores_file+"."+association_scores_file_identifier_type)
+	if not os.path.exists(output_scores_file+"."+association_scores_file_identifier_type):
+	    if PPI.startswith("biana"):
+		prepare_data.convert_file_using_new_id_mapping(output_scores_file, node_description_file, network_file_identifier_type, "geneid", output_scores_file+".geneid")
+		prepare_data.convert_file_using_new_id_mapping(output_scores_file+".geneid", gene_info_file, "geneid", association_scores_file_identifier_type, output_scores_file+"."+association_scores_file_identifier_type)
+	    else:
+		prepare_data.convert_file_using_new_id_mapping(output_scores_file, node_description_file, network_file_identifier_type, association_scores_file_identifier_type, output_scores_file+"."+association_scores_file_identifier_type)
 	if association_scores_validation_file is not None:
 	    f.write("Validation seed coverage:")
 	    f.write("%s\n" % str(analyze_results.calculate_seed_coverage_at_given_percentage(output_scores_file+"."+association_scores_file_identifier_type, association_scores_validation_file, percentage, DEFAULT_NON_SEED_SCORE)))
@@ -409,12 +424,14 @@ def create_biana_network_files(biana_node_file_prefix, biana_network_file_prefix
 
 def prepare_scoring_files(network_file_filtered, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, node_scores_file, edge_scores_file, sampled_file_prefix):
     # Create node scores file and check how many of the seed genes we cover in the network
+    # Create seed scores file from association score to seed node mapping
     if not os.path.exists(seed_scores_file): 
 	print "Creating seed scores file", seed_scores_file
-	nodes = prepare_data.get_nodes_in_network(network_file = network_file_filtered)
+	#nodes = prepare_data.get_nodes_in_network(network_file = network_file_filtered)
 	seed_to_score = prepare_data.get_node_association_score_mapping(network_file = network_file_filtered, network_file_identifier_type = network_file_identifier_type, node_description_file = node_description_file, association_scores_file = association_scores_file, association_scores_file_identifier_type = association_scores_file_identifier_type, log_file = input_log_file)
 	seeds = seed_to_score.keys()
 	prepare_data.create_node_scores_file(nodes = seeds, node_to_score = seed_to_score, node_scores_file = seed_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
+    # Create node scores (original + xval) files using previously created seed score file (all non-seeds will have DEFAULT_NON_SEED_SCORE)
     if not os.path.exists(node_scores_file): 
 	print "Creating node score files", node_scores_file
 	nodes = prepare_data.get_nodes_in_network(network_file = network_file_filtered)
@@ -422,14 +439,22 @@ def prepare_scoring_files(network_file_filtered, network_file_identifier_type, n
 	#prepare_data.create_node_scores_file(network_file = network_file_filtered, network_file_identifier_type = network_file_identifier_type, node_description_file = node_description_file, association_scores_file = association_scores_file, association_scores_file_identifier_type = association_scores_file_identifier_type, node_scores_file = node_scores_file, ignored_seed_nodes = None, default_non_seed_score = DEFAULT_NON_SEED_SCORE)
 	prepare_data.create_node_scores_file(nodes = nodes, node_to_score = seed_to_score, node_scores_file = node_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
 	prepare_data.generate_cross_validation_node_score_files(nodes = nodes, seed_to_score = seed_to_score, node_scores_file = node_scores_file, xval = N_X_VAL, default_score = DEFAULT_NON_SEED_SCORE)
+    # Create edge scores (original + xval) files as well as node scores as edge scores files
     if not os.path.exists(edge_scores_file): 
 	print "Creating edge score files", edge_scores_file
-	prepare_data.create_edge_scores_file(network_file = network_file_filtered, edge_scores_file = edge_scores_file)
-	#prepare_data.old_create_edge_scores_as_node_scores_file(network_file = network_file_filtered, edge_scores_file = edge_scores_as_node_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
 	edges = prepare_data.get_edges_in_network(network_file = network_file_filtered)
+	if interaction_relevance_file is not None:
+	    edge_to_score = prepare_data.get_edge_to_score_from_sif_attribute_file(interaction_relevance_file)
+	    # Normalizing string score (0.001 is added to avoid 0 score edges)
+	    edge_to_score = dict([(e, (sum([float(i) for i in v])/len(v))/1000 + 0.001) for e,v in edge_to_score.iteritems()])
+	else:
+	    edge_to_score = dict([(e, 1) for e in edges])
+	prepare_data.create_edge_scores_file(network_file = network_file_filtered, edge_scores_file = edge_scores_file, edge_to_score = edge_to_score, default_score=DEFAULT_NON_SEED_SCORE)
+	#prepare_data.old_create_edge_scores_as_node_scores_file(network_file = network_file_filtered, edge_scores_file = edge_scores_as_node_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
 	seed_to_score = prepare_data.get_node_to_score_from_node_scores_file(seed_scores_file)
 	prepare_data.create_edge_scores_as_node_scores_file(edges = edges, node_to_score = seed_to_score, edge_scores_file = edge_scores_as_node_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
 	prepare_data.generate_cross_validation_edge_score_as_node_score_files(edges = edges, seed_to_score = seed_to_score, edge_scores_file = edge_scores_as_node_scores_file, xval = N_X_VAL, default_score = DEFAULT_NON_SEED_SCORE)
+    # Create random network files
     if not os.path.exists(sampled_file_prefix + ".sif.1"): 
 	print "Creating sampled networks"
 	prepare_data.sample_network_preserving_topology(edge_scores_file, N_SAMPLE_GRAPH, sampled_file_prefix + ".sif.")

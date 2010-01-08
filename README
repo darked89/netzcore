@@ -1,15 +1,33 @@
 
 TODO:
 
-- shortest path network inclusion count method implementation
+- document all
 
-- filter networks with reliability scores (using edge attributes: pubmed, method, string coexpression/colocalization, jaccard, clustering coefficient)
+- check how seeds are connected with each other (linker degree distribution of seeds)
 
-- add edge relevance to networks with co-expression data from tissue info, (? localization data from locate)
+- modify netzcore for consequitive runs?
+
+- filtering by localization (localization data from locate) (files from uri)
+
+- breast cancer gene data from Osrisv2
+
+- check performance on random seed assignment 
+
+- ppi network from jonsson 
+
+- cancer data from futreal
 
 - runs for possibly AES and then possibly Hefalmp & OMIM data
 
-- document all
+- GO analysis on the high scoring nodes
+
+- revert fflow to its original version
+
+- check shortest path network inclusion count method implementation (check scores w/ original data)
+
+- check netrank without initial scores
+
+- incorporating additional info (active subnetwork discovery, structural info, etc)
 
 - ml predictions based on feature described network
 
@@ -71,6 +89,13 @@ NOTES:
 - nz sucks when self score is assigned in case of 0 division (due to 0 variance), changed to assign inf/-inf. z-scoring in netzcore is contraversial, since it compares scores coming from different distributions (local neighborhood for each node), now assigning scores based on global distribution of neighboring scores.
 
 - runs on 3 ppi with aneurysm data for preliminary analysis of programs & parameters
+
+- Using random subsets of non-seed nodes to get negative score values (for calculating FP/TN). Was using subsets of 10 non-seeds, consequitive runs vary largely, now sampling usibng all non-seeds (N_nonseed / N_seed non_seeds are averaged for each non-negative fold)
+
+- filtered networks with reliability scores (detection method + pubmed > 2) (can also use edge other attributes: pubmed, method, string coexpression/colocalization, jaccard, clustering coefficient)
+
+- edge relevance scores coming from string (all vs only co-expression) (more data from tissue info can be used)
+
 
 aneurysim
 
