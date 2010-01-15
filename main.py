@@ -20,19 +20,27 @@ only_print_command = False
 # Scoring related parameters 
 MODE = "all" # prepare, score, analyze
 
-#PPI = "biana" # using to see results of nw for biana_no_reliability
-#PPI = "biana_no_reliability" 
-#PPI = "biana_reliability" 
-PPI = "biana_no_tap_no_reliability" 
-#PPI = "biana_no_tap_reliability" 
-#PPI = "biana_no_tap_relevance" 
-#PPI = "biana_no_tap_corelevance" 
-#PPI = "biana_no_tap_reliability_relevance" 
+#PPI = "biana" # biana output network as it is (do not forget to revert _degree_filtered.sif.original to _degree_filtered.sif, this one is _degree_filtere_disconnected_only.sif)
+#PPI = "biana_no_reliability" # only largest connected component (lcc)
+#PPI = "biana_reliability" # reliability filtered lcc
+PPI = "biana_no_tap_no_reliability" # tap filtered lcc
+#PPI = "biana_no_tap_no_reliability_1e-5" # tap filtered lcc with non seed scores of 1e-5
+#PPI = "biana_no_tap_reliability" # tap & reliability filtered lcc
+#PPI = "biana_no_tap_relevance" # tap filtered & string edge score assigned lcc
+#PPI = "biana_no_tap_exp_db_relevance" tap filtered & string exp & db edge score assigned lcc
+#PPI = "biana_no_tap_corelevance" # tap filtered & string co-exp score assigned lcc
+#PPI = "biana_no_tap_reliability_relevance" # tap & reliability filtered & string edge score assigned lcc
 #PPI = "goh" 
 #PPI = "rhodes"
+#PPI = "ori_coexpression_1e-2"
+#PPI = "ori_network" # these are all in 1e-5
+#PPI = "ori_coexpression" 
+#PPI = "ori_coexpression_colocalization"
+#PPI = "ori_colocalization"
+#PPI = "ori_coexpression_colocalization_1e-2"
 
-#ASSOCIATION = "aneurysm"
-ASSOCIATION = "breast_cancer"
+ASSOCIATION = "aneurysm"
+#ASSOCIATION = "breast_cancer"
 #ASSOCIATION = "apoptosis"
 
 #SCORING = "ns" #"netscore"
@@ -93,15 +101,18 @@ else:
     raise ValueError("Unrecognized association!")
 
 
-
 # Network specific
-
+interaction_relevance_file = None
+interaction_relevance_file2 = None
 # BIANA ppi
 if PPI.startswith("biana"):
     node_description_file = biana_node_file_prefix + ".tsv"
     network_file_identifier_type = "user entity id"
-    interaction_relevance_file = None
-    if PPI == "biana_no_reliability":
+    if PPI == "biana":
+	biana_network_file_filtered_by_method = biana_network_file_prefix + ".sif"
+	biana_network_file_filtered_by_reliability = biana_network_file_filtered_by_method[:-4] + "_reliability_filtered.sif"
+	network_file = biana_network_file_filtered_by_method 
+    elif PPI == "biana_no_reliability":
 	biana_network_file_filtered_by_method = biana_network_file_prefix + ".sif"
 	biana_network_file_filtered_by_reliability = biana_network_file_filtered_by_method[:-4] + "_reliability_filtered.sif"
 	network_file = biana_network_file_filtered_by_method  
@@ -114,11 +125,18 @@ if PPI.startswith("biana"):
 	biana_network_file_filtered_by_reliability = biana_network_file_filtered_by_method[:-4] + "_reliability_filtered.sif"
 	if PPI == "biana_no_tap_no_reliability":
 	    network_file = biana_network_file_filtered_by_method # Using only non-tap interactions
+	elif PPI == "biana_no_tap_no_reliability_1e-5":
+	    network_file = biana_network_file_filtered_by_method # Using only non-tap interactions
+	    DEFAULT_NON_SEED_SCORE = 0.00001 
 	elif PPI == "biana_no_tap_reliability":
 	    network_file = biana_network_file_filtered_by_reliability # Using reliability filtered non-tap interactions
 	elif PPI == "biana_no_tap_relevance":
 	    network_file = biana_network_file_filtered_by_method 
 	    interaction_relevance_file = biana_network_file_prefix + "_stringscore.eda"
+	elif PPI == "biana_no_tap_exp_db_relevance":
+	    network_file = biana_network_file_filtered_by_method 
+	    interaction_relevance_file = biana_network_file_prefix + "_stringscore_experimental.eda"
+	    interaction_relevance_file2 = biana_network_file_prefix + "_stringscore_db.eda"
 	elif PPI == "biana_no_tap_corelevance":
 	    network_file = biana_network_file_filtered_by_method 
 	    interaction_relevance_file = biana_network_file_prefix + "_stringscore_coexpression.eda"
@@ -142,6 +160,50 @@ elif PPI == "rhodes":
     network_file_identifier_type = "geneid"
     network_file = rhodes_network_file
     network_file_filtered = rhodes_network_file_filtered_by_degree 
+elif PPI.startswith("ori"):
+    network_base_dir = data_dir + "human_interactome_ori" + os.sep
+    node_description_file = biana_node_file_prefix + ".tsv"
+    network_file_identifier_type = "user entity id"
+    if PPI == "ori_network":
+	network_dir = network_base_dir + "network" + os.sep
+	node_file = network_dir + "aneurist.noa"
+	network_file = network_dir + "aneurist.sif"
+	network_file_filtered = network_file
+	interaction_relevance_file = network_dir + "aneurist.eda"
+	DEFAULT_NON_SEED_SCORE = 0.00001 
+    elif PPI == "ori_coexpression_1e-2":
+	network_dir = network_base_dir + "coexpression" + os.sep
+	node_file = network_dir + "aneurist.noa"
+	network_file = network_dir + "aneurist.sif"
+	network_file_filtered = network_file
+	interaction_relevance_file = network_dir + "aneurist.eda"
+    elif PPI == "ori_coexpression":
+	network_dir = network_base_dir + "coexpression" + os.sep
+	node_file = network_dir + "aneurist.noa"
+	network_file = network_dir + "aneurist.sif"
+	network_file_filtered = network_file
+	interaction_relevance_file = network_dir + "aneurist.eda"
+	DEFAULT_NON_SEED_SCORE = 0.00001 
+    elif PPI == "ori_coexpression_colocalization_1e-2":
+	network_dir = network_base_dir + "coexpression_colocalization" + os.sep
+	node_file = network_dir + "aneurist.noa"
+	network_file = network_dir + "aneurist.sif"
+	network_file_filtered = network_file
+	interaction_relevance_file = network_dir + "aneurist.eda"
+    elif PPI == "ori_coexpression_colocalization":
+	network_dir = network_base_dir + "coexpression_colocalization" + os.sep
+	node_file = network_dir + "aneurist.noa"
+	network_file = network_dir + "aneurist.sif"
+	network_file_filtered = network_file
+	interaction_relevance_file = network_dir + "aneurist.eda"
+	DEFAULT_NON_SEED_SCORE = 0.00001 
+    elif PPI == "ori_colocalization":
+	network_dir = network_base_dir + "colocalization" + os.sep
+	node_file = network_dir + "aneurist.noa"
+	network_file = network_dir + "aneurist.sif"
+	network_file_filtered = network_file
+	interaction_relevance_file = network_dir + "aneurist.eda"
+	DEFAULT_NON_SEED_SCORE = 0.00001 
 else:
     raise ValueError("Unrecognized ppi!")
 
@@ -264,10 +326,23 @@ def prepare():
     # Filter network by degree and get largest connected component
     if not os.path.exists(network_file_filtered): 
 	print "Filtering by degree", network_file, "->", network_file_filtered
+	prepare_data.analyze_network(network_file)
 	prepare_data.create_degree_filtered_network_file(network_file, network_file_filtered, ALLOWED_MAX_DEGREE)
+    prepare_data.analyze_network(network_file_filtered, out_file = input_log_file)
+
+    # Get node to association mapping
+    if PPI.startswith("ori"):
+	os.system("awk '{ if($2 == 1) print $1, $2}' %s > %s" % (node_file, seed_scores_file))
+
+    seed_to_score = None
+    if not os.path.exists(seed_scores_file): 
+	seed_to_score = prepare_data.get_node_association_score_mapping(network_file = network_file_filtered, network_file_identifier_type = network_file_identifier_type, node_description_file = node_description_file, association_scores_file = association_scores_file, association_scores_file_identifier_type = association_scores_file_identifier_type, log_file = input_log_file)
+	# Create initial data analysis file
+	#if not os.path.exists(input_dir + "analyze_network.r"):
+	prepare_data.create_R_analyze_network_script(network_file_filtered, seeds=seed_to_score.keys(), out_path=input_dir, title = PPI + "_" + ASSOCIATION)
 
     # Prepare scoring files
-    prepare_scoring_files(network_file_filtered, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, node_scores_file, edge_scores_file, sampled_file_prefix)
+    prepare_scoring_files(network_file_filtered, seed_to_score, node_scores_file, edge_scores_file, sampled_file_prefix)
     return
 
 
@@ -397,11 +472,16 @@ def analyze_original():
 	    if PPI.startswith("biana"):
 		prepare_data.convert_file_using_new_id_mapping(output_scores_file, node_description_file, network_file_identifier_type, "geneid", output_scores_file+".geneid")
 		prepare_data.convert_file_using_new_id_mapping(output_scores_file+".geneid", gene_info_file, "geneid", association_scores_file_identifier_type, output_scores_file+"."+association_scores_file_identifier_type)
+	    elif PPI.startswith("ori"):
+		pass
 	    else:
 		prepare_data.convert_file_using_new_id_mapping(output_scores_file, node_description_file, network_file_identifier_type, association_scores_file_identifier_type, output_scores_file+"."+association_scores_file_identifier_type)
 	if association_scores_validation_file is not None:
 	    f.write("Validation seed coverage:")
-	    f.write("%s\n" % str(analyze_results.calculate_seed_coverage_at_given_percentage(output_scores_file+"."+association_scores_file_identifier_type, association_scores_validation_file, percentage, DEFAULT_NON_SEED_SCORE)))
+	    if PPI.startswith("ori"):
+		pass
+	    else:
+		f.write("%s\n" % str(analyze_results.calculate_seed_coverage_at_given_percentage(output_scores_file+"."+association_scores_file_identifier_type, association_scores_validation_file, percentage, DEFAULT_NON_SEED_SCORE)))
     f.close()
     return
 
@@ -422,13 +502,11 @@ def create_biana_network_files(biana_node_file_prefix, biana_network_file_prefix
     return
 
 
-def prepare_scoring_files(network_file_filtered, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, node_scores_file, edge_scores_file, sampled_file_prefix):
+def prepare_scoring_files(network_file_filtered, seed_to_score, node_scores_file, edge_scores_file, sampled_file_prefix):
     # Create node scores file and check how many of the seed genes we cover in the network
     # Create seed scores file from association score to seed node mapping
     if not os.path.exists(seed_scores_file): 
 	print "Creating seed scores file", seed_scores_file
-	#nodes = prepare_data.get_nodes_in_network(network_file = network_file_filtered)
-	seed_to_score = prepare_data.get_node_association_score_mapping(network_file = network_file_filtered, network_file_identifier_type = network_file_identifier_type, node_description_file = node_description_file, association_scores_file = association_scores_file, association_scores_file_identifier_type = association_scores_file_identifier_type, log_file = input_log_file)
 	seeds = seed_to_score.keys()
 	prepare_data.create_node_scores_file(nodes = seeds, node_to_score = seed_to_score, node_scores_file = seed_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
     # Create node scores (original + xval) files using previously created seed score file (all non-seeds will have DEFAULT_NON_SEED_SCORE)
@@ -436,14 +514,19 @@ def prepare_scoring_files(network_file_filtered, network_file_identifier_type, n
 	print "Creating node score files", node_scores_file
 	nodes = prepare_data.get_nodes_in_network(network_file = network_file_filtered)
 	seed_to_score = prepare_data.get_node_to_score_from_node_scores_file(seed_scores_file)
-	#prepare_data.create_node_scores_file(network_file = network_file_filtered, network_file_identifier_type = network_file_identifier_type, node_description_file = node_description_file, association_scores_file = association_scores_file, association_scores_file_identifier_type = association_scores_file_identifier_type, node_scores_file = node_scores_file, ignored_seed_nodes = None, default_non_seed_score = DEFAULT_NON_SEED_SCORE)
 	prepare_data.create_node_scores_file(nodes = nodes, node_to_score = seed_to_score, node_scores_file = node_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
 	prepare_data.generate_cross_validation_node_score_files(nodes = nodes, seed_to_score = seed_to_score, node_scores_file = node_scores_file, xval = N_X_VAL, default_score = DEFAULT_NON_SEED_SCORE)
     # Create edge scores (original + xval) files as well as node scores as edge scores files
     if not os.path.exists(edge_scores_file): 
 	print "Creating edge score files", edge_scores_file
 	edges = prepare_data.get_edges_in_network(network_file = network_file_filtered)
-	if interaction_relevance_file is not None:
+	if all([interaction_relevance_file, interaction_relevance_file2]):
+	    edge_to_score = prepare_data.get_edge_to_score_from_sif_attribute_file(interaction_relevance_file)
+	    edge_to_score = dict([(e, (sum([float(i) for i in v])/len(v))/1000 + 0.001) for e,v in edge_to_score.iteritems()])
+	    edge_to_score2 = prepare_data.get_edge_to_score_from_sif_attribute_file(interaction_relevance_file2)
+	    edge_to_score2 = dict([(e, (sum([float(i) for i in v])/len(v))/1000) for e,v in edge_to_score2.iteritems()])
+	    edge_to_score = dict([(e, v+edge_to_score2[e]) for e,v in edge_to_score.iteritems()])
+	elif interaction_relevance_file is not None:
 	    edge_to_score = prepare_data.get_edge_to_score_from_sif_attribute_file(interaction_relevance_file)
 	    # Normalizing string score (0.001 is added to avoid 0 score edges)
 	    edge_to_score = dict([(e, (sum([float(i) for i in v])/len(v))/1000 + 0.001) for e,v in edge_to_score.iteritems()])

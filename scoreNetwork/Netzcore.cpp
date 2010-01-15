@@ -129,7 +129,11 @@ void Netzcore::initializeIteration()
 		if(flagVerbose)
 		    std::cout << "--Score of random neighbor " << pG->getVertexName(*vt) << ": " << tempScore << std::endl; 
 	    }
-	    tempScore = sumScore / i;
+	    if(i == 0) { // Disconnected node 
+		tempScore = sumScore;
+	    } else {
+		tempScore = sumScore / i;
+	    }
 	    if(flagVerbose)
 		std::cout << "-Average score of random neighbors " << tempScore << std::endl; 
 	    scores.push_back(tempScore);
@@ -206,7 +210,11 @@ void Netzcore::updateNodeScore(Vertex v)
 	if(flagVerbose)
 	    std::cout << "--Score of neighbor " << getNetwork().getVertexName(*vt) << ": " << tempScore << std::endl; 
     }
-    tempScore = sumScore / i;
+    if(i == 0) { // Disconnected node 
+	tempScore = sumScore;
+    } else {
+	tempScore = sumScore / i;
+    }
     if(flagVerbose)
 	std::cout << "-Average score of neighbors " << tempScore << std::endl; 
     //std::cout << "s: " << tempScore << " m: " << tempPair.first << " sig: " << tempPair.second << std::endl;

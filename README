@@ -1,25 +1,26 @@
 
 TODO:
 
-- document all
-
 - check how seeds are connected with each other (linker degree distribution of seeds)
 
-- modify netzcore for consequitive runs?
+- linker degree / majority voting (1,2,3 as well as %10 %25 %50) performance 
 
-- filtering by localization (localization data from locate) (files from uri)
+- comparison with other methods in the literature (with their data)
+    - FunctionalFlow functional annotation (use scoreN with acc to initial scores option)
+    - MetaCore topological score using shortest paths on psoriasis data
+    - InfoFlow, lethality data on S. cervaise
 
-- breast cancer gene data from Osrisv2
+- aneurysm & breast cancer gene data from Osrisv2
 
-- check performance on random seed assignment 
+- disease data from goh
 
 - ppi network from jonsson 
 
 - cancer data from futreal
 
-- runs for possibly AES and then possibly Hefalmp & OMIM data
+- runs for possibly AES 
 
-- GO analysis on the high scoring nodes
+- check netscore i6 (for performace similarity to r2i3) on gaudi
 
 - revert fflow to its original version
 
@@ -27,14 +28,33 @@ TODO:
 
 - check netrank without initial scores
 
+- modify netzcore for consequitive runs
+
+- comparison of net* methods within pathologies on the effect of scoring & on the effect of different networks
+
+- comparison of fflow with netzcore (with accumulateToInitialScores option)
+
+- comparison of co-expression for correlation
+    - Gemma
+    - coexp network from stuart03
+    - coexp network from 
+    - from tissueinfo or p-values from HEFalMp with scores
+
+- runs for possibly Hefalmp & OMIM data
+
+- comparison of ppis from different species
+
+- GO analysis on the high scoring nodes
+
+- check performance on random seed assignment 
+
+- document all
+
+- filtering by localization (localization data from locate) (files from uri)
+
 - incorporating additional info (active subnetwork discovery, structural info, etc)
 
 - ml predictions based on feature described network
-
-- comparison with other methods in the literature
-    - FunctionalFlow
-    - MetaCore topological score using shortest paths on psoriasis data
-    - InfoFlow, lethality data on S. cervaise
 
 
 NOTES:
@@ -94,8 +114,13 @@ NOTES:
 
 - filtered networks with reliability scores (detection method + pubmed > 2) (can also use edge other attributes: pubmed, method, string coexpression/colocalization, jaccard, clustering coefficient)
 
-- edge relevance scores coming from string (all vs only co-expression) (more data from tissue info can be used)
+- edge relevance scores coming from string (all vs only co-expression vs exp and db) (more data from tissue info / HEFalMp?) seem to not to improve performance
 
+- using 0.00001 vs 0.01 as default non seed score reduced nz i5 performance on no_tap lcc by 4,5%
+
+- performance with all initial network (not the largest connected component) is ~10% better than lcc ?-> small cc of 6,5,4,3,2 has quite good performances (e.g. all of these proteins in these cc's are associated - need to check)
+
+- checked performance of ori's networks using gaudi: no significan difference using only network / network with coexp / network with coloc but 5% increase when using coexp + coloc also checked 1e-2 vs 1e-5 which yields only about 1% difference.
 
 aneurysim
 

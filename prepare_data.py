@@ -18,6 +18,9 @@ def get_edges_in_network(network_file):
     g = network_utilities.create_network_from_sif_file(network_file)
     return g.edges()
 
+#def get_degrees(network_file):
+#    g = network_utilities.create_network_from_sif_file(network_file)
+#    return g.degree()
 
 def get_node_to_score_from_node_scores_file(node_scores_file):
     nodes, set_dummy, node_to_score, dict_dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = node_scores_file, store_edge_type = False)
@@ -242,16 +245,26 @@ def get_node_association_score_mapping(network_file, network_file_identifier_typ
     return node_to_score
 
 
+def analyze_network(network_file, out_file = None):
+    g = network_utilities.create_network_from_sif_file(network_file, use_edge_data = False)
+    network_utilities.analyze_network(g, out_file = out_file)
+    return
+
+def create_R_analyze_network_script(network_file, seeds=None, out_path="./", title = ""):
+    g = network_utilities.create_network_from_sif_file(network_file, use_edge_data = False)
+    network_utilities.create_R_analyze_network_script(g, seeds, out_path, title)
+    return
+
 def create_degree_filtered_network_file(network_file, network_file_filtered, degree):
     """
 	Creates a network file removing nodes that has connections more than given degree
     """
     # Load network
     g = network_utilities.create_network_from_sif_file(network_file, use_edge_data = True)
-    network_utilities.analyze_network(g)
+    #network_utilities.analyze_network(g)
     g = network_utilities.filter_network(g = g, degree_threshold = degree, largest_connected_component=True) 
     # Get degrees of highly connected nodes
-    network_utilities.analyze_network(g)
+    #network_utilities.analyze_network(g)
     network_utilities.output_network_in_sif(g, network_file_filtered)
     return
 
