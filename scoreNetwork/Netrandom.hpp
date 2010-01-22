@@ -9,7 +9,7 @@ private:
     Graph network;
     
     std::string outputFile;
-    bool flagAccumulateToInitialNodeScore; // if true, accumulated shortest path score is added to node score
+    bool flagAccumulateToInitialNodeScore; // if true, random score is to node score
 
 public:
     Netrandom(); 

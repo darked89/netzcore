@@ -1,14 +1,24 @@
 
 TODO:
 
-- check how seeds are connected with each other (linker degree distribution of seeds)
+- check the reason for performance difference between biana_no_top_no_reliability (even when the last modifications taken back)
+
+- modify netzcore, netscore, netlink to adjust self edges and check performance change -> netzcore for biana no tap no reliability has 10% performance loss
+
+- adding confidence interval, fscore and/or harmonic mean of sens spec to analyze_results.r script
 
 - linker degree / majority voting (1,2,3 as well as %10 %25 %50) performance 
+
+- check performance when no random non-seed selection is applied 
+
+- check performance in leave-one-out xval (check first if scripts are capable of loo)
 
 - comparison with other methods in the literature (with their data)
     - FunctionalFlow functional annotation (use scoreN with acc to initial scores option)
     - MetaCore topological score using shortest paths on psoriasis data
     - InfoFlow, lethality data on S. cervaise
+
+- ml predictions based on feature described network (need to use the same training & test sets)
 
 - aneurysm & breast cancer gene data from Osrisv2
 
@@ -53,8 +63,6 @@ TODO:
 - filtering by localization (localization data from locate) (files from uri)
 
 - incorporating additional info (active subnetwork discovery, structural info, etc)
-
-- ml predictions based on feature described network
 
 
 NOTES:
@@ -121,6 +129,9 @@ NOTES:
 - performance with all initial network (not the largest connected component) is ~10% better than lcc ?-> small cc of 6,5,4,3,2 has quite good performances (e.g. all of these proteins in these cc's are associated - need to check)
 
 - checked performance of ori's networks using gaudi: no significan difference using only network / network with coexp / network with coloc but 5% increase when using coexp + coloc also checked 1e-2 vs 1e-5 which yields only about 1% difference.
+
+- checked how seeds are connected with each other (linker degree distribution and ratios of seeds), (see anaylze_network.r generated graphs) for biana_no_tap_no_reliability (ld>10/11 and rld2 > 60/65 % seems well seperator for some of the seeds
+
 
 aneurysim
 

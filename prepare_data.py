@@ -250,10 +250,19 @@ def analyze_network(network_file, out_file = None):
     network_utilities.analyze_network(g, out_file = out_file)
     return
 
+
 def create_R_analyze_network_script(network_file, seeds=None, out_path="./", title = ""):
     g = network_utilities.create_network_from_sif_file(network_file, use_edge_data = False)
     network_utilities.create_R_analyze_network_script(g, seeds, out_path, title)
+    network_utilities.create_R_analyze_network_script(g, seeds, out_path, title, scale_by_log=True)
     return
+
+
+def create_ARFF_network_metrics_file(network_file, node_to_score, seeds, arff_file_name):
+    g = network_utilities.create_network_from_sif_file(network_file, use_edge_data = False)
+    network_utilities.create_ARFF_network_metrics_file(g, node_to_score, seeds, arff_file_name)
+    return
+
 
 def create_degree_filtered_network_file(network_file, network_file_filtered, degree):
     """

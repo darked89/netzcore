@@ -7,6 +7,7 @@
 #include "Netrandom.hpp"
 #include "Netzscore.hpp"
 #include "Netween.hpp"
+#include "Netlink.hpp"
 
 #include <iostream>
 #include <ctime>
@@ -22,21 +23,23 @@ void runNetrandom(string, string, string );
 void runNetzscore(string fileNode, string fileEdge, string fileOutput, string prefixSampledGraphs, unsigned int nSampled, unsigned int nRepetition, unsigned int nIteration); 
 void runNetz1score(string fileNode, string fileEdge, string fileOutput, string prefixSampledGraphs, unsigned int nSampled, unsigned int nRepetition, unsigned int nIteration); 
 void runNetween(string fileNode, string fileEdge, string fileOutput);
+void runNetlink(string fileNode, string fileEdge, string fileOutput, float threshold);
 
 void printHelp() {
-    cout << "-n <node_file> -e <edge_file> -s <scoring_method>{NETSHORT:d|NETSCORE:s|NETRANK:r|NETZCORE:z|NETRANDOM:x|NETZSCORE:h|NETZ1SCORE:1|NETWEEN:w}" << 
+    cout << "-n <node_file> -e <edge_file> -s <scoring_method>{NETSHORT:d|NETSCORE:s|NETRANK:r|NETZCORE:z|NETRANDOM:x|NETZSCORE:h|NETZ1SCORE:1|NETWEEN:w|NETLINK:l}" << 
     " -i <number_of_iteration> -o <output_file> -r <number_of_repetition> -x <number_of_sampled_graphs>" <<
     " -d <sampling_graph_directory> " << endl;
 }
 
 int main(int argc, char **argv)
 {
-    static const char *optString = "n:e:i:s:o:r:x:d:h?";
+    static const char *optString = "n:e:i:s:o:r:x:d:t:h?";
     int opt = 0;
     string fileNode, fileEdge, fileOutput, dirSampling;
-    enum ScoringMethod { NETSHORT = 'd', NETSCORE = 's', NETRANK = 'r', NETZCORE = 'z', NETRANDOM = 'x', NETZSCORE = 'h', NETZ1SCORE = '1', NETWEEN = 'w' };
+    enum ScoringMethod { NETSHORT = 'd', NETSCORE = 's', NETRANK = 'r', NETZCORE = 'z', NETRANDOM = 'x', NETZSCORE = 'h', NETZ1SCORE = '1', NETWEEN = 'w', NETLINK = 'l' };
     unsigned int nIteration = 1, nRepetition = 1, nSampled = 0;  
     char scoring = 's';
+    float threshold = 0.0;
 
     if(argc < 3) {
 	printHelp();
@@ -74,6 +77,10 @@ int main(int argc, char **argv)
             case 'd':
             	dirSampling = string(optarg); 
                 break;
+            case 't':
+                iss.str(optarg);
+            	iss >> threshold;
+                break;
 	    case 'h':
 	    case '?':
 		printHelp();
@@ -102,6 +109,8 @@ int main(int argc, char **argv)
 	runNetz1score(fileNode, fileEdge, fileOutput, dirSampling + string("sampled_graph.sif."), nSampled, nRepetition, nIteration); 
     else if (scoring == NETWEEN)
 	runNetween(fileNode, fileEdge, fileOutput); 
+    else if (scoring == NETLINK)
+	runNetlink(fileNode, fileEdge, fileOutput, threshold); 
     else
 	//runScoreNetwork();
 	cerr << "Unrecognized scoring type!" << endl;
@@ -110,9 +119,16 @@ int main(int argc, char **argv)
     return 0;
 }
 
+void runNetlink(string fileNode, string fileEdge, string fileOutput, float threshold) 
+{
+    // flagAccumulateToInitialNodeScore, flagVerbose
+    Netlink sN(fileNode, fileEdge, fileOutput, threshold, false, false);
+    sN.run(1, 1);
+}
+
 void runNetween(string fileNode, string fileEdge, string fileOutput) 
 {
-    // flagUseEdgeScore, flagAccumulateToInitialNodeScore, flagVerbose
+    // flagAccumulateToInitialNodeScore, flagVerbose
     Netween sN(fileNode, fileEdge, fileOutput, false, false);
     sN.run();
 }

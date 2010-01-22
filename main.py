@@ -340,6 +340,11 @@ def prepare():
 	# Create initial data analysis file
 	#if not os.path.exists(input_dir + "analyze_network.r"):
 	prepare_data.create_R_analyze_network_script(network_file_filtered, seeds=seed_to_score.keys(), out_path=input_dir, title = PPI + "_" + ASSOCIATION)
+	os.system("R CMD BATCH %s" % (input_dir + "analyze_network.r"))
+	os.system("convert %sanalyze_network.eps %sanalyze_network.jpg" % (input_dir, input_dir))
+	os.system("R CMD BATCH %s" % (input_dir + "analyze_network_log_scaled.r"))
+	os.system("convert %sanalyze_network_log_scaled.eps %sanalyze_network_log_scaled.jpg" % (input_dir, input_dir))
+	prepare_data.create_ARFF_network_metrics_file(network_file_filtered, seed_to_score, seed_to_score.keys(), input_dir + "analyze_network.arff")
 
     # Prepare scoring files
     prepare_scoring_files(network_file_filtered, seed_to_score, node_scores_file, edge_scores_file, sampled_file_prefix)

@@ -102,6 +102,9 @@ void Netscore::updateNodeScore(Vertex v)
         std::cout << "-Checking node: " << getNetwork().getVertexName(v) << std::endl; //<<  " (iteration " << iterationCounter << ")" << std::endl;
     for(boost::tie(vt, vtEnd) = getNetwork().getAdjacentVertexIteratorOfVertex(v); vt != vtEnd; ++vt) 
     {
+	if(v == *vt) { // Skip self edges
+	    continue;
+	}
 	if(flagVerbose)
 	    std::cout << "--Messages from neighbor: " << getNetwork().getVertexName(*vt) << std::endl; 
 	mapMessageNeighbor = *(getVertexMessageMap(*vt)); 
