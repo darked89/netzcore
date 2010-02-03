@@ -96,22 +96,27 @@ def get_validation_node_scores_and_labels(file_result, file_seed_test_scores, fi
 	file_result: File to parse output scores 
 	file_seed_test_scores: File to parse test seeds
 	file_node_scores: File to parse all non seeds
-	n_random_negative_folds: Number of non-seed scores to be averaged to be assigned as negative instance, If None calculated to cover as much as non-seed scores as possible
+	n_random_negative_folds: Number of non-seed scores to be averaged to be assigned as negative instance
+				 If None calculated to cover as much as non-seed scores as possible
+				 If 0 all negative data is used
 	default_score: All nodes that have a higher score than this score in file_node_scores will be considered as seeds
     """
     setNodeResult, setDummy, dictNodeResult, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_result, store_edge_type = False)
     setNodeTest, setDummy, dictNodeTest, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_seed_test_scores, store_edge_type = False)
     non_seeds = get_non_seeds_from_node_scores_file(file_node_scores, default_score = default_score)
-    #node_to_validation_data = dict([ (id, (dictNodeResult[id], 1)) for id in setNodeTest ])
     node_validation_data = [ (dictNodeResult[id], 1) for id in setNodeTest ]
 
-    n_actual_folds = 0
-    negative_scores = [ 0 ] * len(setNodeTest)
-    for sample in generate_samples_from_list_without_replacement(non_seeds, len(setNodeTest), n_random_negative_folds, replicable = replicable):
-	for i, id in enumerate(sample):
-	    negative_scores[i] += dictNodeResult[id] 
-	n_actual_folds += 1
-    node_validation_data.extend(map(lambda x: (x/n_actual_folds, 0), negative_scores))
+    if n_random_negative_folds == 0:
+	node_validation_data.extend([(dictNodeResult[id], 0) for id in non_seeds ])
+    else:
+	n_actual_folds = 0
+	negative_sample_size = len(setNodeTest)
+	negative_scores = [ 0 ] * negative_sample_size 
+	for sample in generate_samples_from_list_without_replacement(non_seeds, negative_sample_size, n_random_negative_folds, replicable = replicable):
+	    for i, id in enumerate(sample):
+		negative_scores[i] += dictNodeResult[id] 
+	    n_actual_folds += 1
+	node_validation_data.extend(map(lambda x: (x/n_actual_folds, 0), negative_scores))
     return node_validation_data
 
 
@@ -149,7 +154,10 @@ def calculate_performance_metric_counts(file_result, file_seed_test_scores, file
 	file_seed_test_scores: seed nodes separated for test
 	file_node_scores: initial node/seed scores
 	score_threshold: threshold for considering data as P, N
-	n_random_negative_folds: Number of negative data selection folds (each fold contain same number of test nodes) to be averaged for FP and TN calculation. FP and TN are not necesserily integers when n_random_negative_folds > 1
+	n_random_negative_folds: Number of negative data selection folds (each fold contain same number of test nodes) to be averaged for FP and TN calculation
+				 FP and TN are not necesserily integers when n_random_negative_folds > 1
+				 If None calculated to cover as much as non-seed scores as possible
+				 If 0 all negative data is used
     """
     setNodeResult, setDummy, dictNodeResult, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_result, store_edge_type = False)
     setNodeTest, setDummy, dictNodeTest, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_seed_test_scores, store_edge_type = False)
@@ -163,18 +171,26 @@ def calculate_performance_metric_counts(file_result, file_seed_test_scores, file
             else:
                 nFN += 1
 
-    n_actual_folds = 0
-    for sample in generate_samples_from_list_without_replacement(non_seeds, len(setNodeTest), n_random_negative_folds, replicable = replicable):
-	setNegative = set(sample)
-	n_actual_folds += 1
+    if n_random_negative_folds == 0:
 	for id, score in dictNodeResult.iteritems():
-	    if id in setNegative:
+	    if id in non_seeds:
 		if score >= score_threshold:
 		    nFP += 1
 		else:
 		    nTN += 1
-    nFP /= n_actual_folds
-    nTN /= n_actual_folds
+    else:
+	n_actual_folds = 0
+	for sample in generate_samples_from_list_without_replacement(non_seeds, len(setNodeTest), n_random_negative_folds, replicable = replicable):
+	    setNegative = set(sample)
+	    n_actual_folds += 1
+	    for id, score in dictNodeResult.iteritems():
+		if id in setNegative:
+		    if score >= score_threshold:
+			nFP += 1
+		    else:
+			nTN += 1
+	nFP /= n_actual_folds
+	nTN /= n_actual_folds
     return (nTP, nFP, nFN, nTN)
 
 

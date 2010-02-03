@@ -17,18 +17,26 @@ using namespace std;
 void runScoreNetwork();
 void runNetshort(string, string, string);
 void runNetscore(string, string, string, unsigned int, unsigned int);
-void runNetrank(string, string, string);
+void runNetrank(string, string, string, unsigned int);
 void runNetzcore(string, string, string, string, unsigned int, unsigned int, unsigned int);
 void runNetrandom(string, string, string );
 void runNetzscore(string fileNode, string fileEdge, string fileOutput, string prefixSampledGraphs, unsigned int nSampled, unsigned int nRepetition, unsigned int nIteration); 
 void runNetz1score(string fileNode, string fileEdge, string fileOutput, string prefixSampledGraphs, unsigned int nSampled, unsigned int nRepetition, unsigned int nIteration); 
-void runNetween(string fileNode, string fileEdge, string fileOutput);
+void runNetween(string fileNode, string fileEdge, string fileOutput, float threshold);
 void runNetlink(string fileNode, string fileEdge, string fileOutput, float threshold);
 
 void printHelp() {
-    cout << "-n <node_file> -e <edge_file> -s <scoring_method>{NETSHORT:d|NETSCORE:s|NETRANK:r|NETZCORE:z|NETRANDOM:x|NETZSCORE:h|NETZ1SCORE:1|NETWEEN:w|NETLINK:l}" << 
-    " -i <number_of_iteration> -o <output_file> -r <number_of_repetition> -x <number_of_sampled_graphs>" <<
-    " -d <sampling_graph_directory> " << endl;
+    cout << "scoreN\n" 
+	 << "-s <scoring_method>{NETSHORT:d|NETSCORE:s|NETRANK:r|NETZCORE:z|NETRANDOM:x|NETZSCORE:h|NETZ1SCORE:1|NETWEEN:w|NETLINK:l}\n"
+	 << "-n <node_file>\n" 
+	 << "-e <edge_file>\n" 
+	 << "-o <output_file>\n"
+	 << "-r <number_of_repetition>\n"
+	 << "-i <number_of_iteration>\n"
+	 << "-t <seed_score_threshold>\n"
+	 << "-x <number_of_sampled_graphs>\n" 
+	 << "-d <sampling_graph_directory>\n"
+	 << endl;
 }
 
 int main(int argc, char **argv)
@@ -39,7 +47,7 @@ int main(int argc, char **argv)
     enum ScoringMethod { NETSHORT = 'd', NETSCORE = 's', NETRANK = 'r', NETZCORE = 'z', NETRANDOM = 'x', NETZSCORE = 'h', NETZ1SCORE = '1', NETWEEN = 'w', NETLINK = 'l' };
     unsigned int nIteration = 1, nRepetition = 1, nSampled = 0;  
     char scoring = 's';
-    float threshold = 0.0;
+    float threshold = 0.01;
 
     if(argc < 3) {
 	printHelp();
@@ -91,14 +99,14 @@ int main(int argc, char **argv)
         opt = getopt( argc, argv, optString );
     }
         
-    cout << "Arguments: scoring type " << scoring << ", nIteration " << nIteration << ", nodeFile " << fileNode << ", edgeFile " << fileEdge << ", outputFile " << fileOutput << endl;
+    cout << "Arguments: scoring type " << scoring << ", nRepetition " << nRepetition << ", nIteration " << nIteration << ", nodeFile " << fileNode << ", edgeFile " << fileEdge << ", outputFile " << fileOutput << endl;
     clock_t t1 = clock();
     if(scoring == NETSHORT)
 	runNetshort(fileNode, fileEdge, fileOutput);
     else if (scoring == NETSCORE)
 	runNetscore(fileNode, fileEdge, fileOutput, nRepetition, nIteration);
     else if (scoring == NETRANK)
-	runNetrank(fileNode, fileEdge, fileOutput);
+	runNetrank(fileNode, fileEdge, fileOutput, nIteration);
     else if (scoring == NETZCORE)
 	runNetzcore(fileNode, fileEdge, fileOutput, dirSampling + string("sampled_graph.sif."), nSampled, nRepetition, nIteration); 
     else if (scoring == NETRANDOM)
@@ -108,7 +116,7 @@ int main(int argc, char **argv)
     else if (scoring == NETZ1SCORE)
 	runNetz1score(fileNode, fileEdge, fileOutput, dirSampling + string("sampled_graph.sif."), nSampled, nRepetition, nIteration); 
     else if (scoring == NETWEEN)
-	runNetween(fileNode, fileEdge, fileOutput); 
+	runNetween(fileNode, fileEdge, fileOutput, threshold); 
     else if (scoring == NETLINK)
 	runNetlink(fileNode, fileEdge, fileOutput, threshold); 
     else
@@ -126,10 +134,10 @@ void runNetlink(string fileNode, string fileEdge, string fileOutput, float thres
     sN.run(1, 1);
 }
 
-void runNetween(string fileNode, string fileEdge, string fileOutput) 
+void runNetween(string fileNode, string fileEdge, string fileOutput, float threshold) 
 {
-    // flagAccumulateToInitialNodeScore, flagVerbose
-    Netween sN(fileNode, fileEdge, fileOutput, false, false);
+    // seedScoreThreshold, flagAccumulateToInitialNodeScore, flagVerbose
+    Netween sN(fileNode, fileEdge, fileOutput, threshold, false, false);
     sN.run();
 }
 
@@ -189,11 +197,11 @@ void runNetshort(string fileNode, string fileEdge, string fileOutput)
     //cout << sN.testRun() << endl;
 }
 
-void runNetrank(string fileNode, string fileEdge, string fileOutput) 
+void runNetrank(string fileNode, string fileEdge, string fileOutput, unsigned int nIteration) 
 {
     // flagAccumulateToInitialNodeScore
     Netrank sN(fileNode, fileEdge, fileOutput, false);
-    sN.run();
+    sN.run(20); // number of pagerank iterations
 }
 
 void runNetrandom(string fileNode, string fileEdge, string fileOutput) 

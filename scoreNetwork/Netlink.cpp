@@ -27,6 +27,7 @@ void Netlink::updateNodeScore(Vertex v)
 { 
     AdjVertexIterator ut, utEnd;
     float score = 0.0;
+    unsigned int i = 0;
     if(flagVerbose) {
 	std::cout << "Checking node " << getNetwork().getVertexName(v) << std::endl;
     }
@@ -36,8 +37,11 @@ void Netlink::updateNodeScore(Vertex v)
 		std::cout << "- Score from neighbor " << getNetwork().getVertexName(*ut) << ": " << getNetwork().getVertexScore(*ut) << std::endl;
 	    }
 	    score += getNetwork().getVertexScore(*ut);
+	    i += 1;
 	}
     }
+    // Scale by number of neighbors
+    //if(i!=0) score /= i;
     if(score >= threshold) {
 	score = 1.0;
     } else {

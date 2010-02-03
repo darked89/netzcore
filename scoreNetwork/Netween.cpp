@@ -12,7 +12,7 @@ Netween::Netween()
     flagVerbose = false;
 }
 
-Netween::Netween(string fileNode, string fileEdge, string fileOutput, bool fAccumulateToInitialNodeScore, bool fVerbose)
+Netween::Netween(string fileNode, string fileEdge, string fileOutput, float seedScoreThreshold, bool fAccumulateToInitialNodeScore, bool fVerbose)
 {
     flagAccumulateToInitialNodeScore = fAccumulateToInitialNodeScore;
     flagVerbose = fVerbose;
@@ -22,8 +22,7 @@ Netween::Netween(string fileNode, string fileEdge, string fileOutput, bool fAccu
     VertexIterator it, itEnd;
     for(tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) 
     {
-	//! Using default non seed score assumption
-	if(getNetwork().getVertexScore(*it) > 0.01)
+	if(getNetwork().getVertexScore(*it) > seedScoreThreshold)
 	    setSeed.insert(*it);
     }
 }

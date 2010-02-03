@@ -120,9 +120,10 @@ void Netzcore::initializeIteration()
 	    bool firstTime = true;
 	    for(boost::tie(vt, vtEnd) = pG->getAdjacentVertexIteratorOfVertex(u); vt != vtEnd; ++vt) 
 	    {
-		if(u == *vt) { // Skip self edges
+		if(u == *vt) { // Skip (one of the) self edges
+		    continue; // skip self edges
 		    if(!firstTime) {
-			//continue;
+			continue;
 		    } 
 		    else {
 			firstTime = false;
@@ -213,9 +214,10 @@ void Netzcore::updateNodeScore(Vertex v)
     bool firstTime = true;
     for(boost::tie(vt, vtEnd) = getNetwork().getAdjacentVertexIteratorOfVertex(v); vt != vtEnd; ++vt) 
     {
-	if(v == *vt) { // Skip self edges
+	if(v == *vt) { // Skip (one of the) self edges
+	    continue; // skip self edges
 	    if(!firstTime) {
-		//continue;
+		continue;
 	    } 
 	    else {
 		firstTime = false;

@@ -26,6 +26,10 @@ def get_node_to_score_from_node_scores_file(node_scores_file):
     nodes, set_dummy, node_to_score, dict_dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = node_scores_file, store_edge_type = False)
     return node_to_score
 
+def get_nodes_from_nodes_file(node_scores_file):
+    nodes, set_dummy, dict_dummy, dict_dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = node_scores_file, store_edge_type = False)
+    return nodes
+
 def get_edge_to_score_from_sif_attribute_file(interaction_relevance_file):
     return network_utilities.get_edge_values_from_sif_attribute_file(file_name = interaction_relevance_file, store_edge_type = False)
 

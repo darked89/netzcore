@@ -27,7 +27,7 @@ private:
 
 public:
     Netween(); 
-    Netween(std::string fileNode, std::string fileEdge, std::string fileOutput, bool flagAccumulateToInitialNodeScore = false, bool flagVerbose = false);
+    Netween(std::string fileNode, std::string fileEdge, std::string fileOutput, float seedScoreThreshold = 0.01, bool flagAccumulateToInitialNodeScore = false, bool flagVerbose = false);
     ~Netween();
     Graph & getNetwork() { return network; };
     void run(); 

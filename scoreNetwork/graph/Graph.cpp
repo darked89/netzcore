@@ -285,9 +285,11 @@ void Graph::calculatePageRank(map<Vertex, float> & vertexToFloat, unsigned int n
     VertexIterator it, itEnd;
     for (tie(it, itEnd) = vertices(this->container); it != itEnd; ++it) {
 	sum += getVertexScore(*it);
+	//sum += 1; // no initial score consideration
     }
     for (tie(it, itEnd) = vertices(this->container); it != itEnd; ++it) {
 	vertexToNormalizedScore[*it] = getVertexScore(*it) / sum;
+	//vertexToNormalizedScore[*it] = 1 / sum;
 	//cout << getVertexName(*it) << "(" << *it << "): " << vertexToNormalizedScore[*it] << endl;
     }
     associative_property_map< map<Vertex, float> > mapRankInitial(vertexToNormalizedScore);

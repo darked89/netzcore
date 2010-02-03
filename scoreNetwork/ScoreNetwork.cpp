@@ -136,16 +136,9 @@ float ScoreNetwork::calculateErrorAndUpdateScores() {
         if(isnan(getNetwork().getVertexScore(*it)) or isinf(getNetwork().getVertexScore(*it))) {
 	   cerr << "NAN or INF score" << endl;
 	}
-        //! Reseting to initial scores? 
-	//if(flagResetSeedScoresToInitial) {
-            //if(setSource.find(pVertex->id) != setSource.end()) { // for fFlow compatibility
-                //!pVertex->data.scoreUpdated = pVertex->data.scoreInitial; 
-            //}
-        //}
         error = getVertexScoreUpdated(*it) - getNetwork().getVertexScore(*it); 
         sumErrorNode += sq(error);
 	getNetwork().setVertexScore(*it, getVertexScoreUpdated(*it)); 
-        //!pVertex->data.score = pVertex->data.scoreUpdated;
 	// For the time being, not considering updation of edge scores
 	/*
 	for(boost::tie(et, etEnd) = getNetwork().getEdgeIteratorOfVertex(*it); et != etEnd; ++et) 

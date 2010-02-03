@@ -1,17 +1,9 @@
 
 TODO:
 
-- check the reason for performance difference between biana_no_top_no_reliability (even when the last modifications taken back)
+- fflow & nw & nb runs for goh -> update bo report
 
-- modify netzcore, netscore, netlink to adjust self edges and check performance change -> netzcore for biana no tap no reliability has 10% performance loss
-
-- adding confidence interval, fscore and/or harmonic mean of sens spec to analyze_results.r script
-
-- linker degree / majority voting (1,2,3 as well as %10 %25 %50) performance 
-
-- check performance when no random non-seed selection is applied 
-
-- check performance in leave-one-out xval (check first if scripts are capable of loo)
+- proofchecking netween & fflow with their data
 
 - comparison with other methods in the literature (with their data)
     - FunctionalFlow functional annotation (use scoreN with acc to initial scores option)
@@ -29,14 +21,6 @@ TODO:
 - cancer data from futreal
 
 - runs for possibly AES 
-
-- check netscore i6 (for performace similarity to r2i3) on gaudi
-
-- revert fflow to its original version
-
-- check shortest path network inclusion count method implementation (check scores w/ original data)
-
-- check netrank without initial scores
 
 - modify netzcore for consequitive runs
 
@@ -116,7 +100,7 @@ NOTES:
 
 - nz sucks when self score is assigned in case of 0 division (due to 0 variance), changed to assign inf/-inf. z-scoring in netzcore is contraversial, since it compares scores coming from different distributions (local neighborhood for each node), now assigning scores based on global distribution of neighboring scores.
 
-- runs on 3 ppi with aneurysm data for preliminary analysis of programs & parameters
+- runs on 3 ppi with aneurysm data for preliminary analysis of programs & parameters. Performances do not vary a lot with respect to network. NetShort gives promising results. NetScore and NetZcore is comparable. Furthermore, NetZcore i4,i5,i6 can make a lot of difference since it is sort-of-random whereas performance of NetScore is more stable (i.e. r1i3 vs r2i3 or r3i2)
 
 - Using random subsets of non-seed nodes to get negative score values (for calculating FP/TN). Was using subsets of 10 non-seeds, consequitive runs vary largely, now sampling usibng all non-seeds (N_nonseed / N_seed non_seeds are averaged for each non-negative fold)
 
@@ -131,6 +115,24 @@ NOTES:
 - checked performance of ori's networks using gaudi: no significan difference using only network / network with coexp / network with coloc but 5% increase when using coexp + coloc also checked 1e-2 vs 1e-5 which yields only about 1% difference.
 
 - checked how seeds are connected with each other (linker degree distribution and ratios of seeds), (see anaylze_network.r generated graphs) for biana_no_tap_no_reliability (ld>10/11 and rld2 > 60/65 % seems well seperator for some of the seeds
+
+- Some old runs are with non-replicable data, therefore there is a performance difference. This emphasises the issue of the selection of negative.
+
+- modify netzcore, netscore, netlink to adjust self edges and check performance change -> netzcore for biana no tap no reliability has 1.5% performance loss -> for now skiping all self edges
+
+- adjusted confidence interval, (ROCR arised problems with adding fscore) to analyze_results.r script
+
+- Tested linker degree (majority voting) with 1,2,5,10,11 as well as %20 %50 performance -> due to the nature of evaluation netlink t5 reversed achieves quite high performance -> is this due to negative score calculation? t1 is slightly better than random 
+
+- Performance when no random non-seed selection is applied  (all negatives are included) is 15% better, this could be a more plausible option for demonstrating results however the PPV is devastatingly terrible.
+
+- Performance of leave-one-out xval is not very different from 5 xval (1% less than xval5).
+
+- Checked netrank with different pagerank iteration and without initial scores. Initial scores boosted performance (slightly in 20 iterations, a lot in 2 iterations) for goh network on alzheimer data with ~13 seeds (this is not significant, it has high variation). 20 is selected as the number of pagerank iterations and initial scores are used by default.
+
+- runs for david's network: less number of seeds are fragile for performance comparision having very high variances, ns and nd seems to perform ok.
+
+- Checked netscore r-i variation on goh network with aneurysm data. Performances are as follows r1i2 68, r1i3 68.9, r1i4 73, r2i2 74, r2i3 75.2, r2i4 80.1, r3i2 72, r3i3 76.2, r3i4 57.1. r2i3 may be used by default.
 
 
 aneurysim
