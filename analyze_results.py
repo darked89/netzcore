@@ -131,10 +131,14 @@ def generate_samples_from_list_without_replacement(elements, sample_size, n_fold
 	seed(123)
     shuffle(elements)
     if n_folds is None:
+	from math import ceil
 	n_folds = len(elements) / sample_size
+	#n_folds = int(ceil(float(len(elements)) / sample_size))
     for i in range(n_folds):
 	if (i+1)*sample_size < len(elements):
 	    yield elements[i*sample_size:(i+1)*sample_size]
+	else:
+	    yield elements[i*sample_size:]
     return
 
 

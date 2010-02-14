@@ -22,7 +22,8 @@ void Netrank::run(unsigned int nIteration)
 { 
     std::map<Vertex, float>::iterator vt, vtEnd;
     std::map<Vertex, float> mapRank;
-    getNetwork().calculatePageRank(mapRank, nIteration);
+    //getNetwork().calculatePageRank(mapRank, nIteration);
+    getNetwork().calculatePageRankWithPriors(mapRank, nIteration);
     float score = 0.0;
     for(vt = mapRank.begin(), vtEnd = mapRank.end(); vt != vtEnd; ++vt) 
     {

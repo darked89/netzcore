@@ -150,6 +150,10 @@ void Netscore::updateNodeScore(Vertex v)
 	if(boost::get<1>(it->second) == iterationCounter) 
 	{
 	    tempScore += boost::get<0>(it->second) * getVertexScoreInitial(getNetwork().getVertex(it->first));
+	    // If scaling by iteration is desired
+	    //if(iterationCounter != 0)
+	    //	tempScore /= iterationCounter; 
+
 	    //nMessagesRecieved += 1;
 	    nMessagesRecieved += boost::get<2>(it->second);
 	    if(flagVerbose)
@@ -158,7 +162,7 @@ void Netscore::updateNodeScore(Vertex v)
     }
     if(nMessagesRecieved != 0) 
     {
-        tempScore /= nMessagesRecieved;
+        tempScore /= nMessagesRecieved; 
     }
     tempScore += getNetwork().getVertexScore(v);
     // Remove initial score if accumulation to initial score is not desired

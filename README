@@ -1,44 +1,63 @@
 
 TODO:
 
-- fflow & nw & nb runs for goh -> update bo report
+- david's runs
 
-- proofchecking netween & fflow with their data
+- check edge scoring by string
+
+- check performance on other disease data
+
+- check reviews + existing method articles, see if there is anything comparable
+
+- check whether high scoring nodes in different methods are common, booststrapping possible?
+
+- check %10 coverages of node_scores.sif in different methods for performance comparison
+
+- attach biological sense to the results, check if there is different data sources for the same phenotype coinciding when scores calculated with one of them or GO analysis or greedy expansion of complex from high scoring nodes and analyzing their functional enrichment
+    - GO analysis on the high scoring nodes
+
+- document all + presentation
 
 - comparison with other methods in the literature (with their data)
     - FunctionalFlow functional annotation (use scoreN with acc to initial scores option)
+	- interaction network + all functions of nodes not available
     - MetaCore topological score using shortest paths on psoriasis data
+	- network not available
+	- still their score on psoriasis data can be compared
     - InfoFlow, lethality data on S. cervaise
+	- network not available
+	- still their scores on essentiality data can be compared
 
-- ml predictions based on feature described network (need to use the same training & test sets)
-
-- aneurysm & breast cancer gene data from Osrisv2
-
-- disease data from goh
-
-- ppi network from jonsson 
-
-- cancer data from futreal
-
-- runs for possibly AES 
+- random negative selection n_fold calculation change
 
 - modify netzcore for consequitive runs
 
+- disease data
+    - osiris
+    - aerts06_gene_prioritization
+    - goh07_genes_and_disease_classes
+    - futreal_04_cancer_genes
+    - blalock03_alzheimer 
+    - krauthammer04_alzheimer
+    - AES 
+    - uniprot
+    - data from Hefalmp & OMIM 
+
+- ppi data
+    - network from jonsson 
+    - BIANA ppis from different species
+
+- ml predictions based on feature described network (need to use the same training & test sets)
+
 - comparison of net* methods within pathologies on the effect of scoring & on the effect of different networks
 
-- comparison of fflow with netzcore (with accumulateToInitialScores option)
+- comparison of fflow with netzcore (with accumulateToInitialScores option - not needed, test seeds are independent)
 
 - comparison of co-expression for correlation
     - Gemma
     - coexp network from stuart03
     - coexp network from 
     - from tissueinfo or p-values from HEFalMp with scores
-
-- runs for possibly Hefalmp & OMIM data
-
-- comparison of ppis from different species
-
-- GO analysis on the high scoring nodes
 
 - check performance on random seed assignment 
 
@@ -47,6 +66,7 @@ TODO:
 - filtering by localization (localization data from locate) (files from uri)
 
 - incorporating additional info (active subnetwork discovery, structural info, etc)
+    - after scoring, grouping nodes into expressed modules / functionally enriched modules (greedy selection based on score, max likelihood or bayesian prediction based on preori probability on randoms)
 
 
 NOTES:
@@ -133,6 +153,20 @@ NOTES:
 - runs for david's network: less number of seeds are fragile for performance comparision having very high variances, ns and nd seems to perform ok.
 
 - Checked netscore r-i variation on goh network with aneurysm data. Performances are as follows r1i2 68, r1i3 68.9, r1i4 73, r2i2 74, r2i3 75.2, r2i4 80.1, r3i2 72, r3i3 76.2, r3i4 57.1. r2i3 may be used by default.
+
+- fflow & nw & nb runs for goh/biana_no_tap on aneurysm & breast_cancer. Documented in the report for bo.
+
+- Proofchecked netween & fflow 
+
+- Checked goh aneurysm nz i4, ns r2i2 and r2i3 with different random seed assignment. Performances change similarly (all drop 2-4% when seed 5123 is used instead of 123). Also modified non-negative score calculation a bit so that all randoms are used -for sure- (previously the folds might not be covering all non-negatives but almost all)
+
+- Using a different random sampling on nz on goh - aneurysm, has insignificant effect on the performance (<0.1%)
+
+- A simple parameter check of baldo's method, iteration has little effect (which is superior compared to nz in terms of convergence, the reason could be score assignment if higher than some threshold), best performance is yielded when dn de 3 (vs 5), sigma 6 (vs 3),  max score 1 (vs 3 or 5) on goh aneurysm 66% (vs 75% of nz). 
+
+- Modified PageRank to PageRank with priors (as used by Chen 09), performance increases by 8 to 20% on all data sets, but still <70%.
+
+- Checked performance robustness of netscore to scaling for iterations, for r2i2 r2i3 goh aneurysm, neither scaling by iteration / sq(iteration) improves performance as well as scaling by iteration in addition to not scaling by number of messages. The behaviour may be different for larger iterations.
 
 
 aneurysim

@@ -5,11 +5,12 @@
 #include <fstream>
 
 #include "clustering_coefficient.hpp"
-#include "page_rank_with_initial_ranks.hpp"
+//#include <boost/graph/page_rank.hpp>
+//#include "page_rank_with_initial_ranks.hpp"
+#include "page_rank_with_priors.hpp"
 
 #include <boost/graph/graph_utility.hpp>
 #include <boost/graph/betweenness_centrality.hpp>
-//#include <boost/graph/page_rank.hpp>
 
 #include <boost/graph/dijkstra_shortest_paths.hpp>
 
@@ -277,7 +278,7 @@ void Graph::getAllShortestPaths(Vertex v, map<Vertex, float> & vertexToFloat, Pr
     return;
 }
 
-
+/*
 void Graph::calculatePageRank(map<Vertex, float> & vertexToFloat, unsigned int nIteration) 
 {
     map<Vertex, float> vertexToNormalizedScore;
@@ -295,6 +296,24 @@ void Graph::calculatePageRank(map<Vertex, float> & vertexToFloat, unsigned int n
     associative_property_map< map<Vertex, float> > mapRankInitial(vertexToNormalizedScore);
     associative_property_map< map<Vertex, float> > mapRank(vertexToFloat);
     page_rank(container, mapRankInitial, mapRank, graph::n_iterations(nIteration));
+    return;
+}
+*/
+
+void Graph::calculatePageRankWithPriors(map<Vertex, float> & vertexToFloat, unsigned int nIteration) 
+{
+    map<Vertex, float> vertexToNormalizedScore;
+    float sum = 0.0;
+    VertexIterator it, itEnd;
+    for (tie(it, itEnd) = vertices(this->container); it != itEnd; ++it) {
+	sum += getVertexScore(*it);
+    }
+    for (tie(it, itEnd) = vertices(this->container); it != itEnd; ++it) {
+	vertexToNormalizedScore[*it] = getVertexScore(*it) / sum;
+    }
+    associative_property_map< map<Vertex, float> > mapRankInitial(vertexToNormalizedScore);
+    associative_property_map< map<Vertex, float> > mapRank(vertexToFloat);
+    page_rank_with_priors(container, mapRankInitial, mapRank, graph::n_iterations(nIteration));
     return;
 }
 

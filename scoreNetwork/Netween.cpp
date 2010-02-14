@@ -125,21 +125,24 @@ void Netween::getNodeCounts() {
 		cout << "- Checking seed " << getNetwork().getVertexName(*seedIt) << endl;
 	    for(tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) {
 		vTarget = *it;
+		if(vTarget == *seedIt || vTarget == *setIt)
+		    continue;
 		if(flagVerbose)
 		    cout << "- Checking shortest path to " << getNetwork().getVertexName(vTarget) << endl;
-		// If accumulate to initial nodes is true count the seed node on the path of all targets in inclusion analysis
+		// If included is seed, count the seed node on the path of all targets in inclusion analysis
 		if(*seedIt == *setIt) {
-		    if(flagAccumulateToInitialNodeScore) {
-			if(flagVerbose)
-			    cout << "-- Counting " << getNetwork().getVertexName(*setIt) << endl;
-			mapVertexToLocalCount[*setIt] += 1;
-			mapVertexToGlobalCount[*setIt] += 1;
-		    }
+		    //if(flagVerbose)
+		    //	cout << "-- Counting " << getNetwork().getVertexName(*setIt) << endl;
+		    //if(setSeed.find(vTarget) != seedItEnd) { 
+		    //	mapVertexToLocalCount[*setIt] += 2; // this will not be counted again because of the constraint of vTarget != *setIt
+		    //}
+		    //mapVertexToGlobalCount[*setIt] += 1;
 		}
 		else {
 		    if(isVertexIncludedInsideThePathOfGivenVertex(*setIt, vTarget, *pMapPredecessors)) {
 			if(flagVerbose)
 			    cout << "-- Counting " << getNetwork().getVertexName(*setIt) << endl;
+			// For every pair s,s' i is counted twice (this number is diveded by two later in score calculation)
 			if(setSeed.find(vTarget) != seedItEnd) {
 			    mapVertexToLocalCount[*setIt] += 1;
 			}
@@ -210,14 +213,15 @@ void Netween::calculateScores() {
 	mapVertexToLocalCount[*it] /= 2;
 	// Subtract duplicated local score contributions from global scores
        	mapVertexToGlobalCount[*it] -= mapVertexToLocalCount[*it]; 
-	//cout << getNetwork().getVertexName(*it)  << ": " << mapVertexToLocalCount[*it] << " " << mapVertexToGlobalCount[*it] << endl;
+	if(flagVerbose)
+	    cout << getNetwork().getVertexName(*it)  << ": " << mapVertexToLocalCount[*it] << " " << mapVertexToGlobalCount[*it] << endl;
 	if(mapVertexToLocalCount[*it] == 0) 
 	    score = 0;
 	else
 	    score = float(mapVertexToLocalCount[*it]) / mapVertexToGlobalCount[*it]; 
-	//if(flagAccumulateToInitialNodeScore) {
-	//    score += getNetwork().getVertexScore(*it);
-	//}
+	if(flagAccumulateToInitialNodeScore) {
+	    score += getNetwork().getVertexScore(*it);
+	}
 	getNetwork().setVertexScore(*it, score);
     }
 

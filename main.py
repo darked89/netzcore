@@ -38,17 +38,17 @@ PPI = "goh"
 #PPI = "ori_coexpression_colocalization"
 #PPI = "ori_colocalization"
 #PPI = "ori_coexpression_colocalization_1e-2"
-#PPI = "alzheimer_CpOGU"
-#PPI = "alzheimer_CpOIN"
-#PPI = "alzheimer_RpOGU"
-#PPI = "alzheimer_RpOIN"
+#PPI = "david_CpOGU"
+#PPI = "david_CpOIN"
+#PPI = "david_RpOGU"
+#PPI = "david_RpOIN"
 
 ASSOCIATION = "aneurysm"
 #ASSOCIATION = "breast_cancer"
 #ASSOCIATION = "apoptosis"
 #ASSOCIATION = "alzheimer"
 
-#SCORING = "ns" #"netscore"
+SCORING = "ns" #"netscore"
 #SCORING = "nz" #"netzcore"
 #SCORING = "nh" #"netzscore"
 #SCORING = "n1" #"netz1score"
@@ -57,11 +57,11 @@ ASSOCIATION = "aneurysm"
 #SCORING = "nl" #"netlink"
 #SCORING = "nr" #"netrank"
 #SCORING = "nx" #"netrandom"
-SCORING = "nb" #"netZscore" (cortesy of baldo)
+#SCORING = "nb" #"netZscore" (cortesy of baldo)
 #SCORING = "ff" #"FunctionalFlow" 
 
-N_REPETITION = 1
-N_ITERATION = 5
+N_REPETITION = 2
+N_ITERATION = 2
 N_LINKER_THRESHOLD = 2
 
 DEFAULT_NON_SEED_SCORE = 0.01 # Default score for non-seed nodes
@@ -108,7 +108,7 @@ elif ASSOCIATION == "breast_cancer":
 elif ASSOCIATION == "alzheimer":
     association_dir = data_dir + "alzheimer" + os.sep
     association_scores_file = None
-    association_scores_file_identifier_type = None
+    association_scores_file_identifier_type = "uniprotentry"
 else:
     raise ValueError("Unrecognized association!")
 
@@ -216,26 +216,34 @@ elif PPI.startswith("ori"):
 	network_file_filtered = network_file
 	interaction_relevance_file = network_dir + "aneurist.eda"
 	DEFAULT_NON_SEED_SCORE = 0.00001 
-elif PPI.startswith("alzheimer"):
+elif PPI.startswith("david"):
     network_dir = data_dir + "alzheimer" + os.sep
-    node_description_file = biana_node_file_prefix + ".tsv"
     network_file_identifier_type = "user entity id"
-    if PPI == "alzheimer_CpOGU":
-	node_file = network_dir + "alzheimer_CpOGU_seed.list"
+    if PPI == "david_CpOGU":
+	association_scores_file = network_dir + "alzheimer_CpOGU_seed_all_equal.list"
+	#node_file = network_dir + "alzheimer_CpOGU_seed.list"
 	network_file = network_dir + "alzheimer_CpOGU_network.sif"
-	network_file_filtered = network_file
-    elif PPI == "alzheimer_CpOIN":
-	node_file = network_dir + "alzheimer_CpOIN_seed.list"
+	node_description_file = network_dir + "alzheimer_CpOGU_network_all.tab"
+	#network_file_filtered = network_file
+    elif PPI == "david_CpOIN":
+	association_scores_file = network_dir + "alzheimer_CpOIN_seed_all_equal.list"
+	#node_file = network_dir + "alzheimer_CpOIN_seed.list"
 	network_file = network_dir + "alzheimer_CpOIN_network.sif"
-	network_file_filtered = network_file
-    elif PPI == "alzheimer_RpOGU":
-	node_file = network_dir + "alzheimer_RpOGU_seed.list"
+	node_description_file = network_dir + "alzheimer_CpOIN_network_all.tab"
+	#network_file_filtered = network_file
+    elif PPI == "david_RpOGU":
+	association_scores_file = network_dir + "alzheimer_RpOGU_seed_all_equal.list"
+	#node_file = network_dir + "alzheimer_RpOGU_seed.list"
 	network_file = network_dir + "alzheimer_RpOGU_network.sif"
-	network_file_filtered = network_file
-    elif PPI == "alzheimer_RpOIN":
-	node_file = network_dir + "alzheimer_RpOIN_seed.list"
+	node_description_file = network_dir + "alzheimer_RpOGU_network_all.tab"
+	#network_file_filtered = network_file
+    elif PPI == "david_RpOIN":
+	association_scores_file = network_dir + "alzheimer_RpOIN_seed_all_equal.list"
+	#node_file = network_dir + "alzheimer_RpOIN_seed.list"
 	network_file = network_dir + "alzheimer_RpOIN_network.sif"
-	network_file_filtered = network_file
+	node_description_file = network_dir + "alzheimer_RpOIN_network_all.tab"
+	#network_file_filtered = network_file
+    network_file_filtered = network_file[:-4] + "_degree_filtered.sif" # Using only the largest strongly connected component
 else:
     raise ValueError("Unrecognized ppi!")
 
@@ -375,12 +383,12 @@ def prepare():
     # Get node to association mapping
     if PPI.startswith("ori"):
 	os.system("awk '{ if($2 == 1) print $1, $2}' %s > %s" % (node_file, seed_scores_file))
-    elif PPI.startswith("alzheimer"):
-	#os.system("awk '{ print $1, 1}' %s > %s" % (node_file, seed_scores_file))
-	all_nodes = set(prepare_data.get_nodes_in_network(network_file_filtered))
-	seed_nodes = prepare_data.get_nodes_from_nodes_file(node_file)
-	seed_to_score = dict([(node, 1) for node in seed_nodes])
-	prepare_data.create_node_scores_file(nodes = (all_nodes & seed_nodes), node_to_score = seed_to_score, node_scores_file = seed_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
+    #elif PPI.startswith("david"):
+    #	#os.system("awk '{ print $1, 1}' %s > %s" % (node_file, seed_scores_file))
+    #	all_nodes = set(prepare_data.get_nodes_in_network(network_file_filtered))
+    #	seed_nodes = prepare_data.get_nodes_from_nodes_file(node_file)
+    #	seed_to_score = dict([(node, 1) for node in seed_nodes])
+    #	prepare_data.create_node_scores_file(nodes = (all_nodes & seed_nodes), node_to_score = seed_to_score, node_scores_file = seed_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
 
     if not os.path.exists(seed_scores_file): 
 	seed_to_score = prepare_data.get_node_association_score_mapping(network_file = network_file_filtered, network_file_identifier_type = network_file_identifier_type, node_description_file = node_description_file, association_scores_file = association_scores_file, association_scores_file_identifier_type = association_scores_file_identifier_type, log_file = input_log_file)
@@ -525,13 +533,13 @@ def analyze_original():
 	    if PPI.startswith("biana"):
 		prepare_data.convert_file_using_new_id_mapping(output_scores_file, node_description_file, network_file_identifier_type, "geneid", output_scores_file+".geneid")
 		prepare_data.convert_file_using_new_id_mapping(output_scores_file+".geneid", gene_info_file, "geneid", association_scores_file_identifier_type, output_scores_file+"."+association_scores_file_identifier_type)
-	    elif PPI.startswith("ori") or PPI.startswith("alzheimer"):
+	    elif PPI.startswith("ori") or PPI.startswith("david"):
 		pass
 	    else:
 		prepare_data.convert_file_using_new_id_mapping(output_scores_file, node_description_file, network_file_identifier_type, association_scores_file_identifier_type, output_scores_file+"."+association_scores_file_identifier_type)
 	if association_scores_validation_file is not None:
 	    f.write("Validation seed coverage:")
-	    if PPI.startswith("ori") or PPI.startswith("alzheimer"):
+	    if PPI.startswith("ori") or PPI.startswith("david"):
 		pass
 	    else:
 		f.write("%s\n" % str(analyze_results.calculate_seed_coverage_at_given_percentage(output_scores_file+"."+association_scores_file_identifier_type, association_scores_validation_file, percentage, DEFAULT_NON_SEED_SCORE)))
@@ -570,6 +578,7 @@ def prepare_scoring_files(network_file_filtered, seed_to_score, node_scores_file
 	prepare_data.create_node_scores_file(nodes = nodes, node_to_score = seed_to_score, node_scores_file = node_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
 	prepare_data.generate_cross_validation_node_score_files(nodes = nodes, seed_to_score = seed_to_score, node_scores_file = node_scores_file, xval = N_X_VAL, default_score = DEFAULT_NON_SEED_SCORE)
     # Create edge scores (original + xval) files as well as node scores as edge scores files
+    edges = None
     if not os.path.exists(edge_scores_file): 
 	print "Creating edge score files", edge_scores_file
 	edges = prepare_data.get_edges_in_network(network_file = network_file_filtered)
@@ -587,6 +596,9 @@ def prepare_scoring_files(network_file_filtered, seed_to_score, node_scores_file
 	    edge_to_score = dict([(e, 1) for e in edges])
 	prepare_data.create_edge_scores_file(network_file = network_file_filtered, edge_scores_file = edge_scores_file, edge_to_score = edge_to_score, default_score=DEFAULT_NON_SEED_SCORE)
 	#prepare_data.old_create_edge_scores_as_node_scores_file(network_file = network_file_filtered, edge_scores_file = edge_scores_as_node_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
+    if not os.path.exists(edge_scores_as_node_scores_file):
+	if edges is None:
+	    edges = prepare_data.get_edges_in_network(network_file = network_file_filtered)
 	seed_to_score = prepare_data.get_node_to_score_from_node_scores_file(seed_scores_file)
 	prepare_data.create_edge_scores_as_node_scores_file(edges = edges, node_to_score = seed_to_score, edge_scores_file = edge_scores_as_node_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
 	prepare_data.generate_cross_validation_edge_score_as_node_score_files(edges = edges, seed_to_score = seed_to_score, edge_scores_file = edge_scores_as_node_scores_file, xval = N_X_VAL, default_score = DEFAULT_NON_SEED_SCORE)
