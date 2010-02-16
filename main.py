@@ -11,59 +11,12 @@ import analyze_results
 import os, os.path
 from string import Template
 
-# obsolete
-import score_network # obsolete
-
 #only_print_command = True
 only_print_command = False
+#use_cluster = True
+use_cluster = False
 
-# Scoring related parameters 
-MODE = "all" # prepare, score, analyze
-
-#PPI = "biana" # biana output network as it is (do not forget to revert _degree_filtered.sif.original to _degree_filtered.sif, this one is _degree_filtere_disconnected_only.sif)
-#PPI = "biana_no_reliability" # only largest connected component (lcc)
-#PPI = "biana_reliability" # reliability filtered lcc
-#PPI = "biana_no_tap_no_reliability" # tap filtered lcc
-#PPI = "biana_no_tap_no_reliability_1e-5" # tap filtered lcc with non seed scores of 1e-5
-#PPI = "biana_no_tap_reliability" # tap & reliability filtered lcc
-#PPI = "biana_no_tap_relevance" # tap filtered & string edge score assigned lcc
-#PPI = "biana_no_tap_exp_db_relevance" tap filtered & string exp & db edge score assigned lcc
-#PPI = "biana_no_tap_corelevance" # tap filtered & string co-exp score assigned lcc
-#PPI = "biana_no_tap_reliability_relevance" # tap & reliability filtered & string edge score assigned lcc
-PPI = "goh" 
-#PPI = "rhodes"
-#PPI = "ori_coexpression_1e-2"
-#PPI = "ori_network" # these are all in 1e-5
-#PPI = "ori_coexpression" 
-#PPI = "ori_coexpression_colocalization"
-#PPI = "ori_colocalization"
-#PPI = "ori_coexpression_colocalization_1e-2"
-#PPI = "david_CpOGU"
-#PPI = "david_CpOIN"
-#PPI = "david_RpOGU"
-#PPI = "david_RpOIN"
-
-ASSOCIATION = "aneurysm"
-#ASSOCIATION = "breast_cancer"
-#ASSOCIATION = "apoptosis"
-#ASSOCIATION = "alzheimer"
-
-SCORING = "ns" #"netscore"
-#SCORING = "nz" #"netzcore"
-#SCORING = "nh" #"netzscore"
-#SCORING = "n1" #"netz1score"
-#SCORING = "nd" #"netshort"
-#SCORING = "nw" #"netween"
-#SCORING = "nl" #"netlink"
-#SCORING = "nr" #"netrank"
-#SCORING = "nx" #"netrandom"
-#SCORING = "nb" #"netZscore" (cortesy of baldo)
-#SCORING = "ff" #"FunctionalFlow" 
-
-N_REPETITION = 2
-N_ITERATION = 2
 N_LINKER_THRESHOLD = 2
-
 DEFAULT_NON_SEED_SCORE = 0.01 # Default score for non-seed nodes
 ALLOWED_MAX_DEGREE = 100000 #175 #90 # Max degree allowed in the graph filtering
 N_SAMPLE_GRAPH = 100 # Number of random graphs to be generated
@@ -72,9 +25,12 @@ N_RANDOM_NEGATIVE_FOLDS = None #0 #None #10 # Number of non-seed scores to be av
 			    # If 0 all non seeds are included as they are, If None all non seeds are included averaged to scale with the size of test seeds
 REPLICABLE = True #False # Assign a predefined seed in randomization for N_RANDOM_NEGATIVE_FOLD generation
 
-# Data directory of the project
-data_dir = ".." + os.sep + "data" + os.sep
+# Directory of the project
+base_dir = ".."
+base_dir = os.path.abspath(base_dir) + os.sep
+data_dir = base_dir + "data" + os.sep
 data_dir = os.path.abspath(data_dir) + os.sep
+src_dir = base_dir + "src" + os.sep
 
 # BIANA node & network files
 biana_node_file_prefix = data_dir + "human_interactome_biana" + os.sep + "human_nodes"
@@ -89,282 +45,360 @@ rhodes_network_file_filtered_by_degree = rhodes_network_file[:-4] + "_degree_fil
 # Gene info file 
 gene_info_file = data_dir + "gene_info" + os.sep + "genes.tsv"
 
-# Disease association files (Association data to be used)
-association_scores_validation_file = None
-if ASSOCIATION == "aneurysm":
-    association_dir = data_dir + "aneurist" + os.sep
-    #aneurysm_scores_file = association_dir + "aneurysm_associated_genes.txt"
-    association_scores_file = association_dir + "aneurysm_associated_genes_all_equal.txt"
-    association_scores_file_identifier_type = "genesymbol"
-    association_scores_validation_file = association_dir + "aneurysm_new_9.txt" 
-elif ASSOCIATION == "breast_cancer":
-    association_dir = data_dir + "osiris" + os.sep
-    association_scores_file = association_dir + "breast_cancer_genes_all_equal.txt"
-    association_scores_file_identifier_type = "genesymbol"
-#elif ASSOCIATION == "apoptosis":
-#    association_dir = data_dir + "apoptosis" + os.sep
-#    association_scores_file = apoptosis_scores_all_equal_file
-#    association_scores_file_identifier_type = "uniprotaccession"
-elif ASSOCIATION == "alzheimer":
-    association_dir = data_dir + "alzheimer" + os.sep
-    association_scores_file = None
-    association_scores_file_identifier_type = "uniprotentry"
-else:
-    raise ValueError("Unrecognized association!")
-
-
-# Network specific
-interaction_relevance_file = None
-interaction_relevance_file2 = None
-# BIANA ppi
-if PPI.startswith("biana"):
-    node_description_file = biana_node_file_prefix + ".tsv"
-    network_file_identifier_type = "user entity id"
-    if PPI == "biana":
-	biana_network_file_filtered_by_method = biana_network_file_prefix + ".sif"
-	biana_network_file_filtered_by_reliability = biana_network_file_filtered_by_method[:-4] + "_reliability_filtered.sif"
-	network_file = biana_network_file_filtered_by_method 
-    elif PPI == "biana_no_reliability":
-	biana_network_file_filtered_by_method = biana_network_file_prefix + ".sif"
-	biana_network_file_filtered_by_reliability = biana_network_file_filtered_by_method[:-4] + "_reliability_filtered.sif"
-	network_file = biana_network_file_filtered_by_method  
-    elif PPI == "biana_reliability":
-	biana_network_file_filtered_by_method = biana_network_file_prefix + ".sif"
-	biana_network_file_filtered_by_reliability = biana_network_file_filtered_by_method[:-4] + "_reliability_filtered.sif"
-	network_file = biana_network_file_filtered_by_reliability 
-    elif PPI.startswith("biana_no_tap"):
-	biana_network_file_filtered_by_method = biana_network_file_prefix + "_no_tap.sif"
-	biana_network_file_filtered_by_reliability = biana_network_file_filtered_by_method[:-4] + "_reliability_filtered.sif"
-	if PPI == "biana_no_tap_no_reliability":
-	    network_file = biana_network_file_filtered_by_method # Using only non-tap interactions
-	elif PPI == "biana_no_tap_no_reliability_1e-5":
-	    network_file = biana_network_file_filtered_by_method # Using only non-tap interactions
-	    DEFAULT_NON_SEED_SCORE = 0.00001 
-	elif PPI == "biana_no_tap_reliability":
-	    network_file = biana_network_file_filtered_by_reliability # Using reliability filtered non-tap interactions
-	elif PPI == "biana_no_tap_relevance":
-	    network_file = biana_network_file_filtered_by_method 
-	    interaction_relevance_file = biana_network_file_prefix + "_stringscore.eda"
-	elif PPI == "biana_no_tap_exp_db_relevance":
-	    network_file = biana_network_file_filtered_by_method 
-	    interaction_relevance_file = biana_network_file_prefix + "_stringscore_experimental.eda"
-	    interaction_relevance_file2 = biana_network_file_prefix + "_stringscore_db.eda"
-	elif PPI == "biana_no_tap_corelevance":
-	    network_file = biana_network_file_filtered_by_method 
-	    interaction_relevance_file = biana_network_file_prefix + "_stringscore_coexpression.eda"
-	elif PPI == "biana_no_tap_reliability_relevance":
-	    network_file = biana_network_file_filtered_by_reliability 
-	    interaction_relevance_file = biana_network_file_prefix + "_stringscore.eda"
-	else:
-	    raise ValueError("Unrecognized ppi!")
-    else:
-	raise ValueError("Unrecognized ppi!")
-    network_file_filtered = network_file[:-4] + "_degree_filtered.sif" # Using only the largest strongly connected component
-# Goh ppi
-elif PPI == "goh":
-    node_description_file = gene_info_file 
-    network_file_identifier_type = "geneid"
-    network_file = goh_network_file
-    network_file_filtered = goh_network_file_filtered_by_degree 
-# Rhodes ppi
-elif PPI == "rhodes":
-    node_description_file = gene_info_file 
-    network_file_identifier_type = "geneid"
-    network_file = rhodes_network_file
-    network_file_filtered = rhodes_network_file_filtered_by_degree 
-elif PPI.startswith("ori"):
-    network_base_dir = data_dir + "human_interactome_ori" + os.sep
-    node_description_file = biana_node_file_prefix + ".tsv"
-    network_file_identifier_type = "user entity id"
-    if PPI == "ori_network":
-	network_dir = network_base_dir + "network" + os.sep
-	node_file = network_dir + "aneurist.noa"
-	network_file = network_dir + "aneurist.sif"
-	network_file_filtered = network_file
-	interaction_relevance_file = network_dir + "aneurist.eda"
-	DEFAULT_NON_SEED_SCORE = 0.00001 
-    elif PPI == "ori_coexpression_1e-2":
-	network_dir = network_base_dir + "coexpression" + os.sep
-	node_file = network_dir + "aneurist.noa"
-	network_file = network_dir + "aneurist.sif"
-	network_file_filtered = network_file
-	interaction_relevance_file = network_dir + "aneurist.eda"
-    elif PPI == "ori_coexpression":
-	network_dir = network_base_dir + "coexpression" + os.sep
-	node_file = network_dir + "aneurist.noa"
-	network_file = network_dir + "aneurist.sif"
-	network_file_filtered = network_file
-	interaction_relevance_file = network_dir + "aneurist.eda"
-	DEFAULT_NON_SEED_SCORE = 0.00001 
-    elif PPI == "ori_coexpression_colocalization_1e-2":
-	network_dir = network_base_dir + "coexpression_colocalization" + os.sep
-	node_file = network_dir + "aneurist.noa"
-	network_file = network_dir + "aneurist.sif"
-	network_file_filtered = network_file
-	interaction_relevance_file = network_dir + "aneurist.eda"
-    elif PPI == "ori_coexpression_colocalization":
-	network_dir = network_base_dir + "coexpression_colocalization" + os.sep
-	node_file = network_dir + "aneurist.noa"
-	network_file = network_dir + "aneurist.sif"
-	network_file_filtered = network_file
-	interaction_relevance_file = network_dir + "aneurist.eda"
-	DEFAULT_NON_SEED_SCORE = 0.00001 
-    elif PPI == "ori_colocalization":
-	network_dir = network_base_dir + "colocalization" + os.sep
-	node_file = network_dir + "aneurist.noa"
-	network_file = network_dir + "aneurist.sif"
-	network_file_filtered = network_file
-	interaction_relevance_file = network_dir + "aneurist.eda"
-	DEFAULT_NON_SEED_SCORE = 0.00001 
-elif PPI.startswith("david"):
-    network_dir = data_dir + "alzheimer" + os.sep
-    network_file_identifier_type = "user entity id"
-    if PPI == "david_CpOGU":
-	association_scores_file = network_dir + "alzheimer_CpOGU_seed_all_equal.list"
-	#node_file = network_dir + "alzheimer_CpOGU_seed.list"
-	network_file = network_dir + "alzheimer_CpOGU_network.sif"
-	node_description_file = network_dir + "alzheimer_CpOGU_network_all.tab"
-	#network_file_filtered = network_file
-    elif PPI == "david_CpOIN":
-	association_scores_file = network_dir + "alzheimer_CpOIN_seed_all_equal.list"
-	#node_file = network_dir + "alzheimer_CpOIN_seed.list"
-	network_file = network_dir + "alzheimer_CpOIN_network.sif"
-	node_description_file = network_dir + "alzheimer_CpOIN_network_all.tab"
-	#network_file_filtered = network_file
-    elif PPI == "david_RpOGU":
-	association_scores_file = network_dir + "alzheimer_RpOGU_seed_all_equal.list"
-	#node_file = network_dir + "alzheimer_RpOGU_seed.list"
-	network_file = network_dir + "alzheimer_RpOGU_network.sif"
-	node_description_file = network_dir + "alzheimer_RpOGU_network_all.tab"
-	#network_file_filtered = network_file
-    elif PPI == "david_RpOIN":
-	association_scores_file = network_dir + "alzheimer_RpOIN_seed_all_equal.list"
-	#node_file = network_dir + "alzheimer_RpOIN_seed.list"
-	network_file = network_dir + "alzheimer_RpOIN_network.sif"
-	node_description_file = network_dir + "alzheimer_RpOIN_network_all.tab"
-	#network_file_filtered = network_file
-    network_file_filtered = network_file[:-4] + "_degree_filtered.sif" # Using only the largest strongly connected component
-else:
-    raise ValueError("Unrecognized ppi!")
-
-
-# Human readable title for the run
-title = "%s - %s - %s" % (PPI, ASSOCIATION, SCORING)
-
-# Project directory structure
-input_base_dir = data_dir + "input" + os.sep
-input_base_dir_network = input_base_dir + PPI + os.sep
-input_base_dir_association = input_base_dir_network + ASSOCIATION + os.sep
-input_dir = input_base_dir_association
-sampling_dir = input_base_dir_network + "sampled_graphs" + os.sep
-output_base_dir = data_dir + "output" + os.sep
-output_base_dir_network = output_base_dir + PPI + os.sep
-output_base_dir_association = output_base_dir_network + ASSOCIATION + os.sep
-output_dir = output_base_dir_association + SCORING + os.sep
-
-# Create directory hirerarchy
-if not os.path.exists(input_base_dir): 
-    os.mkdir(input_base_dir)
-if not os.path.exists(input_base_dir_network): 
-    os.mkdir(input_base_dir_network)
-if not os.path.exists(input_base_dir_association): 
-    os.mkdir(input_base_dir_association)
-if not os.path.exists(input_dir): 
-    os.mkdir(input_dir)
-if not os.path.exists(sampling_dir): 
-    os.mkdir(sampling_dir)
-if not os.path.exists(output_base_dir): 
-    os.mkdir(output_base_dir)
-if not os.path.exists(output_base_dir_network): 
-    os.mkdir(output_base_dir_network)
-if not os.path.exists(output_base_dir_association): 
-    os.mkdir(output_base_dir_association)
-if not os.path.exists(output_dir): 
-    os.mkdir(output_dir)
-
-if SCORING == "ns" or SCORING == "nh" or SCORING == "n1":
-    title += " - r%d i%d" % (N_REPETITION, N_ITERATION)
-    output_dir = output_dir + "r%di%d" % (N_REPETITION, N_ITERATION) + os.sep
-    if not os.path.exists(output_dir): 
-	os.mkdir(output_dir)
-elif SCORING == "nz" or SCORING == "ff" or SCORING == "nb":
-    title += " - i%d" % N_ITERATION
-    output_dir = output_dir + "i%d" % N_ITERATION + os.sep
-    if not os.path.exists(output_dir): 
-	os.mkdir(output_dir)
-elif SCORING == "nl":
-    title += " - t%f" % N_LINKER_THRESHOLD
-    output_dir = output_dir + "t%f" % N_LINKER_THRESHOLD + os.sep
-    if not os.path.exists(output_dir): 
-	os.mkdir(output_dir)
-
-
-# Input/Output score file
-seed_scores_file = input_dir + "seed_scores.sif"
-node_scores_file = input_dir + "node_scores.sif"
-#edge_scores_file = input_dir + "edge_scores.sif"
-edge_scores_file = input_base_dir_network + "edge_scores.sif"
-edge_scores_as_node_scores_file = input_dir + "edge_scores_as_node_scores.sif"
-reliability_filtered_edge_scores_file = input_base_dir_network + "reliability_filtered_edge_scores.sif"
-output_scores_file = output_dir + "node_scores.sif" # "_r%dn%d.sif" % (N_REPETITION, N_ITERATION)
-score_log_file = output_dir + "log.txt" # "_r%dn%d.txt" % (N_REPETITION, N_ITERATION)
-sampled_file_prefix = sampling_dir + "sampled_graph"
-
-# Log (README) files 
-log_file = output_dir + "README"
-input_log_file = input_dir + "README"
-
-# Analysis files
-predictions_file = output_dir + "predictions.txt"
-labels_file = output_dir + "labels.txt"
-r_script_file = output_dir + "results.r"
-tex_script_file = output_dir + "results.tex"
-
-score_xval_commands = { "ns": Template("scoreNetwork/scoreN -s s -n %s.$fold -e %s -o %s.$fold -r %d -i %d &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, score_log_file)),
-			"nz": Template("scoreNetwork/scoreN -s z -n %s.$fold -e %s -o %s.$fold -i %d -x %d -d %s &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file)),
-			"nh": Template("scoreNetwork/scoreN -s h -n %s.$fold -e %s -o %s.$fold -r %d -i %d -x %d -d %s &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file)),
-			"n1": Template("scoreNetwork/scoreN -s 1 -n %s.$fold -e %s -o %s.$fold -r %d -i %d -x %d -d %s &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file)),
-			"nd": Template("scoreNetwork/scoreN -s d -n %s.$fold -e %s.$fold -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_as_node_scores_file, output_scores_file, score_log_file)),
-			"nw": Template("scoreNetwork/scoreN -s w -n %s.$fold -e %s -o %s.$fold -t %f &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, DEFAULT_NON_SEED_SCORE, score_log_file)),
-			"nl": Template("scoreNetwork/scoreN -s l -n %s.$fold -e %s -o %s.$fold -t %f &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_LINKER_THRESHOLD, score_log_file)),
-			"nr": Template("scoreNetwork/scoreN -s r -n %s.$fold -e %s -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
-			"nr": Template("scoreNetwork/scoreN -s r -n %s.$fold -e %s -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
-			"nx": Template("scoreNetwork/scoreN -s x -n %s.$fold -e %s -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
-			"nb": Template("./netscore -c %s.$fold -i %s -o %s.$fold -t 0 -z 0 -nr 100 -r 1 -zp 0 -n %d -nd 2 -mx 1 -ms 3 -mn 0 -dn 2 -de 2 -mxe 0 -mne 0.00000001 -mnd 0.0000001 -mnde 0.0000001 -mnst 20 -mnste 20 -dxi 1 -dxn 0 -dxe 0 -e 0.0000001 &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, score_log_file)),
-			"ff": Template("./fFlow %s.$fold %s %s.$fold %d %f &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, DEFAULT_NON_SEED_SCORE, score_log_file)),
-		      }
-
-score_commands = { "ns": "scoreNetwork/scoreN -s s -n %s -e %s -o %s -r %d -i %d &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, score_log_file),
-		   "nz": "scoreNetwork/scoreN -s z -n %s -e %s -o %s -i %d -x %d -d %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file), 
-		   "nh": "scoreNetwork/scoreN -s h -n %s -e %s -o %s -r %d -i %d -x %d -d %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file), 
-		   "n1": "scoreNetwork/scoreN -s 1 -n %s -e %s -o %s -r %d -i %d -x %d -d %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file), 
-		   "nd": "scoreNetwork/scoreN -s d -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_as_node_scores_file, output_scores_file, score_log_file),
-		   "nw": "scoreNetwork/scoreN -s w -n %s -e %s -o %s -t %f &> %s" % (node_scores_file, edge_scores_file, output_scores_file, DEFAULT_NON_SEED_SCORE, score_log_file),
-		   "nl": "scoreNetwork/scoreN -s l -n %s -e %s -o %s -t %f &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_LINKER_THRESHOLD, score_log_file),
-		   "nr": "scoreNetwork/scoreN -s r -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file),
-		   "nx": "scoreNetwork/scoreN -s x -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file),
-		   "nb": "./netscore -c %s -i %s -o %s -t 0 -z 0 -nr 100 -r 1 -zp 0 -n %d -nd 2 -mx 1 -ms 3 -mn 0 -dn 2 -de 2 -mxe 0 -mne 0.00000001 -mnd 0.0000001 -mnde 0.0000001 -mnst 20 -mnste 20 -dxi 1 -dxn 0 -dxe 0 -e 0.0000001 &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, score_log_file),
-		   "ff": "./fFlow %s %s %s %d %f &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, DEFAULT_NON_SEED_SCORE, score_log_file),
-		 }
-
 
 def main():
+    MODE = "analyze" # prepare, score, analyze
+
+    ppis = ["goh"] #["goh", "biana_no_tap_no_reliability"]
+    phenotypes = ["aneurysm"] #["aneurysm", "breast_cancer"]
+    scoring_parameters = [("nx", 1, 1), ("nr",1, 1)]
+    #scoring_parameters += [("nd", 1, 1), ("nw",1, 1)]
+    #scoring_parameters += [("nz", 1, i) for i in xrange(1,8)]
+    #scoring_parameters += [("ns", r, i) for r in (1,2,3) for i in xrange(1,6)]
+
+    experiments = []
+    for ppi in ppis:
+	for phenotype in phenotypes:
+	    for parameters in scoring_parameters:
+		experiments.append((ppi, phenotype, parameters[0], parameters[1], parameters[2]))
+
+    for experiment in experiments:
+	PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION = experiment
+	print "Running experiment:", experiment
+	run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION)
+    return
+
+# Scoring related parameters 
+#PPI = "biana" # biana output network as it is (do not forget to revert _degree_filtered.sif.original to _degree_filtered.sif, this one is _degree_filtere_disconnected_only.sif)
+#PPI = "biana_no_reliability" # only largest connected component (lcc)
+#PPI = "biana_reliability" # reliability filtered lcc
+#PPI = "biana_no_tap_no_reliability" # tap filtered lcc
+#PPI = "biana_no_tap_no_reliability_1e-5" # tap filtered lcc with non seed scores of 1e-5
+#PPI = "biana_no_tap_reliability" # tap & reliability filtered lcc
+#PPI = "biana_no_tap_relevance" # tap filtered & string edge score assigned lcc
+#PPI = "biana_no_tap_exp_db_relevance" tap filtered & string exp & db edge score assigned lcc
+#PPI = "biana_no_tap_corelevance" # tap filtered & string co-exp score assigned lcc
+#PPI = "biana_no_tap_reliability_relevance" # tap & reliability filtered & string edge score assigned lcc
+#PPI = "goh" 
+#PPI = "rhodes"
+#PPI = "ori_coexpression_1e-2"
+#PPI = "ori_network" # these are all in 1e-5
+#PPI = "ori_coexpression" 
+#PPI = "ori_coexpression_colocalization"
+#PPI = "ori_colocalization"
+#PPI = "ori_coexpression_colocalization_1e-2"
+#PPI = "david_CpOGU"
+#PPI = "david_CpOIN"
+#PPI = "david_RpOGU"
+#PPI = "david_RpOIN"
+
+#ASSOCIATION = "aneurysm"
+#ASSOCIATION = "breast_cancer"
+#ASSOCIATION = "apoptosis"
+#ASSOCIATION = "alzheimer"
+
+#SCORING = "ns" #"netscore"
+#SCORING = "nz" #"netzcore"
+#SCORING = "nh" #"netzscore"
+#SCORING = "n1" #"netz1score"
+#SCORING = "nd" #"netshort"
+#SCORING = "nw" #"netween"
+#SCORING = "nl" #"netlink"
+#SCORING = "nr" #"netrank"
+#SCORING = "nx" #"netrandom"
+#SCORING = "nb" #"netZscore" (cortesy of baldo)
+#SCORING = "ff" #"FunctionalFlow" 
+
+#N_REPETITION = 2
+#N_ITERATION = 2
+
+#def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability, network_file, network_file_filtered, input_log_file, node_file, seed_scores_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, input_dir, node_scores_file, edge_scores_file, sampled_file_prefix, output_scores_file, log_file):
+def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
+
+    # Create experiment parameters
+    global DEFAULT_NON_SEED_SCORE 
+
+    # Disease association files (Association data to be used)
+    association_scores_validation_file = None
+    if ASSOCIATION == "aneurysm":
+	association_dir = data_dir + "aneurist" + os.sep
+	#aneurysm_scores_file = association_dir + "aneurysm_associated_genes.txt"
+	association_scores_file = association_dir + "aneurysm_associated_genes_all_equal.txt"
+	association_scores_file_identifier_type = "genesymbol"
+	association_scores_validation_file = association_dir + "aneurysm_new_9.txt" 
+    elif ASSOCIATION == "breast_cancer":
+	association_dir = data_dir + "osiris" + os.sep
+	association_scores_file = association_dir + "breast_cancer_genes_all_equal.txt"
+	association_scores_file_identifier_type = "genesymbol"
+    #elif ASSOCIATION == "apoptosis":
+    #    association_dir = data_dir + "apoptosis" + os.sep
+    #    association_scores_file = apoptosis_scores_all_equal_file
+    #    association_scores_file_identifier_type = "uniprotaccession"
+    elif ASSOCIATION == "alzheimer":
+	association_dir = data_dir + "alzheimer" + os.sep
+	association_scores_file = None
+	association_scores_file_identifier_type = "uniprotentry"
+    else:
+	raise ValueError("Unrecognized association!")
+
+
+    # Network specific
+    interaction_relevance_file = None
+    interaction_relevance_file2 = None
+    biana_network_file_filtered_by_method = None
+    biana_network_file_filtered_by_reliability = None
+    node_file = None
+    # BIANA ppi
+    if PPI.startswith("biana"):
+	node_description_file = biana_node_file_prefix + ".tsv"
+	network_file_identifier_type = "user entity id"
+	if PPI == "biana":
+	    biana_network_file_filtered_by_method = biana_network_file_prefix + ".sif"
+	    biana_network_file_filtered_by_reliability = biana_network_file_filtered_by_method[:-4] + "_reliability_filtered.sif"
+	    network_file = biana_network_file_filtered_by_method 
+	elif PPI == "biana_no_reliability":
+	    biana_network_file_filtered_by_method = biana_network_file_prefix + ".sif"
+	    biana_network_file_filtered_by_reliability = biana_network_file_filtered_by_method[:-4] + "_reliability_filtered.sif"
+	    network_file = biana_network_file_filtered_by_method  
+	elif PPI == "biana_reliability":
+	    biana_network_file_filtered_by_method = biana_network_file_prefix + ".sif"
+	    biana_network_file_filtered_by_reliability = biana_network_file_filtered_by_method[:-4] + "_reliability_filtered.sif"
+	    network_file = biana_network_file_filtered_by_reliability 
+	elif PPI.startswith("biana_no_tap"):
+	    biana_network_file_filtered_by_method = biana_network_file_prefix + "_no_tap.sif"
+	    biana_network_file_filtered_by_reliability = biana_network_file_filtered_by_method[:-4] + "_reliability_filtered.sif"
+	    if PPI == "biana_no_tap_no_reliability":
+		network_file = biana_network_file_filtered_by_method # Using only non-tap interactions
+	    elif PPI == "biana_no_tap_no_reliability_1e-5":
+		network_file = biana_network_file_filtered_by_method # Using only non-tap interactions
+		DEFAULT_NON_SEED_SCORE = 0.00001 
+	    elif PPI == "biana_no_tap_reliability":
+		network_file = biana_network_file_filtered_by_reliability # Using reliability filtered non-tap interactions
+	    elif PPI == "biana_no_tap_relevance":
+		network_file = biana_network_file_filtered_by_method 
+		interaction_relevance_file = biana_network_file_prefix + "_stringscore.eda"
+	    elif PPI == "biana_no_tap_exp_db_relevance":
+		network_file = biana_network_file_filtered_by_method 
+		interaction_relevance_file = biana_network_file_prefix + "_stringscore_experimental.eda"
+		interaction_relevance_file2 = biana_network_file_prefix + "_stringscore_db.eda"
+	    elif PPI == "biana_no_tap_corelevance":
+		network_file = biana_network_file_filtered_by_method 
+		interaction_relevance_file = biana_network_file_prefix + "_stringscore_coexpression.eda"
+	    elif PPI == "biana_no_tap_reliability_relevance":
+		network_file = biana_network_file_filtered_by_reliability 
+		interaction_relevance_file = biana_network_file_prefix + "_stringscore.eda"
+	    else:
+		raise ValueError("Unrecognized ppi!")
+	else:
+	    raise ValueError("Unrecognized ppi!")
+	network_file_filtered = network_file[:-4] + "_degree_filtered.sif" # Using only the largest strongly connected component
+    # Goh ppi
+    elif PPI == "goh":
+	node_description_file = gene_info_file 
+	network_file_identifier_type = "geneid"
+	network_file = goh_network_file
+	network_file_filtered = goh_network_file_filtered_by_degree 
+    # Rhodes ppi
+    elif PPI == "rhodes":
+	node_description_file = gene_info_file 
+	network_file_identifier_type = "geneid"
+	network_file = rhodes_network_file
+	network_file_filtered = rhodes_network_file_filtered_by_degree 
+    elif PPI.startswith("ori"):
+	network_base_dir = data_dir + "human_interactome_ori" + os.sep
+	node_description_file = biana_node_file_prefix + ".tsv"
+	network_file_identifier_type = "user entity id"
+	if PPI == "ori_network":
+	    network_dir = network_base_dir + "network" + os.sep
+	    node_file = network_dir + "aneurist.noa"
+	    network_file = network_dir + "aneurist.sif"
+	    network_file_filtered = network_file
+	    interaction_relevance_file = network_dir + "aneurist.eda"
+	    DEFAULT_NON_SEED_SCORE = 0.00001 
+	elif PPI == "ori_coexpression_1e-2":
+	    network_dir = network_base_dir + "coexpression" + os.sep
+	    node_file = network_dir + "aneurist.noa"
+	    network_file = network_dir + "aneurist.sif"
+	    network_file_filtered = network_file
+	    interaction_relevance_file = network_dir + "aneurist.eda"
+	elif PPI == "ori_coexpression":
+	    network_dir = network_base_dir + "coexpression" + os.sep
+	    node_file = network_dir + "aneurist.noa"
+	    network_file = network_dir + "aneurist.sif"
+	    network_file_filtered = network_file
+	    interaction_relevance_file = network_dir + "aneurist.eda"
+	    DEFAULT_NON_SEED_SCORE = 0.00001 
+	elif PPI == "ori_coexpression_colocalization_1e-2":
+	    network_dir = network_base_dir + "coexpression_colocalization" + os.sep
+	    node_file = network_dir + "aneurist.noa"
+	    network_file = network_dir + "aneurist.sif"
+	    network_file_filtered = network_file
+	    interaction_relevance_file = network_dir + "aneurist.eda"
+	elif PPI == "ori_coexpression_colocalization":
+	    network_dir = network_base_dir + "coexpression_colocalization" + os.sep
+	    node_file = network_dir + "aneurist.noa"
+	    network_file = network_dir + "aneurist.sif"
+	    network_file_filtered = network_file
+	    interaction_relevance_file = network_dir + "aneurist.eda"
+	    DEFAULT_NON_SEED_SCORE = 0.00001 
+	elif PPI == "ori_colocalization":
+	    network_dir = network_base_dir + "colocalization" + os.sep
+	    node_file = network_dir + "aneurist.noa"
+	    network_file = network_dir + "aneurist.sif"
+	    network_file_filtered = network_file
+	    interaction_relevance_file = network_dir + "aneurist.eda"
+	    DEFAULT_NON_SEED_SCORE = 0.00001 
+    elif PPI.startswith("david"):
+	network_dir = data_dir + "alzheimer" + os.sep
+	network_file_identifier_type = "user entity id"
+	if PPI == "david_CpOGU":
+	    association_scores_file = network_dir + "alzheimer_CpOGU_seed_all_equal.list"
+	    #node_file = network_dir + "alzheimer_CpOGU_seed.list"
+	    network_file = network_dir + "alzheimer_CpOGU_network.sif"
+	    node_description_file = network_dir + "alzheimer_CpOGU_network_all.tab"
+	    #network_file_filtered = network_file
+	elif PPI == "david_CpOIN":
+	    association_scores_file = network_dir + "alzheimer_CpOIN_seed_all_equal.list"
+	    #node_file = network_dir + "alzheimer_CpOIN_seed.list"
+	    network_file = network_dir + "alzheimer_CpOIN_network.sif"
+	    node_description_file = network_dir + "alzheimer_CpOIN_network_all.tab"
+	    #network_file_filtered = network_file
+	elif PPI == "david_RpOGU":
+	    association_scores_file = network_dir + "alzheimer_RpOGU_seed_all_equal.list"
+	    #node_file = network_dir + "alzheimer_RpOGU_seed.list"
+	    network_file = network_dir + "alzheimer_RpOGU_network.sif"
+	    node_description_file = network_dir + "alzheimer_RpOGU_network_all.tab"
+	    #network_file_filtered = network_file
+	elif PPI == "david_RpOIN":
+	    association_scores_file = network_dir + "alzheimer_RpOIN_seed_all_equal.list"
+	    #node_file = network_dir + "alzheimer_RpOIN_seed.list"
+	    network_file = network_dir + "alzheimer_RpOIN_network.sif"
+	    node_description_file = network_dir + "alzheimer_RpOIN_network_all.tab"
+	    #network_file_filtered = network_file
+	network_file_filtered = network_file[:-4] + "_degree_filtered.sif" # Using only the largest strongly connected component
+    else:
+	raise ValueError("Unrecognized ppi!")
+
+
+    # Human readable title for the run
+    title = "%s - %s - %s" % (PPI, ASSOCIATION, SCORING)
+
+    # Project directory structure
+    input_base_dir = data_dir + "input" + os.sep
+    input_base_dir_network = input_base_dir + PPI + os.sep
+    input_base_dir_association = input_base_dir_network + ASSOCIATION + os.sep
+    input_dir = input_base_dir_association
+    sampling_dir = input_base_dir_network + "sampled_graphs" + os.sep
+    output_base_dir = data_dir + "output" + os.sep
+    output_base_dir_network = output_base_dir + PPI + os.sep
+    output_base_dir_association = output_base_dir_network + ASSOCIATION + os.sep
+    output_dir = output_base_dir_association + SCORING + os.sep
+
+    # Create directory hirerarchy
+    if not os.path.exists(input_base_dir): 
+	os.mkdir(input_base_dir)
+    if not os.path.exists(input_base_dir_network): 
+	os.mkdir(input_base_dir_network)
+    if not os.path.exists(input_base_dir_association): 
+	os.mkdir(input_base_dir_association)
+    if not os.path.exists(input_dir): 
+	os.mkdir(input_dir)
+    if not os.path.exists(sampling_dir): 
+	os.mkdir(sampling_dir)
+    if not os.path.exists(output_base_dir): 
+	os.mkdir(output_base_dir)
+    if not os.path.exists(output_base_dir_network): 
+	os.mkdir(output_base_dir_network)
+    if not os.path.exists(output_base_dir_association): 
+	os.mkdir(output_base_dir_association)
+    if not os.path.exists(output_dir): 
+	os.mkdir(output_dir)
+
+    if SCORING == "ns" or SCORING == "nh" or SCORING == "n1":
+	title += " - r%d i%d" % (N_REPETITION, N_ITERATION)
+	output_dir = output_dir + "r%di%d" % (N_REPETITION, N_ITERATION) + os.sep
+	if not os.path.exists(output_dir): 
+	    os.mkdir(output_dir)
+    elif SCORING == "nz" or SCORING == "ff" or SCORING == "nb":
+	title += " - i%d" % N_ITERATION
+	output_dir = output_dir + "i%d" % N_ITERATION + os.sep
+	if not os.path.exists(output_dir): 
+	    os.mkdir(output_dir)
+    elif SCORING == "nl":
+	title += " - t%f" % N_LINKER_THRESHOLD
+	output_dir = output_dir + "t%f" % N_LINKER_THRESHOLD + os.sep
+	if not os.path.exists(output_dir): 
+	    os.mkdir(output_dir)
+
+
+    # Input/Output score file
+    seed_scores_file = input_dir + "seed_scores.sif"
+    node_scores_file = input_dir + "node_scores.sif"
+    #edge_scores_file = input_dir + "edge_scores.sif"
+    edge_scores_file = input_base_dir_network + "edge_scores.sif"
+    edge_scores_as_node_scores_file = input_dir + "edge_scores_as_node_scores.sif"
+    reliability_filtered_edge_scores_file = input_base_dir_network + "reliability_filtered_edge_scores.sif"
+    output_scores_file = output_dir + "node_scores.sif" # "_r%dn%d.sif" % (N_REPETITION, N_ITERATION)
+    score_log_file = output_dir + "log.txt" # "_r%dn%d.txt" % (N_REPETITION, N_ITERATION)
+    sampled_file_prefix = sampling_dir + "sampled_graph"
+
+    # Log (README) files 
+    log_file = output_dir + "README"
+    input_log_file = input_dir + "README"
+    job_file = output_dir + "job.sh"
+    output_log_file = output_base_dir_association + "README"
+
+    # Analysis files
+    predictions_file = output_dir + "predictions.txt"
+    labels_file = output_dir + "labels.txt"
+    r_script_file = output_dir + "results.r"
+    tex_script_file = output_dir + "results.tex"
+
+    score_xval_commands = { "ns": Template(src_dir + "scoreNetwork/scoreN -s s -n %s.$fold -e %s -o %s.$fold -r %d -i %d &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, score_log_file)),
+			    "nz": Template(src_dir + "scoreNetwork/scoreN -s z -n %s.$fold -e %s -o %s.$fold -i %d -x %d -d %s &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file)),
+			    "nh": Template(src_dir + "scoreNetwork/scoreN -s h -n %s.$fold -e %s -o %s.$fold -r %d -i %d -x %d -d %s &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file)),
+			    "n1": Template(src_dir + "scoreNetwork/scoreN -s 1 -n %s.$fold -e %s -o %s.$fold -r %d -i %d -x %d -d %s &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file)),
+			    "nd": Template(src_dir + "scoreNetwork/scoreN -s d -n %s.$fold -e %s.$fold -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_as_node_scores_file, output_scores_file, score_log_file)),
+			    "nw": Template(src_dir + "scoreNetwork/scoreN -s w -n %s.$fold -e %s -o %s.$fold -t %f &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, DEFAULT_NON_SEED_SCORE, score_log_file)),
+			    "nl": Template(src_dir + "scoreNetwork/scoreN -s l -n %s.$fold -e %s -o %s.$fold -t %f &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_LINKER_THRESHOLD, score_log_file)),
+			    "nr": Template(src_dir + "scoreNetwork/scoreN -s r -n %s.$fold -e %s -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
+			    "nr": Template(src_dir + "scoreNetwork/scoreN -s r -n %s.$fold -e %s -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
+			    "nx": Template(src_dir + "scoreNetwork/scoreN -s x -n %s.$fold -e %s -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
+			    "nb": Template(src_dir + "./netscore -c %s.$fold -i %s -o %s.$fold -t 0 -z 0 -nr 100 -r 1 -zp 0 -n %d -nd 2 -mx 1 -ms 3 -mn 0 -dn 2 -de 2 -mxe 0 -mne 0.00000001 -mnd 0.0000001 -mnde 0.0000001 -mnst 20 -mnste 20 -dxi 1 -dxn 0 -dxe 0 -e 0.0000001 &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, score_log_file)),
+			    "ff": Template(src_dir + "./fFlow %s.$fold %s %s.$fold %d %f &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, DEFAULT_NON_SEED_SCORE, score_log_file)),
+			  }
+
+    score_commands = { "ns": src_dir + "scoreNetwork/scoreN -s s -n %s -e %s -o %s -r %d -i %d &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, score_log_file),
+		       "nz": src_dir + "scoreNetwork/scoreN -s z -n %s -e %s -o %s -i %d -x %d -d %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file), 
+		       "nh": src_dir + "scoreNetwork/scoreN -s h -n %s -e %s -o %s -r %d -i %d -x %d -d %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file), 
+		       "n1": src_dir + "scoreNetwork/scoreN -s 1 -n %s -e %s -o %s -r %d -i %d -x %d -d %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file), 
+		       "nd": src_dir + "scoreNetwork/scoreN -s d -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_as_node_scores_file, output_scores_file, score_log_file),
+		       "nw": src_dir + "scoreNetwork/scoreN -s w -n %s -e %s -o %s -t %f &> %s" % (node_scores_file, edge_scores_file, output_scores_file, DEFAULT_NON_SEED_SCORE, score_log_file),
+		       "nl": src_dir + "scoreNetwork/scoreN -s l -n %s -e %s -o %s -t %f &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_LINKER_THRESHOLD, score_log_file),
+		       "nr": src_dir + "scoreNetwork/scoreN -s r -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file),
+		       "nx": src_dir + "scoreNetwork/scoreN -s x -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file),
+		       "nb": src_dir + "./netscore -c %s -i %s -o %s -t 0 -z 0 -nr 100 -r 1 -zp 0 -n %d -nd 2 -mx 1 -ms 3 -mn 0 -dn 2 -de 2 -mxe 0 -mne 0.00000001 -mnd 0.0000001 -mnde 0.0000001 -mnst 20 -mnste 20 -dxi 1 -dxn 0 -dxe 0 -e 0.0000001 &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, score_log_file),
+		       "ff": src_dir + "./fFlow %s %s %s %d %f &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, DEFAULT_NON_SEED_SCORE, score_log_file),
+		     }
+
+
+    # Conduct experiment
     if MODE == "prepare":
-	prepare()
+	prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability, network_file, network_file_filtered, input_log_file, node_file, seed_scores_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, input_dir, node_scores_file, edge_scores_file, interaction_relevance_file, interaction_relevance_file2, edge_scores_as_node_scores_file, sampled_file_prefix)
     elif MODE == "score":
-	score()
+	score(SCORING, score_commands, score_xval_commands, output_scores_file, log_file, job_file)
     elif MODE == "analyze":
-	analyze()
+	analyze(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title)
     elif MODE == "all":
-	prepare()
-	score()
-	analyze()
+	prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability, network_file, network_file_filtered, input_log_file, node_file, seed_scores_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, input_dir, node_scores_file, edge_scores_file, interaction_relevance_file, interaction_relevance_file2, edge_scores_as_node_scores_file, sampled_file_prefix)
+	score(SCORING, score_commands, score_xval_commands, output_scores_file, log_file, job_file)
+	analyze(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title)
     else:
 	raise ValueError("Unrecognized mode!")
     return
 
 
-def prepare():
+def prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability, network_file, network_file_filtered, input_log_file, node_file, seed_scores_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, input_dir, node_scores_file, edge_scores_file, interaction_relevance_file, interaction_relevance_file2, edge_scores_as_node_scores_file, sampled_file_prefix):
     """
 	Creates necessary files for scoring
     """
@@ -403,48 +437,57 @@ def prepare():
 	prepare_data.create_ARFF_network_metrics_file(network_file_filtered, seed_to_score, seed_to_score.keys(), input_dir + "analyze_network.arff")
 
     # Prepare scoring files
-    prepare_scoring_files(network_file_filtered, seed_to_score, node_scores_file, edge_scores_file, sampled_file_prefix)
+    prepare_scoring_files(seed_scores_file, network_file_filtered, seed_to_score, node_scores_file, edge_scores_file, interaction_relevance_file, interaction_relevance_file2, edge_scores_as_node_scores_file, sampled_file_prefix)
     return
 
 
-def score():
+def score(SCORING, score_commands, score_xval_commands, output_scores_file, log_file, job_file):
     """
 	Runs or prints commands to run scoring method on the input files
     """
-    score_original()
-    score_xval()
+    score_original(SCORING, score_commands, output_scores_file, log_file, job_file)
+    score_xval(SCORING, score_xval_commands, output_scores_file, log_file, job_file)
     return
 
 
-def analyze():
+def analyze(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title):
     """
 	Does cross validation and percentage analysis on the output files
     """
-    analyze_original()
-    analyze_xval_percentage()
-    analyze_xval() 
+    analyze_original(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_description_file, network_file_identifier_type, association_scores_validation_file)
+    analyze_xval(r_script_file, output_scores_file, node_scores_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, log_file) 
+    analyze_xval_percentage(log_file, output_scores_file, node_scores_file, output_log_file)
     return
 
 
-def generate_score_xval_command(k):
+def generate_score_xval_command(SCORING, score_xval_commands, k):
     #return score_xval_command % (node_scores_file, k, edge_scores_file, output_scores_file, k, N_REPETITION, N_ITERATION, score_log_file, k)
     return score_xval_commands[SCORING].substitute(fold = '%d' % k)
 
 
-def score_xval():
+def score_xval(SCORING, score_xval_commands, output_scores_file, log_file, job_file):
     if not os.path.exists(output_scores_file + ".1"):
 	f = open(log_file, "a")
 	for k in range(1, N_X_VAL+1):
 	    if only_print_command:
-		print generate_score_xval_command(k)
+		print generate_score_xval_command(SCORING, score_xval_commands, k)
 	    else:
-		f.write("%s\n" % generate_score_xval_command(k))
-		os.system( generate_score_xval_command(k) )
+		f.write("%s\n" % generate_score_xval_command(SCORING, score_xval_commands, k))
+		if use_cluster:
+		    #f2 = NamedTemporaryFile(delete=False)
+		    #f2 = open("%s.%d" % (job_file, k), 'w') 
+		    #f2.write("#!/usr/bin/env sh\n%s" % generate_score_xval_command(SCORING, score_xval_commands, k))
+		    #f2.close()
+		    #os.system( "qsub -o out.%d -e err.%d -l hostname=node52 -N %s -b y %s" % (k, k, SCORING, f2.name) )
+		    os.system( "qsub -cwd -o out.%d -e err.%d -l hostname=node52 -N %s -b y %s" % (k, k, SCORING, generate_score_xval_command(SCORING, score_xval_commands, k)) )
+		    #os.unlink(f2.name)
+		else:
+		    os.system( generate_score_xval_command(SCORING, score_xval_commands, k) )
 	f.close()
     return
 
 
-def score_original():
+def score_original(SCORING, score_commands, output_scores_file, log_file, job_file):
     if not os.path.exists(output_scores_file):
 	f = open(log_file, "a")
 	#print score_commands[SCORING]
@@ -452,12 +495,19 @@ def score_original():
 	    print score_commands[SCORING]
 	else:
 	    f.write("%s\n" % score_commands[SCORING])
-	    os.system(score_commands[SCORING])
+	    if use_cluster:
+		#f2 = open(job_file, 'w') 
+		#f2.write("#!/usr/bin/env sh\n%s" % score_commands[SCORING])
+		#f2.close()
+		#os.system("qsub -o out -e err -l hostname=node34 -N %s -b y %s" % (SCORING, f2.name))
+		os.system("qsub -cwd -o out -e err -l hostname=node34 -N %s -b y %s" % (SCORING, score_commands[SCORING]))
+	    else:
+		os.system(score_commands[SCORING])
 	f.close()
     return
 
 
-def analyze_xval():
+def analyze_xval(r_script_file, output_scores_file, node_scores_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, log_file):
     if os.path.exists(r_script_file):
 	return
     list_node_scores_and_labels = []
@@ -468,39 +518,44 @@ def analyze_xval():
     analyze_results.create_R_script(r_script_file, output_dir, title) # os.path.basename(output_dir))
     os.system("R CMD BATCH %s" % (r_script_file))
     os.system("convert %sperformance.eps %sperformance.jpg" % (output_dir, output_dir))
+    analyze_results.record_performance_AUC_in_log_file(output_dir, output_log_file, title)
     analyze_results.create_tex_script(tex_script_file, output_dir, title)
 
-    #for tScore in [ i*0.01 for i in xrange(0, 100, 5)]:
-    f = open(log_file, "a")
-    for tScore in [ 0.5 ]:
-	#print "---- t:", tScore
-	f.write("---- t: %s\n" % tScore)
-	nTP_sum, nFP_sum, nFN_sum, nTN_sum = 0.0, 0.0, 0.0, 0.0
-	for k in range(1, N_X_VAL+1):
-	    ##print output_scores_file+".ns.%d"%k, node_scores_file+".%d.test"%k 
-	    nTP, nFP, nFN, nTN = analyze_results.calculate_performance_metric_counts(file_result = output_scores_file+".%d" % k, file_seed_test_scores = node_scores_file+".%d.test"%k, file_node_scores = node_scores_file, score_threshold = tScore, n_random_negative_folds = N_RANDOM_NEGATIVE_FOLDS, default_score = DEFAULT_NON_SEED_SCORE, replicable = REPLICABLE)
+    #! now unnecessary since ROC curve analysis is done
+    threshold_analysis = False
+    if threshold_analysis:
+	#for tScore in [ i*0.01 for i in xrange(0, 100, 5)]:
+	f = open(log_file, "a")
+	for tScore in [ 0.5 ]:
+	    #print "---- t:", tScore
+	    f.write("---- t: %s\n" % tScore)
+	    nTP_sum, nFP_sum, nFN_sum, nTN_sum = 0.0, 0.0, 0.0, 0.0
+	    for k in range(1, N_X_VAL+1):
+		##print output_scores_file+".ns.%d"%k, node_scores_file+".%d.test"%k 
+		nTP, nFP, nFN, nTN = analyze_results.calculate_performance_metric_counts(file_result = output_scores_file+".%d" % k, file_seed_test_scores = node_scores_file+".%d.test"%k, file_node_scores = node_scores_file, score_threshold = tScore, n_random_negative_folds = N_RANDOM_NEGATIVE_FOLDS, default_score = DEFAULT_NON_SEED_SCORE, replicable = REPLICABLE)
+		(acc, sens, spec, ppv) = analyze_results.calculatePerformance(nTP, nFP, nFN, nTN)
+		##print "A:", acc, "S:", sens, "P:", ppv
+		nTP_sum += nTP
+		nFP_sum += nFP
+		nFN_sum += nFN
+		nTN_sum += nTN
+	    # Calculate Sensitivity (TP/T[TP+FN]) (aka TPR) & Calculate PPV (TP/P[TP+FP]) (use randomly selected non-seed nodes as negatives [average w.r.t. n different random selection results])
+	    nTP = nTP_sum / N_X_VAL
+	    nFP = nFP_sum / N_X_VAL
+	    nFN = nFN_sum / N_X_VAL
+	    nTN = nTN_sum / N_X_VAL
 	    (acc, sens, spec, ppv) = analyze_results.calculatePerformance(nTP, nFP, nFN, nTN)
-	    ##print "A:", acc, "S:", sens, "P:", ppv
-	    nTP_sum += nTP
-	    nFP_sum += nFP
-	    nFN_sum += nFN
-	    nTN_sum += nTN
-	# Calculate Sensitivity (TP/T[TP+FN]) (aka TPR) & Calculate PPV (TP/P[TP+FP]) (use randomly selected non-seed nodes as negatives [average w.r.t. n different random selection results])
-	nTP = nTP_sum / N_X_VAL
-	nFP = nFP_sum / N_X_VAL
-	nFN = nFN_sum / N_X_VAL
-	nTN = nTN_sum / N_X_VAL
-	(acc, sens, spec, ppv) = analyze_results.calculatePerformance(nTP, nFP, nFN, nTN)
-	#print "Avg. A:", acc, "S:", sens, "P:", ppv
-	f.write("Avg. A: %s S: %s P: %s\n" % (acc, sens, ppv))
-	# Calculate 1-Specificity (1-TN/N[FP+TN] = FP/N) (aka FPR) 
-	fpr = 1-spec
-    f.close()
+	    #print "Avg. A:", acc, "S:", sens, "P:", ppv
+	    f.write("Avg. A: %s S: %s P: %s\n" % (acc, sens, ppv))
+	    # Calculate 1-Specificity (1-TN/N[FP+TN] = FP/N) (aka FPR) 
+	    fpr = 1-spec
+	f.close()
     return
 
 
-def analyze_xval_percentage():
+def analyze_xval_percentage(log_file, output_scores_file, node_scores_file, output_log_file):
     f = open(log_file, "a")
+    coverages = []
     for percentage in (10, 25, 50):
 	#print "---- %s%%:" % percentage
 	f.write("---- %s%%:\n" % percentage)
@@ -516,11 +571,13 @@ def analyze_xval_percentage():
 	n_seed = n_seed_sum / N_X_VAL
 	#print "Avg:", n_seed, "over", n
 	f.write("Avg: %i over %i\n" % (n_seed, n))
+	coverages.append(n_seed)
+    analyze_results.record_performance_coverage_in_log_file(output_log_file, coverages)
     f.close()
     return
 
 
-def analyze_original():
+def analyze_original(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_description_file, network_file_identifier_type, association_scores_validation_file):
     if not os.path.exists(output_scores_file):
 	raise Exception("Output score file does not exist!")
     f = open(log_file, "a")
@@ -528,7 +585,8 @@ def analyze_original():
 	#print "---- %s:" % percentage
 	f.write("---- %s:\n" % percentage)
 	f.write("%s\n" % output_scores_file)
-	f.write("%s\n" % str(analyze_results.calculate_seed_coverage_at_given_percentage(output_scores_file, node_scores_file, percentage, DEFAULT_NON_SEED_SCORE)))
+	coverage = analyze_results.calculate_seed_coverage_at_given_percentage(output_scores_file, node_scores_file, percentage, DEFAULT_NON_SEED_SCORE)
+	f.write("%s\n" % str(coverage))
 	if association_scores_file_identifier_type is not None and not os.path.exists(output_scores_file+"."+association_scores_file_identifier_type):
 	    if PPI.startswith("biana"):
 		prepare_data.convert_file_using_new_id_mapping(output_scores_file, node_description_file, network_file_identifier_type, "geneid", output_scores_file+".geneid")
@@ -563,7 +621,7 @@ def create_biana_network_files(biana_node_file_prefix, biana_network_file_prefix
     return
 
 
-def prepare_scoring_files(network_file_filtered, seed_to_score, node_scores_file, edge_scores_file, sampled_file_prefix):
+def prepare_scoring_files(seed_scores_file, network_file_filtered, seed_to_score, node_scores_file, edge_scores_file, interaction_relevance_file, interaction_relevance_file2, edge_scores_as_node_scores_file, sampled_file_prefix):
     # Create node scores file and check how many of the seed genes we cover in the network
     # Create seed scores file from association score to seed node mapping
     if not os.path.exists(seed_scores_file): 
@@ -611,6 +669,9 @@ def prepare_scoring_files(network_file_filtered, seed_to_score, node_scores_file
 
 ########################### Oldies & Goldies #########################
 ######################################################################
+
+# obsolete
+import score_network # obsolete
 
 def old_score_xval_random():
     if not os.path.exists(output_scores_file+"random.1"):
@@ -698,14 +759,14 @@ arff_file_prefix = "../data/arff/network_metrics"
 result_file_prefix = "../data/output/fold"
 
 # Resulting score files
-netshort_results = output_dir + "netshort_onlyEdgeRelevance_noNodeInitialScoreAccumulation.txt"
-netrank_results = output_dir + "netrank_onlyEdgeRelevance_noNodeInitialScoreAccumulation.txt"
-netscore_results_1 = output_dir + "netscore_onlyEdgeRelevance_noNodeInitialScoreAccumulation_i1.txt"
-netscore_results_3 = output_dir + "netscore_onlyEdgeRelevance_noNodeInitialScoreAccumulation_i3.txt"
-netscore_results_no_1 = output_dir + "netscore_noEdgeRelevance_noNodeInitialScoreAccumulation_i1.txt"
-netscore_results_no_3 = output_dir + "netscore_noEdgeRelevance_noNodeInitialScoreAccumulation_i3.txt"
-netzcore_results_1 = output_dir + "netzcore_onlyEdgeRelevance_noNodeInitialScoreAccumulation_i1.txt"
-netzcore_results_3 = output_dir + "netzcore_onlyEdgeRelevance_noNodeInitialScoreAccumulation_i3.txt"
+#netshort_results = output_dir + "netshort_onlyEdgeRelevance_noNodeInitialScoreAccumulation.txt"
+#netrank_results = output_dir + "netrank_onlyEdgeRelevance_noNodeInitialScoreAccumulation.txt"
+#netscore_results_1 = output_dir + "netscore_onlyEdgeRelevance_noNodeInitialScoreAccumulation_i1.txt"
+#netscore_results_3 = output_dir + "netscore_onlyEdgeRelevance_noNodeInitialScoreAccumulation_i3.txt"
+#netscore_results_no_1 = output_dir + "netscore_noEdgeRelevance_noNodeInitialScoreAccumulation_i1.txt"
+#netscore_results_no_3 = output_dir + "netscore_noEdgeRelevance_noNodeInitialScoreAccumulation_i3.txt"
+#netzcore_results_1 = output_dir + "netzcore_onlyEdgeRelevance_noNodeInitialScoreAccumulation_i1.txt"
+#netzcore_results_3 = output_dir + "netzcore_onlyEdgeRelevance_noNodeInitialScoreAccumulation_i3.txt"
 
 
 if __name__ == "__main__":

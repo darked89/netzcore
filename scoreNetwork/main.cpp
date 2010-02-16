@@ -130,22 +130,22 @@ int main(int argc, char **argv)
 void runNetlink(string fileNode, string fileEdge, string fileOutput, float threshold) 
 {
     // flagAccumulateToInitialNodeScore, flagVerbose
-    Netlink sN(fileNode, fileEdge, fileOutput, threshold, false, false);
+    Netlink sN(fileNode, fileEdge, fileOutput, threshold, true, false);
     sN.run(1, 1);
 }
 
 void runNetween(string fileNode, string fileEdge, string fileOutput, float threshold) 
 {
     // seedScoreThreshold, flagAccumulateToInitialNodeScore, flagVerbose
-    Netween sN(fileNode, fileEdge, fileOutput, threshold, false, false);
+    Netween sN(fileNode, fileEdge, fileOutput, threshold, true, false);
     sN.run();
 }
 
 void runNetz1score(string fileNode, string fileEdge, string fileOutput, string prefixSampledGraphs, unsigned int nSampled, unsigned int nRepetition, unsigned int nIteration) 
 {
     // flagUseEdgeScore, flagAccumulateToInitialNodeScore, flagResetSeedScoresToInitial, flagVerbose
-    Netzcore sNz(fileNode, fileEdge, fileOutput, prefixSampledGraphs, nSampled, true, false, false, false);
-    Netscore sNs(fileOutput, true, false, false, false);
+    Netzcore sNz(fileNode, fileEdge, fileOutput, prefixSampledGraphs, nSampled, true, true, false, false);
+    Netscore sNs(fileOutput, true, true, false, false);
     sNs.setPNetwork(sNz.getPNetwork());
 
     // Normalize score in the begining once
@@ -160,7 +160,7 @@ void runNetzscore(string fileNode, string fileEdge, string fileOutput, string pr
     // flagUseEdgeScore, flagAccumulateToInitialNodeScore, flagResetSeedScoresToInitial, flagVerbose
     //Netzscore sN(fileNode, fileEdge, fileOutput, prefixSampledGraphs, nSampled, true, false, false, true);
     Netzcore sNz(fileNode, fileEdge, fileOutput, prefixSampledGraphs, nSampled, true, false, false, false);
-    Netscore sNs(fileOutput, true, false, false, false);
+    Netscore sNs(fileOutput, true, true, false, false);
     sNs.setPNetwork(sNz.getPNetwork());
 
     // Normalize score at each repetition
@@ -175,14 +175,14 @@ void runNetzscore(string fileNode, string fileEdge, string fileOutput, string pr
 void runNetzcore(string fileNode, string fileEdge, string fileOutput, string prefixSampledGraphs, unsigned int nSampled, unsigned int nRepetition, unsigned int nIteration) 
 {
     // flagUseEdgeScore, flagAccumulateToInitialNodeScore, flagResetSeedScoresToInitial, flagVerbose
-    Netzcore sN(fileNode, fileEdge, fileOutput, prefixSampledGraphs, nSampled, true, false, false, false);
+    Netzcore sN(fileNode, fileEdge, fileOutput, prefixSampledGraphs, nSampled, true, true, false, false);
     sN.run(nRepetition, nIteration);
 }
 
 void runNetscore(string fileNode, string fileEdge, string fileOutput, unsigned int nRepetition, unsigned int nIteration) 
 {
     // flagUseEdgeScore, flagAccumulateToInitialNodeScore, flagResetSeedScoresToInitial, flagVerbose
-    Netscore sN(fileNode, fileEdge, fileOutput, true, false, false, false);
+    Netscore sN(fileNode, fileEdge, fileOutput, true, true, false, false);
     sN.run(nRepetition, nIteration);
 }
 
@@ -190,7 +190,7 @@ void runNetshort(string fileNode, string fileEdge, string fileOutput)
 {
     //clock_t t1 = clock();
     // flagAccumulateToInitialNodeScore
-    Netshort sN(fileNode, fileEdge, fileOutput, false);
+    Netshort sN(fileNode, fileEdge, fileOutput, true);
     //clock_t t2 = clock();
     //cout << "Time to load graph: " << (t2-t1) << " (" << (t2-t1)/(double)CLOCKS_PER_SEC << "s)" << endl;
     sN.run();
@@ -200,13 +200,13 @@ void runNetshort(string fileNode, string fileEdge, string fileOutput)
 void runNetrank(string fileNode, string fileEdge, string fileOutput, unsigned int nIteration) 
 {
     // flagAccumulateToInitialNodeScore
-    Netrank sN(fileNode, fileEdge, fileOutput, false);
+    Netrank sN(fileNode, fileEdge, fileOutput, true);
     sN.run(20); // number of pagerank iterations
 }
 
 void runNetrandom(string fileNode, string fileEdge, string fileOutput) 
 {
-    Netrandom sN(fileNode, fileEdge, fileOutput);
+    Netrandom sN(fileNode, fileEdge, fileOutput, true);
     sN.run();
 }
 

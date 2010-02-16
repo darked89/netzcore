@@ -1,9 +1,31 @@
 
 TODO:
 
+- presentation 
+    - Intro 
+	- split slides
+	- add/remove guilt by association
+	- visual representation as much as possible
+	- Move reimplemented methods here (without mentionining reimplementation, introduce as most relevant works)
+    - Method
+	- Scoring methods visual representation
+	- Biana
+	- Random Network
+	- Mapping node + edge data visual representation
+	- data sources adding IPA (ingeniuty)
+	- Performance Evaluation auc, xval visaul repr
+    - Results
+	- Runs over different data! may need to explain the data more in method/data
+	- auc, recovery rates
+	- High scoring node check
+	- Network topology characteristics (ld, ld2) for 2 netw, explain ld
+	- Emiting results
+	    - Net* methods comparison within then other methods
+	    - methods on diff netw when association fixed
+
 - david's runs
 
-- check edge scoring by string
+- check again edge scoring by string
 
 - check performance on other disease data
 
@@ -16,7 +38,7 @@ TODO:
 - attach biological sense to the results, check if there is different data sources for the same phenotype coinciding when scores calculated with one of them or GO analysis or greedy expansion of complex from high scoring nodes and analyzing their functional enrichment
     - GO analysis on the high scoring nodes
 
-- document all + presentation
+- document all
 
 - comparison with other methods in the literature (with their data)
     - FunctionalFlow functional annotation (use scoreN with acc to initial scores option)
@@ -29,8 +51,6 @@ TODO:
 	- still their scores on essentiality data can be compared
 
 - random negative selection n_fold calculation change
-
-- modify netzcore for consequitive runs
 
 - disease data
     - osiris
@@ -167,6 +187,10 @@ NOTES:
 - Modified PageRank to PageRank with priors (as used by Chen 09), performance increases by 8 to 20% on all data sets, but still <70%.
 
 - Checked performance robustness of netscore to scaling for iterations, for r2i2 r2i3 goh aneurysm, neither scaling by iteration / sq(iteration) improves performance as well as scaling by iteration in addition to not scaling by number of messages. The behaviour may be different for larger iterations.
+
+- Modified netzcore for consequitive runs. Added stddev for AUC, created a README file for AUC results
+
+- accumulateToInitialScores flag has been set for scoring methods (in the test original seeds are not used anyway)
 
 
 aneurysim

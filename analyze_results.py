@@ -9,6 +9,25 @@ from biana.utilities import graph_utilities as network_utilities
 #def generate_xval_ROCR_files():
 #    return
 
+def record_performance_AUC_in_log_file(absolute_dir, log_file, title):
+    f = open(absolute_dir + "auc.txt")
+    line = f.readline()
+    words = line.strip().split()
+    mean, sigma = words[1].strip("\""), words[2].strip("\"")
+    f.close()
+    f = open(log_file, "a")
+    f.write("%s\t%s\t+/- %s" % (title, mean, sigma)) 
+    f.close()
+    return
+
+
+def record_performance_coverage_in_log_file(log_file, coverages):
+    f = open(log_file, "a")
+    f.write("\t%s\n" % "\t".join(str(i) for i in coverages)) 
+    f.close()
+    return
+
+
 def create_tex_script(fileName, absolute_dir, title):
     f = open(fileName, "w")
     f.write("\\frame {\n") 
@@ -55,6 +74,9 @@ def create_R_script(fileName, absolute_dir, title):
     f.write("perfAUC<-performance(pred, \"auc\")\n")
     f.write("e=c(); n=c(); x=0; for ( i in perfAUC@y.values ) { x<-x+1;  e[x] <- i; n[x]<-x }; barplot(e, names=n, ylim=c(0,1),ylab= \"AUC\",xlab=\"Fold\", main=\"Area under ROC curve (AUC)\")\n")
     f.write("legend(\"topright\", c(paste(\"(Avg: \", format(mean(e), digits=3), \")\",sep=\"\")), lty=c(), col=c())\n") 
+    f.write("sink(\"%sauc.txt\", append=TRUE, split=TRUE)\n" % absolute_dir)
+    f.write("paste(format(mean(e), digits=3), format(sd(e), digits=3), sep=\" \")\n") 
+    f.write("sink()\n")
     f.write("perfRMSE<-performance(pred, \"rmse\")\n")
     f.write("e=c(); n=c(); x=0; for ( i in perfRMSE@y.values ) { x<-x+1;  e[x] <- i; n[x]<-x }; barplot(e, names=n, ylim=c(0,1),ylab= \"RMSE\",xlab=\"Fold\"); title(\"Root mean square error (RMSE)\")\n")
     f.write("legend(\"topright\", c(paste(\"(Avg: \", format(mean(e), digits=3), \")\", sep=\"\")), lty=c(), col=c())\n") 
@@ -132,8 +154,8 @@ def generate_samples_from_list_without_replacement(elements, sample_size, n_fold
     shuffle(elements)
     if n_folds is None:
 	from math import ceil
-	n_folds = len(elements) / sample_size
-	#n_folds = int(ceil(float(len(elements)) / sample_size))
+	#n_folds = len(elements) / sample_size
+	n_folds = int(ceil(float(len(elements)) / sample_size))
     for i in range(n_folds):
 	if (i+1)*sample_size < len(elements):
 	    yield elements[i*sample_size:(i+1)*sample_size]
