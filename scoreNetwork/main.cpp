@@ -5,7 +5,7 @@
 #include "Netrank.hpp"
 #include "Netzcore.hpp"
 #include "Netrandom.hpp"
-#include "Netzscore.hpp"
+//#include "Netzscore.hpp"
 #include "Netween.hpp"
 #include "Netlink.hpp"
 
