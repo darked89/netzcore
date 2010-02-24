@@ -8,6 +8,7 @@
 
 import prepare_data
 import analyze_results
+import calculate_mean_and_sigma
 import os, os.path
 from string import Template
 
@@ -17,6 +18,7 @@ only_print_command = False
 use_cluster = False
 
 N_LINKER_THRESHOLD = 2
+DEFAULT_SEED_SCORE = 1.0 # Default score for seed nodes, used when no score given in assoc file
 DEFAULT_NON_SEED_SCORE = 0.01 # Default score for non-seed nodes
 ALLOWED_MAX_DEGREE = 100000 #175 #90 # Max degree allowed in the graph filtering
 N_SAMPLE_GRAPH = 100 # Number of random graphs to be generated
@@ -41,20 +43,25 @@ goh_network_file = data_dir + "goh07_human_ppi" + os.sep + "ppi.sif"
 rhodes_network_file = data_dir + "rhodes05_human_probabilistic_ppi" + os.sep + "ppi.sif"
 goh_network_file_filtered_by_degree = goh_network_file[:-4] + "_degree_filtered.sif"
 rhodes_network_file_filtered_by_degree = rhodes_network_file[:-4] + "_degree_filtered.sif"
+rhodes_interaction_relevance_file = rhodes_network_file[:-4] + ".eda"
 
 # Gene info file 
 gene_info_file = data_dir + "gene_info" + os.sep + "genes.tsv"
 
 
 def main():
-    MODE = "analyze" # prepare, score, analyze
+    MODE = "prepare" # prepare, score, analyze
 
-    ppis = ["goh"] #["goh", "biana_no_tap_no_reliability"]
-    phenotypes = ["aneurysm"] #["aneurysm", "breast_cancer"]
-    scoring_parameters = [("nx", 1, 1), ("nr",1, 1)]
+    ppis = ["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
+    phenotypes = ["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
+    scoring_parameters = [("nr", 1, 1)]
+    #scoring_parameters += [("nx", 1, 1), ("nr", 1, 1)]
     #scoring_parameters += [("nd", 1, 1), ("nw",1, 1)]
-    #scoring_parameters += [("nz", 1, i) for i in xrange(1,8)]
-    #scoring_parameters += [("ns", r, i) for r in (1,2,3) for i in xrange(1,6)]
+    #scoring_parameters += [("ff", 1, i) for i in xrange(1,9)]
+    #scoring_parameters += [("nz", 1, i) for i in xrange(1,9)]
+    #scoring_parameters += [("ns", r, i) for r in xrange(1,9) for i in xrange(1,5)]
+    #scoring_parameters += [("nh", r, i) for r in (1,2,3) for i in xrange(1,5)]
+    #scoring_parameters += [("n1", r, i) for r in (1,2,3) for i in xrange(1,5)]
 
     experiments = []
     for ppi in ppis:
@@ -65,7 +72,10 @@ def main():
     for experiment in experiments:
 	PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION = experiment
 	print "Running experiment:", experiment
+	#try:
 	run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION)
+	#except:
+	#    print "!Problem!"
     return
 
 # Scoring related parameters 
@@ -75,7 +85,7 @@ def main():
 #PPI = "biana_no_tap_no_reliability" # tap filtered lcc
 #PPI = "biana_no_tap_no_reliability_1e-5" # tap filtered lcc with non seed scores of 1e-5
 #PPI = "biana_no_tap_reliability" # tap & reliability filtered lcc
-#PPI = "biana_no_tap_relevance" # tap filtered & string edge score assigned lcc
+#PPI = "biana_no_tap_relevance" # tap filtered & string edge score assigned lcc # manually assigned +1 to all edge scores to reduce max/min edge score ratio
 #PPI = "biana_no_tap_exp_db_relevance" tap filtered & string exp & db edge score assigned lcc
 #PPI = "biana_no_tap_corelevance" # tap filtered & string co-exp score assigned lcc
 #PPI = "biana_no_tap_reliability_relevance" # tap & reliability filtered & string edge score assigned lcc
@@ -121,23 +131,29 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
     # Disease association files (Association data to be used)
     association_scores_validation_file = None
     if ASSOCIATION == "aneurysm":
-	association_dir = data_dir + "aneurist" + os.sep
+	association_dir = data_dir + "aneurysm" + os.sep
 	#aneurysm_scores_file = association_dir + "aneurysm_associated_genes.txt"
 	association_scores_file = association_dir + "aneurysm_associated_genes_all_equal.txt"
 	association_scores_file_identifier_type = "genesymbol"
 	association_scores_validation_file = association_dir + "aneurysm_new_9.txt" 
     elif ASSOCIATION == "breast_cancer":
-	association_dir = data_dir + "osiris" + os.sep
-	association_scores_file = association_dir + "breast_cancer_genes_all_equal.txt"
-	association_scores_file_identifier_type = "genesymbol"
-    #elif ASSOCIATION == "apoptosis":
-    #    association_dir = data_dir + "apoptosis" + os.sep
-    #    association_scores_file = apoptosis_scores_all_equal_file
-    #    association_scores_file_identifier_type = "uniprotaccession"
+	association_dir = data_dir + "breast_cancer" + os.sep
+	#association_scores_file = association_dir + "breast_cancer_gene_names_all_equal.txt"
+	#association_scores_file_identifier_type = "genesymbol"
+	association_scores_file = association_dir + "breast_cancer_gene_ids_all_equal.txt"
+	association_scores_file_identifier_type = "geneid"
+    elif ASSOCIATION.startswith("alzheimer_david"):
+	association_dir = data_dir + "alzheimer_david" + os.sep
+	association_scores_file = association_dir + "alzheimer_" + ASSOCIATION[-5:] + "_seed.list"
+	association_scores_file_identifier_type = "uniprotentry"
+    elif ASSOCIATION == "apoptosis_joan":
+        association_dir = data_dir + "apoptosis_joan" + os.sep
+        association_scores_file = "apoptosis_scores_all_equal_file.txt"
+        association_scores_file_identifier_type = "uniprotentry"
     elif ASSOCIATION == "alzheimer":
 	association_dir = data_dir + "alzheimer" + os.sep
 	association_scores_file = None
-	association_scores_file_identifier_type = "uniprotentry"
+	association_scores_file_identifier_type = "genesymbol"
     else:
 	raise ValueError("Unrecognized association!")
 
@@ -204,6 +220,7 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
 	network_file_identifier_type = "geneid"
 	network_file = rhodes_network_file
 	network_file_filtered = rhodes_network_file_filtered_by_degree 
+	#interaction_relevance_file = rhodes_interaction_relevance_file # need to rescale / cluster scores because max/min >= 10000
     elif PPI.startswith("ori"):
 	network_base_dir = data_dir + "human_interactome_ori" + os.sep
 	node_description_file = biana_node_file_prefix + ".tsv"
@@ -248,32 +265,34 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
 	    network_file_filtered = network_file
 	    interaction_relevance_file = network_dir + "aneurist.eda"
 	    DEFAULT_NON_SEED_SCORE = 0.00001 
-    elif PPI.startswith("david"):
-	network_dir = data_dir + "alzheimer" + os.sep
+    elif PPI == "david": #elif PPI.startswith("david"):
+	network_dir = data_dir + "human_interactome_david" + os.sep
 	network_file_identifier_type = "user entity id"
-	if PPI == "david_CpOGU":
-	    association_scores_file = network_dir + "alzheimer_CpOGU_seed_all_equal.list"
+	network_file = network_dir + "human_network.sif"
+	node_description_file = network_dir + "human_nodes.tsv"
+	#if PPI == "david_CpOGU":
+	    #association_scores_file = association_dir + "alzheimer_CpOGU_seed.list"
 	    #node_file = network_dir + "alzheimer_CpOGU_seed.list"
-	    network_file = network_dir + "alzheimer_CpOGU_network.sif"
-	    node_description_file = network_dir + "alzheimer_CpOGU_network_all.tab"
+	    #network_file = network_dir + "alzheimer_CpOGU_network.sif"
+	    #node_description_file = network_dir + "alzheimer_CpOGU_network_all.tab"
 	    #network_file_filtered = network_file
-	elif PPI == "david_CpOIN":
-	    association_scores_file = network_dir + "alzheimer_CpOIN_seed_all_equal.list"
+	#elif PPI == "david_CpOIN":
+	    #association_scores_file = association_dir + "alzheimer_CpOIN_seed.list"
 	    #node_file = network_dir + "alzheimer_CpOIN_seed.list"
-	    network_file = network_dir + "alzheimer_CpOIN_network.sif"
-	    node_description_file = network_dir + "alzheimer_CpOIN_network_all.tab"
+	    #network_file = network_dir + "alzheimer_CpOIN_network.sif"
+	    #node_description_file = network_dir + "alzheimer_CpOIN_network_all.tab"
 	    #network_file_filtered = network_file
-	elif PPI == "david_RpOGU":
-	    association_scores_file = network_dir + "alzheimer_RpOGU_seed_all_equal.list"
+	#elif PPI == "david_RpOGU":
+	    #association_scores_file = association_dir + "alzheimer_RpOGU_seed.list"
 	    #node_file = network_dir + "alzheimer_RpOGU_seed.list"
-	    network_file = network_dir + "alzheimer_RpOGU_network.sif"
-	    node_description_file = network_dir + "alzheimer_RpOGU_network_all.tab"
+	    #network_file = network_dir + "alzheimer_RpOGU_network.sif"
+	    #node_description_file = network_dir + "alzheimer_RpOGU_network_all.tab"
 	    #network_file_filtered = network_file
-	elif PPI == "david_RpOIN":
-	    association_scores_file = network_dir + "alzheimer_RpOIN_seed_all_equal.list"
+	#elif PPI == "david_RpOIN":
+	    #association_scores_file = association_dir + "alzheimer_RpOIN_seed.list"
 	    #node_file = network_dir + "alzheimer_RpOIN_seed.list"
-	    network_file = network_dir + "alzheimer_RpOIN_network.sif"
-	    node_description_file = network_dir + "alzheimer_RpOIN_network_all.tab"
+	    #network_file = network_dir + "alzheimer_RpOIN_network.sif"
+	    #node_description_file = network_dir + "alzheimer_RpOIN_network_all.tab"
 	    #network_file_filtered = network_file
 	network_file_filtered = network_file[:-4] + "_degree_filtered.sif" # Using only the largest strongly connected component
     else:
@@ -403,8 +422,8 @@ def prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix,
 	Creates necessary files for scoring
     """
     # Create PPI network if necessary
-    if PPI.startswith("biana"):
-	create_biana_network_files(biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability)
+    #if PPI.startswith("biana"):
+    #	create_biana_network_files(biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability)
 
     # Filter network by degree and get largest connected component
     if not os.path.exists(network_file_filtered): 
@@ -425,7 +444,7 @@ def prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix,
     #	prepare_data.create_node_scores_file(nodes = (all_nodes & seed_nodes), node_to_score = seed_to_score, node_scores_file = seed_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
 
     if not os.path.exists(seed_scores_file): 
-	seed_to_score = prepare_data.get_node_association_score_mapping(network_file = network_file_filtered, network_file_identifier_type = network_file_identifier_type, node_description_file = node_description_file, association_scores_file = association_scores_file, association_scores_file_identifier_type = association_scores_file_identifier_type, log_file = input_log_file)
+	seed_to_score = prepare_data.get_node_association_score_mapping(network_file = network_file_filtered, network_file_identifier_type = network_file_identifier_type, node_description_file = node_description_file, association_scores_file = association_scores_file, association_scores_file_identifier_type = association_scores_file_identifier_type, log_file = input_log_file, default_seed_score=DEFAULT_SEED_SCORE)
 
     # Create initial data analysis file
     if not os.path.exists(input_dir + "analyze_network.r") and seed_to_score is not None:
@@ -454,9 +473,10 @@ def analyze(PPI, output_scores_file, log_file, node_scores_file, association_sco
     """
 	Does cross validation and percentage analysis on the output files
     """
-    analyze_original(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_description_file, network_file_identifier_type, association_scores_validation_file)
-    analyze_xval(r_script_file, output_scores_file, node_scores_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, log_file) 
-    analyze_xval_percentage(log_file, output_scores_file, node_scores_file, output_log_file)
+    analyzed = analyze_xval(r_script_file, output_scores_file, node_scores_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, log_file) 
+    if analyzed:
+	analyze_xval_percentage(log_file, output_scores_file, node_scores_file, output_log_file)
+    #analyze_original(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_description_file, network_file_identifier_type, association_scores_validation_file)
     return
 
 
@@ -509,7 +529,7 @@ def score_original(SCORING, score_commands, output_scores_file, log_file, job_fi
 
 def analyze_xval(r_script_file, output_scores_file, node_scores_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, log_file):
     if os.path.exists(r_script_file):
-	return
+	return False
     list_node_scores_and_labels = []
     for k in range(1, N_X_VAL+1):
 	node_validation_data = analyze_results.get_validation_node_scores_and_labels(file_result = output_scores_file+".%d"%k, file_seed_test_scores = node_scores_file+".%d.test"%k, file_node_scores = node_scores_file, n_random_negative_folds = N_RANDOM_NEGATIVE_FOLDS, default_score = DEFAULT_NON_SEED_SCORE, replicable = REPLICABLE)
@@ -517,9 +537,9 @@ def analyze_xval(r_script_file, output_scores_file, node_scores_file, prediction
     analyze_results.create_ROCR_files(list_node_scores_and_labels, predictions_file, labels_file)
     analyze_results.create_R_script(r_script_file, output_dir, title) # os.path.basename(output_dir))
     os.system("R CMD BATCH %s" % (r_script_file))
-    os.system("convert %sperformance.eps %sperformance.jpg" % (output_dir, output_dir))
+    #os.system("convert %sperformance.eps %sperformance.jpg" % (output_dir, output_dir))
+    #analyze_results.create_tex_script(tex_script_file, output_dir, title)
     analyze_results.record_performance_AUC_in_log_file(output_dir, output_log_file, title)
-    analyze_results.create_tex_script(tex_script_file, output_dir, title)
 
     #! now unnecessary since ROC curve analysis is done
     threshold_analysis = False
@@ -550,7 +570,7 @@ def analyze_xval(r_script_file, output_scores_file, node_scores_file, prediction
 	    # Calculate 1-Specificity (1-TN/N[FP+TN] = FP/N) (aka FPR) 
 	    fpr = 1-spec
 	f.close()
-    return
+    return True
 
 
 def analyze_xval_percentage(log_file, output_scores_file, node_scores_file, output_log_file):
@@ -560,18 +580,24 @@ def analyze_xval_percentage(log_file, output_scores_file, node_scores_file, outp
 	#print "---- %s%%:" % percentage
 	f.write("---- %s%%:\n" % percentage)
 	n_seed_sum = 0.0
+	n_seed_all_sum = 0.0
+	values = []
 	for k in range(1, N_X_VAL+1):
 	    ##print output_scores_file+".%s.%d" % (SCORING, k), node_scores_file+".%d.test"%k 
-	    n_seed, n, i = analyze_results.calculate_seed_coverage_at_given_percentage(output_scores_file + ".%d" % k, node_scores_file+".%d.test" % k, percentage, DEFAULT_NON_SEED_SCORE)
+	    n_seed, n_seed_all, n, i = analyze_results.calculate_seed_coverage_at_given_percentage(output_scores_file + ".%d" % k, node_scores_file+".%d.test" % k, percentage, DEFAULT_NON_SEED_SCORE)
 	    ##print n_seed, n, i
 	    if i > n+1:
 		#print "Warning: Real coverage percentage is disputed due to equal scores!", i, n
 		f.write("Warning: Real coverage percentage is disputed due to equal scores! %i %i\n" % (i, n))
 	    n_seed_sum += n_seed
+	    n_seed_all_sum += n_seed_all
+	    values.append(float(n_seed)/n_seed_all)
+	coverages.append("%f\t+/- %f" % calculate_mean_and_sigma.calc_mean_and_sigma(values))
 	n_seed = n_seed_sum / N_X_VAL
+	n_seed_all = n_seed_all_sum / N_X_VAL
 	#print "Avg:", n_seed, "over", n
 	f.write("Avg: %i over %i\n" % (n_seed, n))
-	coverages.append(n_seed)
+	#coverages.append(float(n_seed)/n_seed_all)
     analyze_results.record_performance_coverage_in_log_file(output_log_file, coverages)
     f.close()
     return

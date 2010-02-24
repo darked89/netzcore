@@ -1,39 +1,35 @@
 
 TODO:
 
-- presentation 
-    - Intro 
-	- split slides
-	- add/remove guilt by association
-	- visual representation as much as possible
-	- Move reimplemented methods here (without mentionining reimplementation, introduce as most relevant works)
-    - Method
-	- Scoring methods visual representation
-	- Biana
-	- Random Network
-	- Mapping node + edge data visual representation
-	- data sources adding IPA (ingeniuty)
-	- Performance Evaluation auc, xval visaul repr
-    - Results
-	- Runs over different data! may need to explain the data more in method/data
-	- auc, recovery rates
-	- High scoring node check
-	- Network topology characteristics (ld, ld2) for 2 netw, explain ld
-	- Emiting results
-	    - Net* methods comparison within then other methods
-	    - methods on diff netw when association fixed
+- Check auc & recovery (check %10 coverages) rates for all runs
 
 - david's runs
 
-- check again edge scoring by string
+- New runs with (check performance on other disease data)
+    - disease data
+	- aneurist
+	- aerts06_gene_prioritization
+	* futreal_04_cancer_genes
+	- blalock03_alzheimer 
+	* krauthammer04_alzheimer
+	- goh07_genes_and_disease_classes
+	- OMIM Morbidmap
+	- CTD gene_disease_relations
+	- PharmaGK
+	- TTD
+	- AES 
+	- uniprot
+	- data from Hefalmp 
 
-- check performance on other disease data
+    - ppi data
+	- biana exp + reactome
+	- biana string (exp & low score filtered)
+	- network from jonsson 
+	- BIANA ppis from different species
+
+- High scoring node check, check whether high scoring nodes in different methods are common, booststrapping possible?
 
 - check reviews + existing method articles, see if there is anything comparable
-
-- check whether high scoring nodes in different methods are common, booststrapping possible?
-
-- check %10 coverages of node_scores.sif in different methods for performance comparison
 
 - attach biological sense to the results, check if there is different data sources for the same phenotype coinciding when scores calculated with one of them or GO analysis or greedy expansion of complex from high scoring nodes and analyzing their functional enrichment
     - GO analysis on the high scoring nodes
@@ -50,28 +46,7 @@ TODO:
 	- network not available
 	- still their scores on essentiality data can be compared
 
-- random negative selection n_fold calculation change
-
-- disease data
-    - osiris
-    - aerts06_gene_prioritization
-    - goh07_genes_and_disease_classes
-    - futreal_04_cancer_genes
-    - blalock03_alzheimer 
-    - krauthammer04_alzheimer
-    - AES 
-    - uniprot
-    - data from Hefalmp & OMIM 
-
-- ppi data
-    - network from jonsson 
-    - BIANA ppis from different species
-
 - ml predictions based on feature described network (need to use the same training & test sets)
-
-- comparison of net* methods within pathologies on the effect of scoring & on the effect of different networks
-
-- comparison of fflow with netzcore (with accumulateToInitialScores option - not needed, test seeds are independent)
 
 - comparison of co-expression for correlation
     - Gemma
@@ -192,6 +167,7 @@ NOTES:
 
 - accumulateToInitialScores flag has been set for scoring methods (in the test original seeds are not used anyway)
 
+- For the network of biana_no_tap_relevance modified edge scores so that new_score = 1 + score (otherwise min score 0.01, max score 1 -> 100 times stronger edge, now at most 2 times stronger)
 
 aneurysim
 

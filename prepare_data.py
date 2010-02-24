@@ -200,13 +200,15 @@ def convert_file_using_new_id_mapping(file_to_be_converted, node_description_fil
     f.close()
     return
 
-def get_node_association_score_mapping(network_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, log_file = None):
+def get_node_association_score_mapping(network_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, log_file = None, default_seed_score=1.0):
     """
 	Maps genes and their scores to nodes in the network using given association_scores_file, correspondance identifiers
     """
     g = network_utilities.create_network_from_sif_file(network_file)
     nodes = g.nodes()
     setNode, setDummy, dictNode, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = association_scores_file, store_edge_type = False)
+    if dictNode is None:
+	dictNode = dict([ (v, default_seed_score) for v in setNode ])
     node_to_genes, gene_to_nodes = biana_output_converter.get_attribute_to_attribute_mapping(node_description_file, network_file_identifier_type, association_scores_file_identifier_type, keys_to_include=set(nodes))
     covered_genes = set()
     seeds = set()

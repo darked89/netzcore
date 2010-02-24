@@ -271,5 +271,5 @@ def calculate_seed_coverage_at_given_percentage(file_result, file_seed_scores, p
 	    n_seed += 1
 	last_score = score
     
-    return n_seed, n, i
+    return n_seed, len(dictNode), n, i
 
