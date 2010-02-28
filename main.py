@@ -52,14 +52,16 @@ gene_info_file = data_dir + "gene_info" + os.sep + "genes.tsv"
 def main():
     MODE = "prepare" # prepare, score, analyze
 
-    ppis = ["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
-    phenotypes = ["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
-    scoring_parameters = [("nr", 1, 1)]
+    ppis = ["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
+    phenotypes = ["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
+    scoring_parameters = [("nr", 1, 1)] #, ("nd", 1, 1)]
     #scoring_parameters += [("nx", 1, 1), ("nr", 1, 1)]
     #scoring_parameters += [("nd", 1, 1), ("nw",1, 1)]
     #scoring_parameters += [("ff", 1, i) for i in xrange(1,9)]
     #scoring_parameters += [("nz", 1, i) for i in xrange(1,9)]
-    #scoring_parameters += [("ns", r, i) for r in xrange(1,9) for i in xrange(1,5)]
+    ##scoring_parameters += [("ns", r, i) for r in xrange(1,9) for i in xrange(1,5)]
+    #scoring_parameters += [("ns", r, i) for r in xrange(1,4) for i in xrange(1,4)]
+    #scoring_parameters += [("ns", r, i) for r in xrange(4,9) for i in xrange(1,3)]
     #scoring_parameters += [("nh", r, i) for r in (1,2,3) for i in xrange(1,5)]
     #scoring_parameters += [("n1", r, i) for r in (1,2,3) for i in xrange(1,5)]
 
@@ -72,10 +74,10 @@ def main():
     for experiment in experiments:
 	PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION = experiment
 	print "Running experiment:", experiment
-	#try:
+#	try:
 	run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION)
-	#except:
-	#    print "!Problem!"
+#	except:
+#	    print "!Problem!"
     return
 
 # Scoring related parameters 
@@ -148,7 +150,7 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
 	association_scores_file_identifier_type = "uniprotentry"
     elif ASSOCIATION == "apoptosis_joan":
         association_dir = data_dir + "apoptosis_joan" + os.sep
-        association_scores_file = "apoptosis_scores_all_equal_file.txt"
+        association_scores_file = association_dir + "Apoptosis_uniProt_nodes.list"
         association_scores_file_identifier_type = "uniprotentry"
     elif ASSOCIATION == "alzheimer":
 	association_dir = data_dir + "alzheimer" + os.sep
@@ -295,6 +297,17 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
 	    #node_description_file = network_dir + "alzheimer_RpOIN_network_all.tab"
 	    #network_file_filtered = network_file
 	network_file_filtered = network_file[:-4] + "_degree_filtered.sif" # Using only the largest strongly connected component
+    elif PPI.startswith("piana_joan"):
+	network_dir = data_dir + "apoptosis_joan" + os.sep
+	node_description_file = None #biana_node_file_prefix + ".tsv"
+	network_file_identifier_type = "uniprotentry"
+	node_file = association_scores_file  # association_dir + "Apoptosis_uniProt_nodes.list" 
+	if PPI == "piana_joan_exp":
+	    network_file = network_dir + "piana_exp_human.sif"
+	elif PPI == "piana_joan_all":
+	    network_file = network_dir + "piana_all_human.sif"
+	network_file_filtered = network_file
+	interaction_relevance_file = None 
     else:
 	raise ValueError("Unrecognized ppi!")
 
@@ -436,6 +449,8 @@ def prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix,
     # Get node to association mapping
     if PPI.startswith("ori"):
 	os.system("awk '{ if($2 == 1) print $1, $2}' %s > %s" % (node_file, seed_scores_file))
+    elif PPI.startswith("piana_joan"):
+	os.system("awk '{print $1, 1}' %s > %s" % (node_file, seed_scores_file))
     #elif PPI.startswith("david"):
     #	#os.system("awk '{ print $1, 1}' %s > %s" % (node_file, seed_scores_file))
     #	all_nodes = set(prepare_data.get_nodes_in_network(network_file_filtered))
@@ -486,9 +501,9 @@ def generate_score_xval_command(SCORING, score_xval_commands, k):
 
 
 def score_xval(SCORING, score_xval_commands, output_scores_file, log_file, job_file):
-    if not os.path.exists(output_scores_file + ".1"):
-	f = open(log_file, "a")
-	for k in range(1, N_X_VAL+1):
+    f = open(log_file, "a")
+    for k in range(1, N_X_VAL+1):
+	if not os.path.exists(output_scores_file + ".%d" % k):
 	    if only_print_command:
 		print generate_score_xval_command(SCORING, score_xval_commands, k)
 	    else:
@@ -504,7 +519,7 @@ def score_xval(SCORING, score_xval_commands, output_scores_file, log_file, job_f
 		    #os.unlink(f2.name)
 		else:
 		    os.system( generate_score_xval_command(SCORING, score_xval_commands, k) )
-	f.close()
+    f.close()
     return
 
 
@@ -619,13 +634,13 @@ def analyze_original(PPI, output_scores_file, log_file, node_scores_file, associ
 	    if PPI.startswith("biana"):
 		prepare_data.convert_file_using_new_id_mapping(output_scores_file, node_description_file, network_file_identifier_type, "geneid", output_scores_file+".geneid")
 		prepare_data.convert_file_using_new_id_mapping(output_scores_file+".geneid", gene_info_file, "geneid", association_scores_file_identifier_type, output_scores_file+"."+association_scores_file_identifier_type)
-	    elif PPI.startswith("ori") or PPI.startswith("david"):
+	    elif PPI.startswith("ori") or PPI.startswith("david") or PPI.startswith("piana_joan"):
 		pass
 	    else:
 		prepare_data.convert_file_using_new_id_mapping(output_scores_file, node_description_file, network_file_identifier_type, association_scores_file_identifier_type, output_scores_file+"."+association_scores_file_identifier_type)
 	if association_scores_validation_file is not None:
 	    f.write("Validation seed coverage:")
-	    if PPI.startswith("ori") or PPI.startswith("david"):
+	    if PPI.startswith("ori") or PPI.startswith("david") or PPI.startswith("piana_joan"):
 		pass
 	    else:
 		f.write("%s\n" % str(analyze_results.calculate_seed_coverage_at_given_percentage(output_scores_file+"."+association_scores_file_identifier_type, association_scores_validation_file, percentage, DEFAULT_NON_SEED_SCORE)))
