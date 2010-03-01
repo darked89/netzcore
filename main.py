@@ -14,8 +14,8 @@ from string import Template
 
 #only_print_command = True
 only_print_command = False
-#use_cluster = True
-use_cluster = False
+use_cluster = True
+#use_cluster = False
 
 N_LINKER_THRESHOLD = 2
 DEFAULT_SEED_SCORE = 1.0 # Default score for seed nodes, used when no score given in assoc file
@@ -50,16 +50,19 @@ gene_info_file = data_dir + "gene_info" + os.sep + "genes.tsv"
 
 
 def main():
-    MODE = "prepare" # prepare, score, analyze
+    MODE = "score" # prepare, score, analyze
 
     ppis = ["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
     phenotypes = ["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
-    scoring_parameters = [("nr", 1, 1)]
+    scoring_parameters = [] #[("nr", 1, 1)]
     #scoring_parameters += [("nx", 1, 1), ("nr", 1, 1)]
-    #scoring_parameters += [("nd", 1, 1), ("nw",1, 1)]
+    scoring_parameters += [("nd", 1, 1)]
+    #scoring_parameters += [("nw",1, 1)]
     #scoring_parameters += [("ff", 1, i) for i in xrange(1,9)]
     #scoring_parameters += [("nz", 1, i) for i in xrange(1,9)]
-    #scoring_parameters += [("ns", r, i) for r in xrange(1,9) for i in xrange(1,5)]
+    #scoring_parameters += [("ns", r, i) for r in xrange(1,4) for i in xrange(1,4)]
+    #scoring_parameters += [("ns", r, i) for r in xrange(4,9) for i in xrange(1,3)]
+    #scoring_parameters += [("ns", r, i) for r in xrange(1,4) for i in xrange(4,5)]
     #scoring_parameters += [("nh", r, i) for r in (1,2,3) for i in xrange(1,5)]
     #scoring_parameters += [("n1", r, i) for r in (1,2,3) for i in xrange(1,5)]
 
@@ -486,9 +489,9 @@ def generate_score_xval_command(SCORING, score_xval_commands, k):
 
 
 def score_xval(SCORING, score_xval_commands, output_scores_file, log_file, job_file):
-    if not os.path.exists(output_scores_file + ".1"):
-	f = open(log_file, "a")
-	for k in range(1, N_X_VAL+1):
+    f = open(log_file, "a")
+    for k in range(1, N_X_VAL+1):
+        if not os.path.exists(output_scores_file + ".%d" % k):
 	    if only_print_command:
 		print generate_score_xval_command(SCORING, score_xval_commands, k)
 	    else:
@@ -504,7 +507,7 @@ def score_xval(SCORING, score_xval_commands, output_scores_file, log_file, job_f
 		    #os.unlink(f2.name)
 		else:
 		    os.system( generate_score_xval_command(SCORING, score_xval_commands, k) )
-	f.close()
+    f.close()
     return
 
 
