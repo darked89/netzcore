@@ -575,7 +575,7 @@ def analyze_xval(r_script_file, output_scores_file, node_scores_file, prediction
 		##print "A:", acc, "S:", sens, "P:", ppv
 		nTP_sum += nTP
 		nFP_sum += nFP
-		nN_sum += nFN
+		nFN_sum += nFN
 		nTN_sum += nTN
 	    # Calculate Sensitivity (TP/T[TP+FN]) (aka TPR) & Calculate PPV (TP/P[TP+FP]) (use randomly selected non-seed nodes as negatives [average w.r.t. n different random selection results])
 	    nTP = nTP_sum / N_X_VAL
