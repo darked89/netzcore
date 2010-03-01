@@ -56,7 +56,7 @@ def main():
     phenotypes = ["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
     scoring_parameters = [("nr", 1, 1)] #, ("nd", 1, 1)]
     #scoring_parameters += [("nx", 1, 1), ("nr", 1, 1)]
-    scoring_parameters += [("nd", 1, 1)]
+    #scoring_parameters += [("nd", 1, 1)]
     #scoring_parameters += [("nw",1, 1)]
     #scoring_parameters += [("ff", 1, i) for i in xrange(1,9)]
     #scoring_parameters += [("nz", 1, i) for i in xrange(1,9)]
@@ -575,7 +575,7 @@ def analyze_xval(r_script_file, output_scores_file, node_scores_file, prediction
 		##print "A:", acc, "S:", sens, "P:", ppv
 		nTP_sum += nTP
 		nFP_sum += nFP
-		nFN_sum += nFN
+		nN_sum += nFN
 		nTN_sum += nTN
 	    # Calculate Sensitivity (TP/T[TP+FN]) (aka TPR) & Calculate PPV (TP/P[TP+FP]) (use randomly selected non-seed nodes as negatives [average w.r.t. n different random selection results])
 	    nTP = nTP_sum / N_X_VAL
