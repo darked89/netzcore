@@ -1,8 +1,6 @@
 
 TODO:
 
-- Check auc & recovery (check %10 coverages) rates for all runs
-
 - joan's runs
 
 - New runs with (check performance on other disease data)
@@ -27,14 +25,16 @@ TODO:
 	- network from jonsson 
 	- BIANA ppis from different species
 
-- High scoring node check, check whether high scoring nodes in different methods are common, booststrapping possible?
-
-- check reviews + existing method articles, see if there is anything comparable
+- check/ask for fflow/netween/netrank data
 
 - attach biological sense to the results, check if there is different data sources for the same phenotype coinciding when scores calculated with one of them or GO analysis or greedy expansion of complex from high scoring nodes and analyzing their functional enrichment
-    - GO analysis on the high scoring nodes
+    - greedy search for high scoring modules
+    - High scoring node check, check whether high scoring nodes in different methods are common, booststrapping possible?
+    - GO enrichment check (on the high scoring nodes)
 
-- document all
+- document all (combine presentation + report + README notes)
+
+- check reviews + existing method articles, see if there is anything comparable
 
 - comparison with other methods in the literature (with their data)
     - FunctionalFlow functional annotation (use scoreN with acc to initial scores option)
@@ -168,6 +168,9 @@ NOTES:
 - accumulateToInitialScores flag has been set for scoring methods (in the test original seeds are not used anyway)
 
 - For the network of biana_no_tap_relevance modified edge scores so that new_score = 1 + score (otherwise min score 0.01, max score 1 -> 100 times stronger edge, now at most 2 times stronger)
+
+- Checked auc & recovery (check %10 coverages) rates for all runs. Also observed effects of parameters. In aneurysm on GOH and somewhat slightly in bc on BIANA, parameters have a considerable effect (probably due to number of seeds vs interactions). Apart from that, change of parameters around r2i2, r2i3, r3i2, r3i3 for Netscore, i4, i5, i6 for Netzcore and fFlow seems to have little effect. Selected parameters: r3i2 and i5. 
+
 
 aneurysim
 

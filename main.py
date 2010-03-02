@@ -48,12 +48,13 @@ rhodes_interaction_relevance_file = rhodes_network_file[:-4] + ".eda"
 # Gene info file 
 gene_info_file = data_dir + "gene_info" + os.sep + "genes.tsv"
 
+goh_phenotypes = ["goh_developmental", "goh_connective_tissue", "goh_ear,nose,throat", "goh_endocrine", "goh_psychiatric", "goh_immunological", "goh_neurological", "goh_respiratory", "goh_multiple", "goh_renal", "goh_skeletal", "goh_bone", "goh_dermatological", "goh_cancer", "goh_ophthamological", "goh_metabolic", "goh_nutritional", "goh_muscular", "goh_hematological", "goh_gastrointestinal", "goh_cardiovascular"] #,"goh_unclassified"] 
 
 def main():
-    MODE = "score" # prepare, score, analyze
+    MODE = "prepare" # prepare, score, analyze
 
-    ppis = ["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
-    phenotypes = ["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
+    ppis = ["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
+    phenotypes = goh_phenotypes #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
     scoring_parameters = [("nr", 1, 1)] #, ("nd", 1, 1)]
     #scoring_parameters += [("nx", 1, 1), ("nr", 1, 1)]
     #scoring_parameters += [("nd", 1, 1)]
@@ -156,6 +157,10 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
     elif ASSOCIATION == "alzheimer":
 	association_dir = data_dir + "alzheimer" + os.sep
 	association_scores_file = None
+	association_scores_file_identifier_type = "genesymbol"
+    if ASSOCIATION.startswith("goh_"):
+	association_dir = data_dir + "goh_disease_data" + os.sep
+	association_scores_file = association_dir + ASSOCIATION + ".txt"
 	association_scores_file_identifier_type = "genesymbol"
     else:
 	raise ValueError("Unrecognized association!")
