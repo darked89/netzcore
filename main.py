@@ -54,17 +54,19 @@ def main():
 
     ppis = ["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
     phenotypes = ["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
-    scoring_parameters = [("nr", 1, 1)] #, ("nd", 1, 1)]
-    #scoring_parameters += [("nx", 1, 1), ("nr", 1, 1)]
-    #scoring_parameters += [("nd", 1, 1)]
+    scoring_parameters = []
+    scoring_parameters += [("ff", 1, 5), ("nz", 1, 5), ("ns", 3, 2)] 
+    #scoring_parameters += [("nr", 1, 1), ("nd", 1, 1)]
+    #scoring_parameters += [("nx", 1, 1)]
     #scoring_parameters += [("nw",1, 1)]
     #scoring_parameters += [("ff", 1, i) for i in xrange(1,9)]
-    #scoring_parameters += [("nz", 1, i) for i in xrange(1,9)]
+    #scoring_parameters += [("nz", 1, i) for i in xrange(4,6)]
+    ##scoring_parameters += [("nz", 1, i) for i in xrange(1,9)]
     ##scoring_parameters += [("ns", r, i) for r in xrange(1,9) for i in xrange(1,5)]
     #scoring_parameters += [("ns", r, i) for r in xrange(1,4) for i in xrange(1,4)]
-    #scoring_parameters += [("ns", r, i) for r in xrange(4,9) for i in xrange(1,3)]
-    #scoring_parameters += [("nh", r, i) for r in (1,2,3) for i in xrange(1,5)]
-    #scoring_parameters += [("n1", r, i) for r in (1,2,3) for i in xrange(1,5)]
+    ##scoring_parameters += [("ns", r, i) for r in xrange(4,9) for i in xrange(1,3)]
+    ##scoring_parameters += [("nh", r, i) for r in (1,2,3) for i in xrange(1,5)]
+    ##scoring_parameters += [("n1", r, i) for r in (1,2,3) for i in xrange(1,5)]
 
     experiments = []
     for ppi in ppis:
@@ -516,7 +518,9 @@ def score_xval(SCORING, score_xval_commands, output_scores_file, log_file, job_f
 		    #f2.close()
 		    #os.system( "qsub -o out.%d -e err.%d -l hostname=node52 -N %s -b y %s" % (k, k, SCORING, f2.name) )
 		    #os.system( "qsub -cwd -o out.%d -e err.%d -l hostname=node52 -N %s -b y %s" % (k, k, SCORING, generate_score_xval_command(SCORING, score_xval_commands, k)) )
-		    os.system( "qsub -cwd -o out.%d -e err.%d -N %s -b y %s" % (k, k, SCORING, generate_score_xval_command(SCORING, score_xval_commands, k)) )
+		    #if k % 2 != 0:
+		    #	continue
+		    os.system( "qsub -cwd -o out.%d -e err.%d -q bigmem -N %s -b y %s" % (k, k, SCORING, generate_score_xval_command(SCORING, score_xval_commands, k)) )
 		    #os.unlink(f2.name)
 		else:
 		    os.system( generate_score_xval_command(SCORING, score_xval_commands, k) )
@@ -538,7 +542,7 @@ def score_original(SCORING, score_commands, output_scores_file, log_file, job_fi
 		#f2.close()
 		#os.system("qsub -o out -e err -l hostname=node34 -N %s -b y %s" % (SCORING, f2.name))
 		#os.system("qsub -cwd -o out -e err -l hostname=node34 -N %s -b y %s" % (SCORING, score_commands[SCORING]))
-		os.system("qsub -cwd -o out -e err -N %s -b y %s" % (SCORING, score_commands[SCORING]))
+		os.system("qsub -cwd -o out -e err -q bigmem -N %s -b y %s" % (SCORING, score_commands[SCORING]))
 	    else:
 		os.system(score_commands[SCORING])
 	f.close()
