@@ -51,16 +51,16 @@ gene_info_file = data_dir + "gene_info" + os.sep + "genes.tsv"
 goh_phenotypes = ["goh_developmental", "goh_connective_tissue", "goh_ear,nose,throat", "goh_endocrine", "goh_psychiatric", "goh_immunological", "goh_neurological", "goh_respiratory", "goh_multiple", "goh_renal", "goh_skeletal", "goh_bone", "goh_dermatological", "goh_cancer", "goh_ophthamological", "goh_metabolic", "goh_nutritional", "goh_muscular", "goh_hematological", "goh_gastrointestinal", "goh_cardiovascular"] #,"goh_unclassified"] 
 
 def main():
-    MODE = "prepare" # prepare, score, analyze
+    MODE = "score" # prepare, score, analyze
 
-    ppis = ["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
+    ppis = ["biana_no_tap_no_reliability"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"] #["piana_joan_exp", "piana_joan_all"] #["david"] 
     phenotypes = goh_phenotypes #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
     scoring_parameters = []
-    scoring_parameters += [("ff", 1, 5), ("nz", 1, 5), ("ns", 3, 2)] 
-    #scoring_parameters += [("nr", 1, 1)]
-    #scoring_parameters += [("nd", 1, 1)]
-    #scoring_parameters += [("nx", 1, 1)]
+    #scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
+    scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
+    scoring_parameters += [("nd", 1, 1)]
     #scoring_parameters += [("nw",1, 1)]
+    #scoring_parameters += [("nx", 1, 1)]
     #scoring_parameters += [("ff", 1, i) for i in xrange(1,9)]
     #scoring_parameters += [("nz", 1, i) for i in xrange(4,6)]
     ##scoring_parameters += [("nz", 1, i) for i in xrange(1,9)]
@@ -161,7 +161,7 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
 	association_dir = data_dir + "alzheimer" + os.sep
 	association_scores_file = None
 	association_scores_file_identifier_type = "genesymbol"
-    if ASSOCIATION.startswith("goh_"):
+    elif ASSOCIATION.startswith("goh_"):
 	association_dir = data_dir + "goh_disease_data" + os.sep
 	association_scores_file = association_dir + ASSOCIATION + ".txt"
 	association_scores_file_identifier_type = "genesymbol"
@@ -510,6 +510,14 @@ def generate_score_xval_command(SCORING, score_xval_commands, k):
 
 
 def score_xval(SCORING, score_xval_commands, output_scores_file, log_file, job_file):
+    qname = None
+    if use_cluster:
+	if SCORING in ("nz", "ns"):
+	    qname = "bigmem"
+	elif SCORING in ("nr", "ff", "nd"):
+	    qname = "bigmem" #"sbi-short"
+	else: #elif SCORING in ("nd", "nw"):
+	    qname = "sbi"
     f = open(log_file, "a")
     for k in range(1, N_X_VAL+1):
 	if not os.path.exists(output_scores_file + ".%d" % k):
@@ -526,7 +534,7 @@ def score_xval(SCORING, score_xval_commands, output_scores_file, log_file, job_f
 		    #os.system( "qsub -cwd -o out.%d -e err.%d -l hostname=node52 -N %s -b y %s" % (k, k, SCORING, generate_score_xval_command(SCORING, score_xval_commands, k)) )
 		    #if k % 2 != 0:
 		    #	continue
-		    os.system( "qsub -cwd -o out.%d -e err.%d -q bigmem -N %s -b y %s" % (k, k, SCORING, generate_score_xval_command(SCORING, score_xval_commands, k)) )
+		    os.system( "qsub -cwd -o out.%d -e err.%d -q %s -N %s -b y %s" % (k, k, qname, SCORING, generate_score_xval_command(SCORING, score_xval_commands, k)) )
 		    #os.unlink(f2.name)
 		else:
 		    os.system( generate_score_xval_command(SCORING, score_xval_commands, k) )
@@ -535,6 +543,14 @@ def score_xval(SCORING, score_xval_commands, output_scores_file, log_file, job_f
 
 
 def score_original(SCORING, score_commands, output_scores_file, log_file, job_file):
+    qname = None
+    if use_cluster:
+	if SCORING in ("nz", "ns"):
+	    qname = "bigmem"
+	elif SCORING in ("nr", "ff", "nd"):
+	    qname = "bigmem" #"sbi-short"
+	else:
+	    qname = "sbi"
     if not os.path.exists(output_scores_file):
 	f = open(log_file, "a")
 	#print score_commands[SCORING]
@@ -548,7 +564,7 @@ def score_original(SCORING, score_commands, output_scores_file, log_file, job_fi
 		#f2.close()
 		#os.system("qsub -o out -e err -l hostname=node34 -N %s -b y %s" % (SCORING, f2.name))
 		#os.system("qsub -cwd -o out -e err -l hostname=node34 -N %s -b y %s" % (SCORING, score_commands[SCORING]))
-		os.system("qsub -cwd -o out -e err -q bigmem -N %s -b y %s" % (SCORING, score_commands[SCORING]))
+		os.system("qsub -cwd -o out -e err -q %s -N %s -b y %s" % (qname, SCORING, score_commands[SCORING]))
 	    else:
 		os.system(score_commands[SCORING])
 	f.close()
