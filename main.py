@@ -50,22 +50,27 @@ gene_info_file = data_dir + "gene_info" + os.sep + "genes.tsv"
 
 goh_phenotypes = ["goh_developmental", "goh_connective_tissue", "goh_ear,nose,throat", "goh_endocrine", "goh_psychiatric", "goh_immunological", "goh_neurological", "goh_respiratory", "goh_multiple", "goh_renal", "goh_skeletal", "goh_bone", "goh_dermatological", "goh_cancer", "goh_ophthamological", "goh_metabolic", "goh_nutritional", "goh_muscular", "goh_hematological", "goh_gastrointestinal", "goh_cardiovascular"] #,"goh_unclassified"] 
 
+omim_phenotypes = ["alzheimer", "breast cancer", "diabetes", "insulin", "anemia", "aneurysm", "myopathy", "neuropathy", "obesity", "parkinson disease", "prostate cancer", "hypertension", "leukemia", "lung cancer", "autism", "asthma", "ataxia", "epilepsy", "schizophrenia", "cardiomyopathy", "cataract", "spastic paraplegia", "lymphoma", "mental retardation", "systemic lupus erythematosus"]
+omim_phenotypes = [ "omim_" + "_".join(p.split()) for p in omim_phenotypes ]
+
 def main():
     MODE = "prepare" # prepare, score, analyze
+    ignore_experiment_failures = False
 
-    ppis = ["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
-    phenotypes = goh_phenotypes #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
+    ppis = ["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"] #["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
+    phenotypes = omim_phenotypes + goh_phenotypes #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
     scoring_parameters = []
-    scoring_parameters += [("ff", 1, 5), ("nz", 1, 5), ("ns", 3, 2)] 
-    #scoring_parameters += [("nr", 1, 1)]
+    #scoring_parameters += [("ff", 1, 5), ("nz", 1, 5), ("ns", 3, 2)] 
+    scoring_parameters += [("nr", 1, 1)]
     #scoring_parameters += [("nd", 1, 1)]
-    #scoring_parameters += [("nx", 1, 1)]
     #scoring_parameters += [("nw",1, 1)]
-    #scoring_parameters += [("ff", 1, i) for i in xrange(1,9)]
-    #scoring_parameters += [("nz", 1, i) for i in xrange(4,6)]
+    #scoring_parameters += [("nx", 1, 1)]
+    #scoring_parameters += [("ff", 1, i) for i in xrange(4,7)]
+    #scoring_parameters += [("nz", 1, i) for i in xrange(4,7)]
+    #scoring_parameters += [("ns", r, i) for r in xrange(1,4) for i in xrange(1,4)]
+    ##scoring_parameters += [("ff", 1, i) for i in xrange(1,9)]
     ##scoring_parameters += [("nz", 1, i) for i in xrange(1,9)]
     ##scoring_parameters += [("ns", r, i) for r in xrange(1,9) for i in xrange(1,5)]
-    #scoring_parameters += [("ns", r, i) for r in xrange(1,4) for i in xrange(1,4)]
     ##scoring_parameters += [("ns", r, i) for r in xrange(4,9) for i in xrange(1,3)]
     ##scoring_parameters += [("nh", r, i) for r in (1,2,3) for i in xrange(1,5)]
     ##scoring_parameters += [("n1", r, i) for r in (1,2,3) for i in xrange(1,5)]
@@ -79,10 +84,13 @@ def main():
     for experiment in experiments:
 	PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION = experiment
 	print "Running experiment:", experiment
-#	try:
-	run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION)
-#	except:
-#	    print "!Problem!"
+	if ignore_experiment_failures:
+	    try:
+		run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION)
+	    except:
+		print "!Problem!"
+	else:
+	    run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION)
     return
 
 # Scoring related parameters 
@@ -161,8 +169,12 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
 	association_dir = data_dir + "alzheimer" + os.sep
 	association_scores_file = None
 	association_scores_file_identifier_type = "genesymbol"
-    if ASSOCIATION.startswith("goh_"):
+    elif ASSOCIATION.startswith("goh_"):
 	association_dir = data_dir + "goh_disease_data" + os.sep
+	association_scores_file = association_dir + ASSOCIATION + ".txt"
+	association_scores_file_identifier_type = "genesymbol"
+    elif ASSOCIATION.startswith("omim_"):
+	association_dir = data_dir + "omim" + os.sep
 	association_scores_file = association_dir + ASSOCIATION + ".txt"
 	association_scores_file_identifier_type = "genesymbol"
     else:
@@ -458,14 +470,12 @@ def prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix,
     # Get node to association mapping
     if PPI.startswith("ori"):
 	os.system("awk '{ if($2 == 1) print $1, $2}' %s > %s" % (node_file, seed_scores_file))
-    elif PPI.startswith("piana_joan"):
-	os.system("awk '{print $1, 1}' %s > %s" % (node_file, seed_scores_file))
-    #elif PPI.startswith("david"):
-    #	#os.system("awk '{ print $1, 1}' %s > %s" % (node_file, seed_scores_file))
-    #	all_nodes = set(prepare_data.get_nodes_in_network(network_file_filtered))
-    #	seed_nodes = prepare_data.get_nodes_from_nodes_file(node_file)
-    #	seed_to_score = dict([(node, 1) for node in seed_nodes])
-    #	prepare_data.create_node_scores_file(nodes = (all_nodes & seed_nodes), node_to_score = seed_to_score, node_scores_file = seed_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
+    elif PPI.startswith("piana_joan"): # or PPI.startswith("david"):
+	#os.system("awk '{print $1, 1}' %s > %s" % (node_file, seed_scores_file))
+    	all_nodes = set(prepare_data.get_nodes_in_network(network_file_filtered))
+    	seed_nodes = prepare_data.get_nodes_from_nodes_file(node_file)
+    	seed_to_score = dict([(node, 1) for node in seed_nodes])
+    	prepare_data.create_node_scores_file(nodes = (all_nodes & seed_nodes), node_to_score = seed_to_score, node_scores_file = seed_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
 
     if not os.path.exists(seed_scores_file): 
 	seed_to_score = prepare_data.get_node_association_score_mapping(network_file = network_file_filtered, network_file_identifier_type = network_file_identifier_type, node_description_file = node_description_file, association_scores_file = association_scores_file, association_scores_file_identifier_type = association_scores_file_identifier_type, log_file = input_log_file, default_seed_score=DEFAULT_SEED_SCORE)
