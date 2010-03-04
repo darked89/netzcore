@@ -1,17 +1,25 @@
 
 TODO:
 
-- joan's runs
-
+- Runs with
+    -1- goh diseases on biana/entrez ppi
+    -2- omim on goh/entrez ppi/biana
+    -6- chen09 (nr) on goh/entrez ppi then comparison w/ toppgene (chen) results
+    - anna db on goh/entrez ppi/biana
+    - dezso09 (nw) on biana/goh and compare w/ their results
+    - vanunu10 comparison with OMIM prostate, AD, diabetes casual gene predictions
+    - new biana netw reactome/string non-exp
+    
 - New runs with (check performance on other disease data)
     - disease data
+	* goh07_genes_and_disease_classes
+	* OMIM Morbidmap (selected diseases keyword merged)
+	* data compiled by chen09 (19 disaeses ~600 genes)
 	- aneurist
 	- aerts06_gene_prioritization
-	* futreal_04_cancer_genes
+	- futreal_04_cancer_genes
 	- blalock03_alzheimer 
-	* krauthammer04_alzheimer
-	- goh07_genes_and_disease_classes
-	- OMIM Morbidmap
+	- krauthammer04_alzheimer
 	- CTD gene_disease_relations
 	- PharmaGK
 	- TTD
@@ -20,31 +28,41 @@ TODO:
 	- data from Hefalmp 
 
     - ppi data
+	- goh07
+	- biana no tap
+	- entrez ppi
 	- biana exp + reactome
 	- biana string (exp & low score filtered)
 	- network from jonsson 
 	- BIANA ppis from different species
 
-- check/ask for fflow/netween/netrank data
-
-- attach biological sense to the results, check if there is different data sources for the same phenotype coinciding when scores calculated with one of them or GO analysis or greedy expansion of complex from high scoring nodes and analyzing their functional enrichment
-    - greedy search for high scoring modules
-    - High scoring node check, check whether high scoring nodes in different methods are common, booststrapping possible?
+-3- attach biological sense to the results, check if there is different data sources for the same phenotype coinciding when scores calculated with one of them or GO analysis or greedy expansion of complex from high scoring nodes and analyzing their functional enrichment
+    - greedy search for high scoring modules and/or expanding high scoring nodes based on their connectedness in addition to score
+	- none
+	- greedy
+	- greedy w/ return
+	- greedy w/ all bigger than max-min avg
+	- greedy w/ best of above + near clique
+    - Create complexes using MCODE / COACH 
     - GO enrichment check (on the high scoring nodes)
+    - High scoring node check, check whether high scoring nodes in different methods are common, booststrapping possible?
 
-- document all (combine presentation + report + README notes)
+-4- analysis of results on goh disease & omim
 
-- check reviews + existing method articles, see if there is anything comparable
+-*/5- document all (combine presentation + report + README notes)
 
 - comparison with other methods in the literature (with their data)
-    - FunctionalFlow functional annotation (use scoreN with acc to initial scores option)
-	- interaction network + all functions of nodes not available
+    - ToppGene
+	- network and disease data available
     - MetaCore topological score using shortest paths on psoriasis data
 	- network not available
 	- still their score on psoriasis data can be compared
     - InfoFlow, lethality data on S. cervaise
 	- network not available
 	- still their scores on essentiality data can be compared
+    - FunctionalFlow functional annotation (use scoreN with acc to initial scores option)
+	- different type of data
+	- interaction network + all functions of nodes not available
 
 - ml predictions based on feature described network (need to use the same training & test sets)
 
@@ -55,8 +73,6 @@ TODO:
     - from tissueinfo or p-values from HEFalMp with scores
 
 - check performance on random seed assignment 
-
-- document all
 
 - filtering by localization (localization data from locate) (files from uri)
 
@@ -170,6 +186,8 @@ NOTES:
 - For the network of biana_no_tap_relevance modified edge scores so that new_score = 1 + score (otherwise min score 0.01, max score 1 -> 100 times stronger edge, now at most 2 times stronger)
 
 - Checked auc & recovery (check %10 coverages) rates for all runs. Also observed effects of parameters. In aneurysm on GOH and somewhat slightly in bc on BIANA, parameters have a considerable effect (probably due to number of seeds vs interactions). Apart from that, change of parameters around r2i2, r2i3, r3i2, r3i3 for Netscore, i4, i5, i6 for Netzcore and fFlow seems to have little effect. Selected parameters: r3i2 and i5. 
+
+- For piana apoptosis network NetRank surprising performs as good as others (so does ns r1i1 -- need to see whether due to a speacial characteristic of network, e.g. seeds connected with each other) 
 
 
 aneurysim
