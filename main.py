@@ -9,7 +9,7 @@
 import prepare_data
 import analyze_results
 import calculate_mean_and_sigma
-import os, os.path
+import os, os.path, time, subprocess
 from string import Template
 
 #only_print_command = True
@@ -56,14 +56,15 @@ omim_phenotypes = [ "omim_" + "_".join(p.split()) for p in omim_phenotypes ]
 def main():
     MODE = "score" # prepare, score, analyze
     ignore_experiment_failures = False
+    delay_experiment = True
 
-    ppis = ["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"] #["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
-    phenotypes = omim_phenotypes + goh_phenotypes #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
+    ppis = ["goh", "biana_no_tap_no_reliability"] #, "biana_no_reliability", "biana_no_tap_relevance"] #["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
+    phenotypes = omim_phenotypes # + goh_phenotypes #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
 
     scoring_parameters = []
-    scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
     scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
-    #scoring_parameters += [("nd", 1, 1)]
+    scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
+    scoring_parameters += [("nd", 1, 1)]
     #scoring_parameters += [("nw",1, 1)]
     #scoring_parameters += [("nx", 1, 1)]
     #scoring_parameters += [("ff", 1, i) for i in xrange(1,9)]
@@ -80,6 +81,7 @@ def main():
 	    for parameters in scoring_parameters:
 		experiments.append((ppi, phenotype, parameters[0], parameters[1], parameters[2]))
 
+    #experiment_count = 0
     for experiment in experiments:
 	PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION = experiment
 	print "Running experiment:", experiment
@@ -90,6 +92,13 @@ def main():
 		print "!Problem!"
 	else:
 	    run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION)
+	#experiment_count += 1
+	if use_cluster and delay_experiment:
+	    delay = 10
+	    experiment_count = get_number_of_jobs_in_queues()
+	    while experiment_count > 60:
+		time.sleep(delay)
+		experiment_count = get_number_of_jobs_in_queues()
     return
 
 # Scoring related parameters 
@@ -135,6 +144,12 @@ def main():
 
 #N_REPETITION = 2
 #N_ITERATION = 2
+
+def get_number_of_jobs_in_queues():
+    p1 = subprocess.Popen(["qstat"], stdout=subprocess.PIPE)
+    p2 = subprocess.Popen(["wc", "-l"], stdin=p1.stdout, stdout=subprocess.PIPE)
+    experiment_count = int(p2.communicate()[0])
+    return experiment_count
 
 #def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability, network_file, network_file_filtered, input_log_file, node_file, seed_scores_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, input_dir, node_scores_file, edge_scores_file, sampled_file_prefix, output_scores_file, log_file):
 def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
