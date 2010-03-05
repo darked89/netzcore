@@ -2,9 +2,8 @@
 TODO:
 
 - Runs with
-    -1- goh diseases on biana/entrez ppi
-    -2- omim on goh/entrez ppi/biana
-    -6- chen09 (nr) on goh/entrez ppi then comparison w/ toppgene (chen) results
+    -1- goh + omim diseases on goh/biana/entrez ppi
+    -5- chen09 (nr) on goh/entrez ppi then comparison w/ toppgene (chen) results
     - anna db on goh/entrez ppi/biana
     - dezso09 (nw) on biana/goh and compare w/ their results
     - vanunu10 comparison with OMIM prostate, AD, diabetes casual gene predictions
@@ -36,7 +35,7 @@ TODO:
 	- network from jonsson 
 	- BIANA ppis from different species
 
--3- attach biological sense to the results, check if there is different data sources for the same phenotype coinciding when scores calculated with one of them or GO analysis or greedy expansion of complex from high scoring nodes and analyzing their functional enrichment
+-2- attach biological sense to the results, check if there is different data sources for the same phenotype coinciding when scores calculated with one of them or GO analysis or greedy expansion of complex from high scoring nodes and analyzing their functional enrichment
     - greedy search for high scoring modules and/or expanding high scoring nodes based on their connectedness in addition to score
 	- none
 	- greedy
@@ -47,9 +46,9 @@ TODO:
     - GO enrichment check (on the high scoring nodes)
     - High scoring node check, check whether high scoring nodes in different methods are common, booststrapping possible?
 
--4- analysis of results on goh disease & omim
+-3- analysis of results on goh disease & omim
 
--*/5- document all (combine presentation + report + README notes)
+-*/4- document all (combine presentation + report + README notes)
 
 - comparison with other methods in the literature (with their data)
     - ToppGene

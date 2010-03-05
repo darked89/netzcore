@@ -57,7 +57,7 @@ def main():
     MODE = "prepare" # prepare, score, analyze
     ignore_experiment_failures = False
 
-    ppis = ["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"] #["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
+    ppis = ["goh", "entrez", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"] #["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
     phenotypes = omim_phenotypes + goh_phenotypes #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
     scoring_parameters = []
     #scoring_parameters += [("ff", 1, 5), ("nz", 1, 5), ("ns", 3, 2)] 
@@ -237,6 +237,12 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
 	network_file_identifier_type = "geneid"
 	network_file = goh_network_file
 	network_file_filtered = goh_network_file_filtered_by_degree 
+    # Entrez ppi
+    elif PPI == "entrez":
+	node_description_file = gene_info_file 
+	network_file_identifier_type = "geneid"
+	network_file = data_dir + "entrez10_human_ppi" + os.sep + "ppi.sif"
+	network_file_filtered = network_file[:-4] + "_degree_filtered.sif"
     # Rhodes ppi
     elif PPI == "rhodes":
 	node_description_file = gene_info_file 
