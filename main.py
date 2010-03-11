@@ -145,19 +145,10 @@ def main():
 #N_REPETITION = 2
 #N_ITERATION = 2
 
-def get_number_of_jobs_in_queues():
-    p1 = subprocess.Popen(["qstat"], stdout=subprocess.PIPE)
-    p2 = subprocess.Popen(["wc", "-l"], stdin=p1.stdout, stdout=subprocess.PIPE)
-    experiment_count = int(p2.communicate()[0])
-    return experiment_count
-
-#def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability, network_file, network_file_filtered, input_log_file, node_file, seed_scores_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, input_dir, node_scores_file, edge_scores_file, sampled_file_prefix, output_scores_file, log_file):
-def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
-
-    # Create experiment parameters
-    global DEFAULT_NON_SEED_SCORE 
-
-    # Disease association files (Association data to be used)
+def decide_association(ASSOCIATION):
+    """
+    Decide disease association files (Association data to be used)
+    """
     association_scores_validation_file = None
     if ASSOCIATION == "aneurysm":
 	association_dir = data_dir + "aneurysm" + os.sep
@@ -194,8 +185,24 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
     else:
 	raise ValueError("Unrecognized association!")
 
+    return (association_scores_file, association_scores_file_identifier_type, association_scores_validation_file)
+
+def get_number_of_jobs_in_queues():
+    p1 = subprocess.Popen(["qstat"], stdout=subprocess.PIPE)
+    p2 = subprocess.Popen(["wc", "-l"], stdin=p1.stdout, stdout=subprocess.PIPE)
+    experiment_count = int(p2.communicate()[0])
+    return experiment_count
+
+#def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability, network_file, network_file_filtered, input_log_file, node_file, seed_scores_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, input_dir, node_scores_file, edge_scores_file, sampled_file_prefix, output_scores_file, log_file):
+def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
+
+    # Create experiment parameters
+
+    # Disease association files (Association data to be used)
+    (association_scores_file, association_scores_file_identifier_type, association_scores_validation_file) = decide_association(ASSOCIATION)
 
     # Network specific
+    global DEFAULT_NON_SEED_SCORE 
     interaction_relevance_file = None
     interaction_relevance_file2 = None
     biana_network_file_filtered_by_method = None
