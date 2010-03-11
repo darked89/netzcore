@@ -58,13 +58,13 @@ def main():
     ignore_experiment_failures = False
     delay_experiment = True
 
-    ppis = ["goh", "entrez", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"] #["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
-    phenotypes = omim_phenotypes + goh_phenotypes #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
+    ppis = ["goh"] #, "entrez", "biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] #["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
+    phenotypes = ["aneurysm"] #omim_phenotypes + goh_phenotypes #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
 
     scoring_parameters = []
     scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
-    scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
-    scoring_parameters += [("nd", 1, 1)]
+    #scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
+    #scoring_parameters += [("nd", 1, 1)]
     #scoring_parameters += [("nw",1, 1)]
     #scoring_parameters += [("nx", 1, 1)]
     #scoring_parameters += [("ff", 1, i) for i in xrange(1,9)]
@@ -99,6 +99,9 @@ def main():
 	    while experiment_count > 60:
 		time.sleep(delay)
 		experiment_count = get_number_of_jobs_in_queues()
+
+    #! compare_experiments(experiments)
+
     return
 
 # Scoring related parameters 
@@ -145,9 +148,17 @@ def main():
 #N_REPETITION = 2
 #N_ITERATION = 2
 
-def decide_association(ASSOCIATION):
+
+def get_number_of_jobs_in_queues():
+    p1 = subprocess.Popen(["qstat"], stdout=subprocess.PIPE)
+    p2 = subprocess.Popen(["wc", "-l"], stdin=p1.stdout, stdout=subprocess.PIPE)
+    experiment_count = int(p2.communicate()[0])
+    return experiment_count
+
+
+def decide_association_data(ASSOCIATION):
     """
-    Decide disease association files (Association data to be used)
+	Decide disease association files (Association data to be used)
     """
     association_scores_validation_file = None
     if ASSOCIATION == "aneurysm":
@@ -184,23 +195,13 @@ def decide_association(ASSOCIATION):
 	association_scores_file_identifier_type = "genesymbol"
     else:
 	raise ValueError("Unrecognized association!")
-
     return (association_scores_file, association_scores_file_identifier_type, association_scores_validation_file)
 
-def get_number_of_jobs_in_queues():
-    p1 = subprocess.Popen(["qstat"], stdout=subprocess.PIPE)
-    p2 = subprocess.Popen(["wc", "-l"], stdin=p1.stdout, stdout=subprocess.PIPE)
-    experiment_count = int(p2.communicate()[0])
-    return experiment_count
 
-#def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability, network_file, network_file_filtered, input_log_file, node_file, seed_scores_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, input_dir, node_scores_file, edge_scores_file, sampled_file_prefix, output_scores_file, log_file):
-def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
-
-    # Create experiment parameters
-
-    # Disease association files (Association data to be used)
-    (association_scores_file, association_scores_file_identifier_type, association_scores_validation_file) = decide_association(ASSOCIATION)
-
+def decide_interaction_data(PPI):
+    """ 
+	Decide interaction data to be used
+    """
     # Network specific
     global DEFAULT_NON_SEED_SCORE 
     interaction_relevance_file = None
@@ -359,10 +360,31 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
     else:
 	raise ValueError("Unrecognized ppi!")
 
+    return (interaction_relevance_file, interaction_relevance_file2, biana_network_file_filtered_by_method, \
+	    biana_network_file_filtered_by_reliability, node_file, node_description_file, \
+	    network_file_identifier_type, network_file, network_file_filtered)
 
-    # Human readable title for the run
+
+def decide_title(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, N_LINKER_THRESHOLD):
+    """
+	Decide title for the run
+    """
     title = "%s - %s - %s" % (PPI, ASSOCIATION, SCORING)
 
+    if SCORING == "ns" or SCORING == "nh" or SCORING == "n1":
+	title += " - r%d i%d" % (N_REPETITION, N_ITERATION)
+    elif SCORING == "nz" or SCORING == "ff" or SCORING == "nb":
+	title += " - i%d" % N_ITERATION
+    elif SCORING == "nl":
+	title += " - t%f" % N_LINKER_THRESHOLD
+
+    return title
+
+
+def decide_directory_hierarchy(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, N_LINKER_THRESHOLD):
+    """
+	Decide directory structure and create necessary folders
+    """
     # Project directory structure
     input_base_dir = data_dir + "input" + os.sep
     input_base_dir_network = input_base_dir + PPI + os.sep
@@ -395,29 +417,32 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
 	os.mkdir(output_dir)
 
     if SCORING == "ns" or SCORING == "nh" or SCORING == "n1":
-	title += " - r%d i%d" % (N_REPETITION, N_ITERATION)
 	output_dir = output_dir + "r%di%d" % (N_REPETITION, N_ITERATION) + os.sep
 	if not os.path.exists(output_dir): 
 	    os.mkdir(output_dir)
     elif SCORING == "nz" or SCORING == "ff" or SCORING == "nb":
-	title += " - i%d" % N_ITERATION
 	output_dir = output_dir + "i%d" % N_ITERATION + os.sep
 	if not os.path.exists(output_dir): 
 	    os.mkdir(output_dir)
     elif SCORING == "nl":
-	title += " - t%f" % N_LINKER_THRESHOLD
 	output_dir = output_dir + "t%f" % N_LINKER_THRESHOLD + os.sep
 	if not os.path.exists(output_dir): 
 	    os.mkdir(output_dir)
 
+    return (input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association)
 
+
+def decide_scoring_and_analysis_files(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association):
+    """
+	Decide file names to be used in scoring and analysis
+    """
     # Input/Output score file
     seed_scores_file = input_dir + "seed_scores.sif"
     node_scores_file = input_dir + "node_scores.sif"
     #edge_scores_file = input_dir + "edge_scores.sif"
     edge_scores_file = input_base_dir_network + "edge_scores.sif"
     edge_scores_as_node_scores_file = input_dir + "edge_scores_as_node_scores.sif"
-    reliability_filtered_edge_scores_file = input_base_dir_network + "reliability_filtered_edge_scores.sif"
+    #reliability_filtered_edge_scores_file = input_base_dir_network + "reliability_filtered_edge_scores.sif"
     output_scores_file = output_dir + "node_scores.sif" # "_r%dn%d.sif" % (N_REPETITION, N_ITERATION)
     score_log_file = output_dir + "log.txt" # "_r%dn%d.txt" % (N_REPETITION, N_ITERATION)
     sampled_file_prefix = sampling_dir + "sampled_graph"
@@ -434,6 +459,15 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
     r_script_file = output_dir + "results.r"
     tex_script_file = output_dir + "results.tex"
 
+    return (seed_scores_file, node_scores_file, edge_scores_file, edge_scores_as_node_scores_file, output_scores_file, \
+	    score_log_file, sampled_file_prefix, log_file, input_log_file, job_file, output_log_file, predictions_file, \
+	    labels_file, r_script_file, tex_script_file)
+
+
+def decide_score_commands(node_scores_file, edge_scores_file, output_scores_file, edge_scores_as_node_scores_file, N_REPETITION, N_ITERATION, sampling_dir, score_log_file):
+    """
+	Decide commands to be used in scoring
+    """
     score_xval_commands = { "ns": Template(src_dir + "scoreNetwork/scoreN -s s -n %s.$fold -e %s -o %s.$fold -r %d -i %d &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, score_log_file)),
 			    "nz": Template(src_dir + "scoreNetwork/scoreN -s z -n %s.$fold -e %s -o %s.$fold -i %d -x %d -d %s &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file)),
 			    "nh": Template(src_dir + "scoreNetwork/scoreN -s h -n %s.$fold -e %s -o %s.$fold -r %d -i %d -x %d -d %s &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file)),
@@ -460,7 +494,34 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
 		       "nb": src_dir + "./netscore -c %s -i %s -o %s -t 0 -z 0 -nr 100 -r 1 -zp 0 -n %d -nd 2 -mx 1 -ms 3 -mn 0 -dn 2 -de 2 -mxe 0 -mne 0.00000001 -mnd 0.0000001 -mnde 0.0000001 -mnst 20 -mnste 20 -dxi 1 -dxn 0 -dxe 0 -e 0.0000001 &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, score_log_file),
 		       "ff": src_dir + "./fFlow %s %s %s %d %f &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, DEFAULT_NON_SEED_SCORE, score_log_file),
 		     }
+    return score_xval_commands, score_commands
 
+
+#def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability, network_file, network_file_filtered, input_log_file, node_file, seed_scores_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, input_dir, node_scores_file, edge_scores_file, sampled_file_prefix, output_scores_file, log_file):
+def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
+
+    # Create experiment parameters
+    # Disease association files (Association data to be used)
+    association_scores_file, association_scores_file_identifier_type, association_scores_validation_file = decide_association_data(ASSOCIATION)
+
+    # Interaction files (Interaction data to be used)
+    (interaction_relevance_file, interaction_relevance_file2, biana_network_file_filtered_by_method, \
+	    biana_network_file_filtered_by_reliability, node_file, node_description_file, \
+	    network_file_identifier_type, network_file, network_file_filtered) = decide_interaction_data(PPI)
+
+    # Human readable title for the run
+    title = decide_title(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, N_LINKER_THRESHOLD)
+
+    # Project directory structure
+    (input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association) = decide_directory_hierarchy(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, N_LINKER_THRESHOLD)
+
+    # Input/Output score, logging and analysis files
+    (seed_scores_file, node_scores_file, edge_scores_file, edge_scores_as_node_scores_file, output_scores_file, \
+	score_log_file, sampled_file_prefix, log_file, input_log_file, job_file, output_log_file, predictions_file, \
+	labels_file, r_script_file, tex_script_file) = decide_scoring_and_analysis_files(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association)
+
+    # Scoring commands
+    score_xval_commands, score_commands = decide_score_commands(node_scores_file, edge_scores_file, output_scores_file, edge_scores_as_node_scores_file, N_REPETITION, N_ITERATION, sampling_dir, score_log_file)
 
     # Conduct experiment
     if MODE == "prepare":
@@ -476,6 +537,10 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
     else:
 	raise ValueError("Unrecognized mode!")
     return
+
+
+#! def compare_experiments(experiments):
+#!    return
 
 
 def prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability, network_file, network_file_filtered, input_log_file, node_file, seed_scores_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, input_dir, node_scores_file, edge_scores_file, interaction_relevance_file, interaction_relevance_file2, edge_scores_as_node_scores_file, sampled_file_prefix):
@@ -687,6 +752,20 @@ def analyze_xval_percentage(log_file, output_scores_file, node_scores_file, outp
 def analyze_original(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_description_file, network_file_identifier_type, association_scores_validation_file):
     if not os.path.exists(output_scores_file):
 	raise Exception("Output score file does not exist!")
+
+    if association_scores_file_identifier_type is not None and not os.path.exists(output_scores_file+"."+association_scores_file_identifier_type):
+	if PPI.startswith("biana"):
+	    prepare_data.convert_file_using_new_id_mapping(output_scores_file, node_description_file, network_file_identifier_type, "geneid", output_scores_file+".geneid")
+	    prepare_data.convert_file_using_new_id_mapping(output_scores_file+".geneid", gene_info_file, "geneid", association_scores_file_identifier_type, output_scores_file+"."+association_scores_file_identifier_type)
+	elif PPI.startswith("ori") or PPI.startswith("david") or PPI.startswith("piana_joan"):
+	    pass
+	else:
+	    prepare_data.convert_file_using_new_id_mapping(output_scores_file, node_description_file, network_file_identifier_type, association_scores_file_identifier_type, output_scores_file+"."+association_scores_file_identifier_type)
+
+	#! analyze_results.fetch_modules(network_file, output_scores_file+"."+association_scores_file_identifier_type, log_file)
+
+	#! analyze_results.check_functional_enrichment(output_scores_file+"."+association_scores_file_identifier_type, log_file)
+
     f = open(log_file, "a")
     for percentage in (10, 25, 50):
 	#print "---- %s:" % percentage
@@ -694,14 +773,6 @@ def analyze_original(PPI, output_scores_file, log_file, node_scores_file, associ
 	f.write("%s\n" % output_scores_file)
 	coverage = analyze_results.calculate_seed_coverage_at_given_percentage(output_scores_file, node_scores_file, percentage, DEFAULT_NON_SEED_SCORE)
 	f.write("%s\n" % str(coverage))
-	if association_scores_file_identifier_type is not None and not os.path.exists(output_scores_file+"."+association_scores_file_identifier_type):
-	    if PPI.startswith("biana"):
-		prepare_data.convert_file_using_new_id_mapping(output_scores_file, node_description_file, network_file_identifier_type, "geneid", output_scores_file+".geneid")
-		prepare_data.convert_file_using_new_id_mapping(output_scores_file+".geneid", gene_info_file, "geneid", association_scores_file_identifier_type, output_scores_file+"."+association_scores_file_identifier_type)
-	    elif PPI.startswith("ori") or PPI.startswith("david") or PPI.startswith("piana_joan"):
-		pass
-	    else:
-		prepare_data.convert_file_using_new_id_mapping(output_scores_file, node_description_file, network_file_identifier_type, association_scores_file_identifier_type, output_scores_file+"."+association_scores_file_identifier_type)
 	if association_scores_validation_file is not None:
 	    f.write("Validation seed coverage:")
 	    if PPI.startswith("ori") or PPI.startswith("david") or PPI.startswith("piana_joan"):

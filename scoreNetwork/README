@@ -1,0 +1,34 @@
+
+Executables are located under /sbi/users/emre/bin/
+
+    * netzcore (suggested n_iteration: 5, n_random_graph*: 100)
+
+scoreN -s z -n node_score.txt -e node_score_node.txt -o output.txt -i n_iteration -d path_to_random_graphs -x n_random_graph
+
+* you can generate random networks using graph_utilities.randomize_graph fucntion with randomization_type "preserve_topology_and_node_degree"
+
+    * netscore (suggested n_repetition: 3, n_iteration: 2)
+
+scoreN -s s -n node_score.txt -e node_score_node.txt -o output.txt -r n_repetition -i n_iteration
+
+    * netshort
+
+scoreN -s d -n node_score.txt -e edge_score_as_node_score.txt -o output.txt
+
+    * netrank
+
+scoreN -s r -n node_score.txt -e node_score_node.txt -o output.txt
+
+    * function flow (suggested n_iteration: 5)
+
+fFlow node_score.txt node_score_node.txt output.txt n_iteration non_seed_score_threshold*
+
+* All nodes have score higher than non_seed_score_threshold in node_score.txt file are going to be considered as seeds
+
+the input files contain:
+node_score.txt: node id whitespace(s) node score
+node_score_node.txt: node id whitespace(s) interaction score whitespace(s) node id
+edge_score_as_node_score.txt: similar to node_score_node.txt file but edge score is assigned averaging scores of the nodes of the edge in node_score.txt file
+
+I attach a script I use to create input files (e.g. creating random graphs, edge_score_as_node_score.txt file etc..)
+
