@@ -162,10 +162,12 @@ def create_node_scores_file(nodes, node_to_score, node_scores_file, ignored_node
     f.close()
     return 
 
-def convert_file_using_new_id_mapping(file_to_be_converted, node_description_file, from_id_type, to_id_type, new_file):
+
+def convert_file_using_new_id_mapping(file_to_be_converted, node_description_file, from_id_type, to_id_type, new_file, id_to_id_mapping=False):
     """
 	Maps nodes given as from_id_type to their correspondants in to_id_type using node_description_file
 	Can convert node / network file in sif format (node file with data, network file with data in the middle)
+	id_to_id_mapping: Output id to id mapping as TSV file
     """
     nodes, edges, node_to_data, edge_to_data = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_to_be_converted, store_edge_type = True)
 
@@ -174,18 +176,27 @@ def convert_file_using_new_id_mapping(file_to_be_converted, node_description_fil
     columns, node_id_to_new_ids = reader.read(fields_to_include = [from_id_type, to_id_type], keys_to_include=nodes, merge_inner_values = True)
 
     f = open(new_file, 'w')
+    if id_to_id_mapping:
+	f.write("%s\t%s\n" % (from_id_type, to_id_type))
+
     if edges is None:
 	for v in nodes:
 	    if node_to_data.has_key(v):
 		if node_id_to_new_ids.has_key(v):
 		    vals = reduce(lambda x,y: x+y, node_id_to_new_ids[v])
 		    for id in vals:
-			f.write("%s %s\n" % (id, node_to_data[v]))
+			if id_to_id_mapping:
+			    f.write("%s\t%s\n" % (v, id))
+			else:
+			    f.write("%s %s\n" % (id, node_to_data[v]))
 	    else:
 		if node_id_to_new_ids.has_key(v):
 		    vals = reduce(lambda x,y: x+y, node_id_to_new_ids[v])
 		    for id in vals:
-			f.write("%s\n", id)
+			if id_to_id_mapping:
+			    f.write("%s\t%s\n" % (v, id))
+			else:
+			    f.write("%s\n", id)
     else:
 	for e in edges:
 	    u,v = e
@@ -199,6 +210,7 @@ def convert_file_using_new_id_mapping(file_to_be_converted, node_description_fil
 				f.write("%s %s %s\n" % (id, edge_to_data[e], id2))
     f.close()
     return
+
 
 def get_node_association_score_mapping(network_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, log_file = None, default_seed_score=1.0):
     """

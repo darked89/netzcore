@@ -2,7 +2,7 @@
 TODO:
 
 - Runs with
-    -1- goh + omim diseases on goh/biana/entrez ppi
+    -1- goh + omim + chen diseases on goh/biana/entrez ppi
     -5- chen09 (nr) on goh/entrez ppi then comparison w/ toppgene (chen) results
     - anna db on goh/entrez ppi/biana
     - dezso09 (nw) on biana/goh and compare w/ their results
@@ -36,6 +36,8 @@ TODO:
 	- BIANA ppis from different species
 
 -2- attach biological sense to the results, check if there is different data sources for the same phenotype coinciding when scores calculated with one of them or GO analysis or greedy expansion of complex from high scoring nodes and analyzing their functional enrichment
+    + GO enrichment check (on the high scoring nodes) using node_id - gene_symbol mapping 
+    - High scoring node check, check whether high scoring nodes in different methods are common, booststrapping possible?
     - greedy search for high scoring modules and/or expanding high scoring nodes based on their connectedness in addition to score
 	- none
 	- greedy
@@ -43,12 +45,17 @@ TODO:
 	- greedy w/ all bigger than max-min avg
 	- greedy w/ best of above + near clique
     - Create complexes using MCODE / COACH 
-    - GO enrichment check (on the high scoring nodes)
-    - High scoring node check, check whether high scoring nodes in different methods are common, booststrapping possible?
 
 -3- analysis of results on goh disease & omim
 
 -*/4- document all (combine presentation + report + README notes)
+    - table w/ auc averaged over different phenotypes for each scoring method
+    - method overview diagram
+    - bar plots of 10 percent seed coverages with confidence values averaged over phenotypes
+    - table/graph with comparison of nw and other methods
+    - another table?
+
+- netscore robustness on different data types (see dittrich08, identifying functional...)
 
 - comparison with other methods in the literature (with their data)
     - ToppGene
