@@ -58,11 +58,17 @@ def main():
     ignore_experiment_failures = False
     delay_experiment = True
 
-    ppis = ["goh"] #, "entrez", "biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] #["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
-    phenotypes = ["aneurysm"] #omim_phenotypes + goh_phenotypes #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
+    ppis = []
+    ppis += ["goh", "entrez", "biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] #["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
+    #ppis = ["ori_coexpression_1e-2", "ori_network", "ori_coexpression", "ori_coexpression_colocalization", "ori_colocalization", "ori_coexpression_colocalization_1e-2"]
+    #ppis += ["ori_no_tap_coexpression_1e-2", "ori_no_tap_network", "ori_no_tap_coexpression", "ori_no_tap_coexpression_colocalization", "ori_no_tap_colocalization", "ori_no_tap_coexpression_colocalization_1e-2"]
+
+    phenotypes = []
+    phenotypes += omim_phenotypes + goh_phenotypes 
+    #phenotypes += ["aneurysm"] #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
 
     scoring_parameters = []
-    scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
+    #scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
     #scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
     #scoring_parameters += [("nd", 1, 1)]
     #scoring_parameters += [("nw",1, 1)]
@@ -273,43 +279,46 @@ def decide_interaction_data(PPI):
 	network_file_filtered = rhodes_network_file_filtered_by_degree 
 	#interaction_relevance_file = rhodes_interaction_relevance_file # need to rescale / cluster scores because max/min >= 10000
     elif PPI.startswith("ori"):
-	network_base_dir = data_dir + "human_interactome_ori" + os.sep
-	node_description_file = biana_node_file_prefix + ".tsv"
+	if PPI.startswith("ori_no_tap"):
+	    network_base_dir = data_dir + "human_interactome_ori_no_tap" + os.sep
+	else:
+	    network_base_dir = data_dir + "human_interactome_ori" + os.sep
+	node_description_file = None #biana_node_file_prefix + ".tsv"
 	network_file_identifier_type = "user entity id"
-	if PPI == "ori_network":
+	if PPI == "ori_network" or PPI == "ori_no_tap_network":
 	    network_dir = network_base_dir + "network" + os.sep
 	    node_file = network_dir + "aneurist.noa"
 	    network_file = network_dir + "aneurist.sif"
 	    network_file_filtered = network_file
 	    interaction_relevance_file = network_dir + "aneurist.eda"
 	    DEFAULT_NON_SEED_SCORE = 0.00001 
-	elif PPI == "ori_coexpression_1e-2":
+	elif PPI == "ori_coexpression_1e-2" or PPI == "ori_no_tap_coexpression_1e-2":
 	    network_dir = network_base_dir + "coexpression" + os.sep
 	    node_file = network_dir + "aneurist.noa"
 	    network_file = network_dir + "aneurist.sif"
 	    network_file_filtered = network_file
 	    interaction_relevance_file = network_dir + "aneurist.eda"
-	elif PPI == "ori_coexpression":
+	elif PPI == "ori_coexpression" or PPI == "ori_no_tap_coexpression":
 	    network_dir = network_base_dir + "coexpression" + os.sep
 	    node_file = network_dir + "aneurist.noa"
 	    network_file = network_dir + "aneurist.sif"
 	    network_file_filtered = network_file
 	    interaction_relevance_file = network_dir + "aneurist.eda"
 	    DEFAULT_NON_SEED_SCORE = 0.00001 
-	elif PPI == "ori_coexpression_colocalization_1e-2":
+	elif PPI == "ori_coexpression_colocalization_1e-2" or PPI == "ori_no_tap_coexpression_colocalization_1e-2":
 	    network_dir = network_base_dir + "coexpression_colocalization" + os.sep
 	    node_file = network_dir + "aneurist.noa"
 	    network_file = network_dir + "aneurist.sif"
 	    network_file_filtered = network_file
 	    interaction_relevance_file = network_dir + "aneurist.eda"
-	elif PPI == "ori_coexpression_colocalization":
+	elif PPI == "ori_coexpression_colocalization" or PPI == "ori_no_tap_coexpression_colocalization":
 	    network_dir = network_base_dir + "coexpression_colocalization" + os.sep
 	    node_file = network_dir + "aneurist.noa"
 	    network_file = network_dir + "aneurist.sif"
 	    network_file_filtered = network_file
 	    interaction_relevance_file = network_dir + "aneurist.eda"
 	    DEFAULT_NON_SEED_SCORE = 0.00001 
-	elif PPI == "ori_colocalization":
+	elif PPI == "ori_colocalization" or PPI == "ori_no_tap_colocalization":
 	    network_dir = network_base_dir + "colocalization" + os.sep
 	    node_file = network_dir + "aneurist.noa"
 	    network_file = network_dir + "aneurist.sif"

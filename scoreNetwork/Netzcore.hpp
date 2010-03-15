@@ -31,8 +31,8 @@ private:
     //UIntToMessage * getVertexMessageMap(Vertex const v) { return messageMaps[v]; };
     //void createVertexMessageMap(Vertex const v) { messageMaps[v] = new UIntToMessage(); };
 
-    //float getVertexScoreInitial(Vertex const v) const { return mapScoreInitial.at(v); };
-    //void setVertexScoreInitial(Vertex const v, float vData) { mapScoreInitial[v] = vData; };
+    float getVertexScoreInitial(Vertex const v) const { return mapScoreInitial.at(v); };
+    void setVertexScoreInitial(Vertex const v, float vData) { mapScoreInitial[v] = vData; };
 
     void loadSampledGraphs();
     void printSampledGraphs();
@@ -40,7 +40,7 @@ private:
 
     // MEMBERS
     //VertexToMessageMap messageMaps;
-    //VertexToFloat mapScoreInitial;
+    VertexToFloat mapScoreInitial;
     std::list<Graph*> sampledGraphs;
     std::string nodeFileName;
     std::string prefixSampledGraphs;

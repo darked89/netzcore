@@ -82,7 +82,7 @@ void Netzcore::initializeScoring() {
     for(boost::tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) 
     {
 	//createVertexMessageMap(*it);
-	//setVertexScoreInitial(*it, getNetwork().getVertexScore(*it));
+	setVertexScoreInitial(*it, getNetwork().getVertexScore(*it));
 	setVertexScoreUpdated(*it, 0.0);
     }
     loadSampledGraphs();
@@ -94,6 +94,15 @@ void Netzcore::initializeScoring() {
 
 void Netzcore::finalizeScoring()
 {
+    VertexIterator it, itEnd;
+    // Add initial score if accumulation to initial score is desired 
+    if(flagAccumulateToInitialNodeScore == true) 
+    {
+	for(boost::tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) 
+	{
+	    getNetwork().setVertexScore(*it, getNetwork().getVertexScore(*it) + getVertexScoreInitial(*it));
+	}
+    }
     scaleNodeScores(SCALE_BETWEEN_INITIAL_MIN_AND_MAX_SCORE);
 }
 
