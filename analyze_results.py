@@ -1,13 +1,174 @@
 #########################################################################
-# Methods for analyzing output files from scoring methods
+#output_scores_file+"."+association_scores_file_identifier_type Methods for analyzing output files from scoring methods
 #
 # eg 13/08/2009
 #########################################################################
 
 from biana.utilities import graph_utilities as network_utilities
+from funcassociate import client
+from biana.utilities import TsvReader
 
-#def generate_xval_ROCR_files():
-#    return
+
+def check_functional_enrichment_of_high_scoring_modules(network_file, module_detection_type, output_scores_file, node_scores_file, node_mapping_file, percentage, association_scores_file_identifier_type, output_method, default_non_seed_score = 0, exclude_seeds = False, specie = "Homo sapiens", mode = "unordered"):
+    """
+	Check functional enrichment of highest scoring modules at given percentage
+    """
+    g = network_utilities.create_network_from_sif_file(network_file)
+
+    dummy, dummy, node_to_score, dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = output_scores_file, store_edge_type = False)
+    ids, n, i = get_top_scoring_nodes_at_given_percentage(node_to_score, percentage)
+
+    if module_detection_type != "greedy":
+	raise ValueError("Only greedy all highest neighbor node inclusion is supported!")
+
+    sub_graph = network_utilities.get_subgraph(g, ids)
+    modules = network_utilities.get_connected_components(sub_graph, return_as_graph_list=True)
+    #print "NetworkX way:"
+    print len(modules), map(len, modules)
+
+    #modules =  get_high_scoring_modules(g, node_to_score, ids)
+    #print "Handcrafted way:"
+    #print len(modules), map(len, modules)
+
+    return
+
+    #!
+    #selected_ids, all_ids = get_top_scoring_node_ids_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file, percentage, id_type, default_non_seed_score, exclude_seeds)
+
+    #for module in modules:
+    #	check_functional_enrichment(selected_ids, all_ids, id_type, output_method, specie = specie = "Home sapiens", mode="unordered")
+
+    #output_method("%d genes among %d\n" % (len(selected_ids), len(all_ids)))
+
+    #check_functional_enrichment(selected_ids, all_ids, id_type, output_method, specie = specie, mode = mode)
+    return
+
+
+def get_high_scoring_modules(g, node_to_score, ids):
+    """
+	Can use ids instead of node_to_score & min_score, helper function can be removed and made inline 
+    """
+
+    def get_high_scoring_neighbors(v, g, node_to_score, min_score):
+	neighbors = set()
+	for u in g.neighbors(v):
+	    if node_to_score[u] >= min_score:
+		neighbors.add(u)
+	return neighbors
+
+    min_score = node_to_score[ids[-1]]
+    modules = []
+    current_module = set()
+    ids_included_in_modules = set()
+    #for u,v in g.edges_iter():
+    for v in ids:
+	if v in ids_included_in_modules:
+	    continue
+	else:
+	    modules.append(current_module)
+	    current_module = set()
+	current_module.add(v)
+	for u in current_module:
+	    if u in ids_included_in_modules:
+		continue
+	    neighbors = get_high_scoring_neighbors(u, g, node_to_score, min_score)
+	    ids_included_in_modules.add(u) 
+	    #! buggy below modifying set being iterated
+	    current_module |= neighbors
+    return modules
+
+
+def get_top_scoring_node_ids_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file, percentage, id_type, default_non_seed_score=0, exclude_seeds=False):
+    """
+	Get ids of highest scoring nodes at given percentage
+    """
+    dummy, dummy, node_to_score, dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = output_scores_file, store_edge_type = False)
+    ids, n, i = get_top_scoring_nodes_at_given_percentage(node_to_score, percentage)
+
+    reader = TsvReader.TsvReader(node_mapping_file, inner_delim = ",")
+    columns, id_to_mapped_ids = reader.read(fields_to_include = None, merge_inner_values = True)
+   
+    selected_ids = []
+    all_ids = []
+
+    if exclude_seeds:
+	dummy, dummy, node_to_score, dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = node_scores_file, store_edge_type = False)
+
+    for id in ids:
+	if exclude_seeds:
+	    score = node_to_score[id]
+	    if score <= default_non_seed_score:
+		continue
+	vals = reduce(lambda x,y: x+y, id_to_mapped_ids[id])
+	selected_ids.extend(vals)
+
+    for val_list in id_to_mapped_ids.values():
+	all_ids.extend(reduce(lambda x,y: x+y, val_list))
+
+    return selected_ids, all_ids
+
+
+def check_functional_enrichment_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file, percentage, id_type, output_method, default_non_seed_score=0, exclude_seeds=False, specie = "Home sapiens", mode="unordered"):
+    """
+	Check functional enrichment of highest scoring nodes at given percentage
+    """
+    selected_ids, all_ids = get_top_scoring_node_ids_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file, percentage, id_type, default_non_seed_score, exclude_seeds)
+
+    output_method("%d genes among %d\n" % (len(selected_ids), len(all_ids)))
+
+    check_functional_enrichment(selected_ids, all_ids, id_type, output_method, specie = specie, mode = mode)
+
+    return
+
+
+def check_functional_enrichment(subset_gene_ids, gene_ids, id_type, output_method, specie = "Homo sapiens", mode = "unordered"):
+    """
+	Check GO functional enrichment using funcassociate web service
+    """
+    #f = open(output_file, "a")
+    #output_method = f.write
+
+    if id_type == "geneid":
+	id_type = "entrezgene"
+    elif id_type == "genesymbol":
+	id_type = "hgnc_symbol"
+    elif id_type == "uniprotaccession":
+	id_type = "uniprot_accession"
+    elif id_type == "uniprotentry":
+	id_type = "uniprot_id"
+    else:
+	raise ValueError("Unrecognized id_type: %s" % id_type)
+
+    reps = 1500
+    client_funcassociate = client.FuncassociateClient()
+    response = client_funcassociate.functionate(query = subset_gene_ids,
+                             species = specie,
+                             namespace = id_type,
+                             genespace = gene_ids,
+                             mode = mode,
+                             reps = reps)
+
+    #output_method("OVERREPRESENTED ATTRIBUTES"\n)
+
+    headers = ("N", "M", "X", "LOD", "P", "P_adj", "attrib ID", "attrib name")
+    output_method("%s\n" % "\t".join(headers))
+
+    zero = "< %f" % (1.0/float(reps))
+
+    for row in response["over"]:
+        row.pop(1)
+        if row[4] is 0:
+            row[4] = zero
+        output_method("%s\n" % "\t".join(map(str, row)))
+
+    #output_method("\nREQUEST INFO\n")
+    #info = response["request_info"]
+    #for k in info.keys():
+    #    output_method("%s: %s" % (k, info[k]))
+
+    #f.close()
+    return
+
 
 def record_performance_AUC_in_log_file(absolute_dir, log_file, title):
     f = open(absolute_dir + "auc.txt")
@@ -243,33 +404,72 @@ def calculatePerformance(nTP, nFP, nFN, nTN):
     return (acc, sens, spec, ppv)
 
 
-def calculate_seed_coverage_at_given_percentage(file_result, file_seed_scores, percentage, default_score=0):
+def get_top_scoring_nodes_at_given_percentage(node_to_score, percentage):
     """
-	Calculates number of seed nodes included in the given percentage of high ranking nodes in result file 
-	Returns a tuple containing number of seed nodes and all nodes at that percentage
+	Returns highest scoring nodes at given percentage
     """
-    setDummy, setDummy, dictNodeResult, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_result, store_edge_type = False)
-    setDummy, setDummy, dictNode, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_seed_scores, store_edge_type = False)
-    
-    result_scores = dictNodeResult.items()
+
+    result_scores = node_to_score.items()
     result_scores.sort(lambda x,y: cmp(y[1], x[1]))
 
     i = 0
     n = len(result_scores)*percentage/100
-    n_seed = 0
+    ids = [] # the order is important
     
     last_score = result_scores[0][1]
     for id, score in result_scores:
 	i+=1
 	if i>n:
 	    if last_score != score:
-		#print "i,n:", i, n
-		#print "id,score,last:", id, score, last_score
 		break
-	# checking whether node was a seed (using initial non-seed score assumption)
-	if dictNode.has_key(id) and dictNode[id] > default_score:
-	    n_seed += 1
+	ids.append(id)
 	last_score = score
+
+    return ids, n, i
+
+
+def calculate_seed_coverage_at_given_percentage(file_result, file_seed_scores, percentage, default_score=0):
+    """
+	Calculates number of seed nodes included in the given percentage of high ranking nodes in result file 
+	Returns a tuple containing number of seed nodes and all nodes at that percentage
+    """
+
+    n_seed = 0
+
+    dummy, dummy, node_to_score_initial, dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_seed_scores, store_edge_type = False)
+    # getting seeds (using initial non-seed score assumption)
+    seeds = set([ id for id, score in node_to_score_initial.iteritems() if score > default_score ])
+
+    dummy, dummy, node_to_score, dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_result, store_edge_type = False)
+    ids, n, i = get_top_scoring_nodes_at_given_percentage(node_to_score, percentage)
+    for id in ids:
+	if id in seeds:
+    	    n_seed += 1
+    return n_seed, len(seeds), n, i
     
-    return n_seed, len(dictNode), n, i
+    #setDummy, setDummy, dictNodeResult, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_result, store_edge_type = False)
+    #setDummy, setDummy, dictNode, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_seed_scores, store_edge_type = False)
+    
+    #result_scores = dictNodeResult.items()
+    #result_scores.sort(lambda x,y: cmp(y[1], x[1]))
+
+    #i = 0
+    #n = len(result_scores)*percentage/100
+    #n_seed = 0
+
+    #last_score = result_scores[0][1]
+    #for id, score in result_scores:
+    #	i+=1
+    #	if i>n:
+    #	    if last_score != score:
+    #		#print "i,n:", i, n
+    #		#print "id,score,last:", id, score, last_score
+    #		break
+    #	# checking whether node was a seed (using initial non-seed score assumption)
+    #	if dictNode.has_key(id) and dictNode[id] > default_score:
+    #	    n_seed += 1
+    #	last_score = score
+    
+    #return n_seed, len(dictNode), n, i
+
 
