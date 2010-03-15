@@ -11,12 +11,14 @@ import analyze_results
 import calculate_mean_and_sigma
 import os, os.path, time, subprocess
 from string import Template
+from sys import stdout as sys_stdout
 
 #only_print_command = True
 only_print_command = False
 #use_cluster = True
 use_cluster = False
 
+DEFAULT_TOP_SCORING_PERCENTAGE = 10
 N_LINKER_THRESHOLD = 2
 DEFAULT_SEED_SCORE = 1.0 # Default score for seed nodes, used when no score given in assoc file
 DEFAULT_NON_SEED_SCORE = 0.01 # Default score for non-seed nodes
@@ -39,8 +41,8 @@ biana_node_file_prefix = data_dir + "human_interactome_biana" + os.sep + "human_
 biana_network_file_prefix = data_dir + "human_interactome_biana" + os.sep + "human_network"
 
 # PPIs from existing studies
-goh_network_file = data_dir + "goh07_human_ppi" + os.sep + "ppi.sif"
-rhodes_network_file = data_dir + "rhodes05_human_probabilistic_ppi" + os.sep + "ppi.sif"
+goh_network_file = data_dir + "goh_human_ppi" + os.sep + "ppi.sif"
+rhodes_network_file = data_dir + "rhodes_human_probabilistic_ppi" + os.sep + "ppi.sif"
 goh_network_file_filtered_by_degree = goh_network_file[:-4] + "_degree_filtered.sif"
 rhodes_network_file_filtered_by_degree = rhodes_network_file[:-4] + "_degree_filtered.sif"
 rhodes_interaction_relevance_file = rhodes_network_file[:-4] + ".eda"
@@ -53,16 +55,20 @@ goh_phenotypes = ["goh_developmental", "goh_connective_tissue", "goh_ear,nose,th
 omim_phenotypes = ["alzheimer", "breast cancer", "diabetes", "insulin", "anemia", "aneurysm", "myopathy", "neuropathy", "obesity", "parkinson disease", "prostate cancer", "hypertension", "leukemia", "lung cancer", "autism", "asthma", "ataxia", "epilepsy", "schizophrenia", "cardiomyopathy", "cataract", "spastic paraplegia", "lymphoma", "mental retardation", "systemic lupus erythematosus"]
 omim_phenotypes = [ "omim_" + "_".join(p.split()) for p in omim_phenotypes ]
 
+chen_phenotypes = ["atherosclerosis",  "ischaemic_stroke",  "systemic_scleroderma",  "migraine",  "epilepsy",  "cirrhosis",  "ulcerative_colitis",  "cervical_carcinoma",  "osteoarthritis",  "inflammatory_bowel_disease_(ibd)",  "myocardial_ischemia",  "endometrial_carcinoma",  "pancreatitis",  "grave's_disease",  "neural_tube_defects",  "lymphoma",  "endometriosis",  "autism",  "hypercholesterolaemia"]
+chen_phenotypes = [ "chen_" + p for p in chen_phenotypes ]
+
+
 def main():
     MODE = "all" # prepare, score, analyze
     ignore_experiment_failures = False
     delay_experiment = True
 
     ppis = ["goh"] #, "entrez", "biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] #["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
-    phenotypes = ["aneurysm"] #omim_phenotypes + goh_phenotypes #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
+    phenotypes = ["aneurysm"] # chen_phenotypes + omim_phenotypes + goh_phenotypes #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
 
-    scoring_parameters = []
-    scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
+    scoring_parameters = [("nz", 1, 5)]
+    #scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
     #scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
     #scoring_parameters += [("nd", 1, 1)]
     #scoring_parameters += [("nw",1, 1)]
@@ -100,7 +106,8 @@ def main():
 		time.sleep(delay)
 		experiment_count = get_number_of_jobs_in_queues()
 
-    #! compare_experiments(experiments)
+    if MODE == "analyze":
+	compare_experiments(experiments)
 
     return
 
@@ -193,6 +200,10 @@ def decide_association_data(ASSOCIATION):
 	association_dir = data_dir + "omim" + os.sep
 	association_scores_file = association_dir + ASSOCIATION + ".txt"
 	association_scores_file_identifier_type = "genesymbol"
+    elif ASSOCIATION.startswith("chen_"):
+	association_dir = data_dir + "chen_disease_data" + os.sep
+	association_scores_file = association_dir + ASSOCIATION + ".txt"
+	association_scores_file_identifier_type = "genesymbol"
     else:
 	raise ValueError("Unrecognized association!")
     return (association_scores_file, association_scores_file_identifier_type, association_scores_validation_file)
@@ -204,6 +215,7 @@ def decide_interaction_data(PPI):
     """
     # Network specific
     global DEFAULT_NON_SEED_SCORE 
+    specie = "Homo sapiens" # For GO functional enrichment analysis
     interaction_relevance_file = None
     interaction_relevance_file2 = None
     biana_network_file_filtered_by_method = None
@@ -263,7 +275,7 @@ def decide_interaction_data(PPI):
     elif PPI == "entrez":
 	node_description_file = gene_info_file 
 	network_file_identifier_type = "geneid"
-	network_file = data_dir + "entrez10_human_ppi" + os.sep + "ppi.sif"
+	network_file = data_dir + "entrez_human_ppi" + os.sep + "ppi.sif"
 	network_file_filtered = network_file[:-4] + "_degree_filtered.sif"
     # Rhodes ppi
     elif PPI == "rhodes":
@@ -362,7 +374,7 @@ def decide_interaction_data(PPI):
 
     return (interaction_relevance_file, interaction_relevance_file2, biana_network_file_filtered_by_method, \
 	    biana_network_file_filtered_by_reliability, node_file, node_description_file, \
-	    network_file_identifier_type, network_file, network_file_filtered)
+	    network_file_identifier_type, network_file, network_file_filtered, specie)
 
 
 def decide_title(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, N_LINKER_THRESHOLD):
@@ -451,8 +463,8 @@ def decide_scoring_and_analysis_files(input_dir, input_base_dir_network, samplin
     # Log (README) files 
     log_file = output_dir + "README"
     input_log_file = input_dir + "README"
-    job_file = output_dir + "job.sh"
     output_log_file = output_base_dir_association + "README"
+    job_file = output_dir + "job.sh"
 
     # Analysis files
     predictions_file = output_dir + "predictions.txt"
@@ -508,7 +520,7 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
     # Interaction files (Interaction data to be used)
     (interaction_relevance_file, interaction_relevance_file2, biana_network_file_filtered_by_method, \
 	    biana_network_file_filtered_by_reliability, node_file, node_description_file, \
-	    network_file_identifier_type, network_file, network_file_filtered) = decide_interaction_data(PPI)
+	    network_file_identifier_type, network_file, network_file_filtered, specie) = decide_interaction_data(PPI)
 
     # Human readable title for the run
     title = decide_title(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, N_LINKER_THRESHOLD)
@@ -530,18 +542,57 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
     elif MODE == "score":
 	score(SCORING, score_commands, score_xval_commands, output_scores_file, log_file, job_file)
     elif MODE == "analyze":
-	analyze(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title)
+	analyze(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, specie, network_file_filtered)
     elif MODE == "all":
 	prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability, network_file, network_file_filtered, input_log_file, node_file, seed_scores_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, node_mapping_file, input_dir, node_scores_file, edge_scores_file, interaction_relevance_file, interaction_relevance_file2, edge_scores_as_node_scores_file, sampled_file_prefix)
 	score(SCORING, score_commands, score_xval_commands, output_scores_file, log_file, job_file)
-	analyze(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title)
+	analyze(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, specie, network_file_filtered)
     else:
 	raise ValueError("Unrecognized mode!")
     return
 
 
-#! def compare_experiments(experiments):
-#!    return
+def compare_experiments(experiments):
+    """
+	Selects and checks functional annotation of common highest scoring nodes (mapping their genesymols) in different experiments
+    """
+    top_scoring_ids = None
+    all_scoring_ids = set()
+    species = set()
+    prev_id_type = None
+    for experiment in experiments:
+	PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION = experiment
+	# Disease association files (Association data to be used)
+	association_scores_file, association_scores_file_identifier_type, association_scores_validation_file = decide_association_data(ASSOCIATION)
+	# Interaction files (Interaction data to be used)
+	(interaction_relevance_file, interaction_relevance_file2, biana_network_file_filtered_by_method, \
+	    biana_network_file_filtered_by_reliability, node_file, node_description_file, \
+	    network_file_identifier_type, network_file, network_file_filtered, specie) = decide_interaction_data(PPI)
+	# Project directory structure
+	(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association) = decide_directory_hierarchy(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, N_LINKER_THRESHOLD)
+	# Input/Output score, logging and analysis files
+	(seed_scores_file, node_scores_file, node_mapping_file, edge_scores_file, edge_scores_as_node_scores_file, output_scores_file, \
+	score_log_file, sampled_file_prefix, log_file, input_log_file, job_file, output_log_file, predictions_file, \
+	labels_file, r_script_file, tex_script_file) = decide_scoring_and_analysis_files(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association)
+	# Get high scoring node ids
+	selected_ids, all_ids = analyze_results.get_top_scoring_node_ids_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_PERCENTAGE, association_scores_file_identifier_type, default_non_seed_score = DEFAULT_NON_SEED_SCORE, exclude_seeds = True)
+	if top_scoring_ids is None:
+	    top_scoring_ids = set(selected_ids)
+	else:
+	    top_scoring_ids &= set(selected_ids)
+	all_scoring_ids |= set(all_ids)
+	species.add(specie)
+	if len(species) > 1:
+	    raise ValueError("Comparison can be made only on the data from same specie")
+	if prev_id_type is not None:
+	    if prev_id_type != association_scores_file_identifier_type:
+		raise ValueError("Comparison can be made only on the association data that provides the same nomenclature")
+	else:
+	    prev_id_type = association_scores_file_identifier_type
+
+    sys_stdout.write("\n%s common genes among %s\n\n" % (len(top_scoring_ids), len(all_scoring_ids)))
+    analyze_results.check_functional_enrichment(list(top_scoring_ids), list(all_scoring_ids), prev_id_type, sys_stdout.write, specie = species.pop(), mode = "unordered")
+    return
 
 
 def prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability, network_file, network_file_filtered, input_log_file, node_file, seed_scores_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, node_mapping_file, input_dir, node_scores_file, edge_scores_file, interaction_relevance_file, interaction_relevance_file2, edge_scores_as_node_scores_file, sampled_file_prefix):
@@ -596,14 +647,14 @@ def score(SCORING, score_commands, score_xval_commands, output_scores_file, log_
     return
 
 
-def analyze(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title):
+def analyze(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, specie, network_file):
     """
 	Does cross validation and percentage analysis on the output files
     """
     analyzed = analyze_xval(r_script_file, output_scores_file, node_scores_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, log_file) 
     if analyzed:
 	analyze_xval_percentage(log_file, output_scores_file, node_scores_file, output_log_file)
-	analyze_original(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file)
+	analyze_original(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, specie, network_file)
     return
 
 
@@ -752,7 +803,7 @@ def analyze_xval_percentage(log_file, output_scores_file, node_scores_file, outp
     return
 
 
-def analyze_original(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file):
+def analyze_original(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, specie, network_file):
     if not os.path.exists(output_scores_file):
 	raise Exception("Output score file does not exist!")
 
@@ -769,15 +820,16 @@ def analyze_original(PPI, output_scores_file, log_file, node_scores_file, associ
 
     if association_scores_file_identifier_type is not None and os.path.exists(node_mapping_file+"."+association_scores_file_identifier_type):
     	f.write("\nFUNCTIONAL ENRICHMENT ANALYSIS (OVER TOP 10%% SCORING NODES)\n")
-    	analyze_results.check_functional_enrichment_coverage_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, 10, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, exclude_seeds = True)
+    	analyze_results.check_functional_enrichment_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_PERCENTAGE, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, exclude_seeds = True, specie = specie, mode = "ordered")
 
 	#for percentage in (10, 25, 50):
 	#    f.write("---- %s:\n" % percentage)
 	#    f.close()
-	#    analyze_results.check_functional_enrichment_at_given_percentage(output_scores_file, node_scores_file, output_scores_file+"."+association_scores_file_identifier_type, percentage, association_scores_file_identifier_type, log_file, DEFAULT_NON_SEED_SCORE, excludee_seeds)
+	#    analyze_results.check_functional_enrichment_at_given_percentage(output_scores_file, node_scores_file, output_scores_file+"."+association_scores_file_identifier_type, percentage, association_scores_file_identifier_type, log_file, DEFAULT_NON_SEED_SCORE, exclude_seeds)
 	#    f = open(log_file, "a")
 
-	#! analyze_results.check_functional_enrichment_of_modules(network_file, output_scores_file+"."+association_scores_file_identifier_type, log_file)
+    	f.write("\nFUNCTIONAL ENRICHMENT ANALYSIS OF MODULES (OVER TOP 10%% SCORING NODES)\n")
+	analyze_results.check_functional_enrichment_of_high_scoring_modules(network_file, "greedy", output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_PERCENTAGE, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, exclude_seeds = True, specie = specie, mode = "unordered")
 
     f.write("\nSEED COVERAGE ANALYSIS\n")
     for percentage in (10, 25, 50):

@@ -38,15 +38,19 @@ TODO:
 -2- attach biological sense to the results, check if there is different data sources for the same phenotype coinciding when scores calculated with one of them or GO analysis or greedy expansion of complex from high scoring nodes and analyzing their functional enrichment
     + GO enrichment check (on the high scoring nodes) using node_id - gene_symbol mapping 
     - High scoring node check, check whether high scoring nodes in different methods are common, booststrapping possible?
-    - greedy search for high scoring modules and/or expanding high scoring nodes based on their connectedness in addition to score
+    - greedy search for high scoring modules and/or expanding high scoring nodes based on their connectedness in addition to score (start from lower scored highest scoring nodes repeat for each high scoring nodes that are not already included in modules)
 	- none
-	- greedy
-	- greedy w/ return
-	- greedy w/ all bigger than max-min avg
+	- greedy highest
+	- greedy w/ return 
+	- greedy all (since greedy w/out all does not make sense when within selected set there exist nodes with lower scores and excluded neighbors of them though having higher scores)
+	- greedy w/ all bigger than all avg (still has the problem mentioned above)
 	- greedy w/ best of above + near clique
     - Create complexes using MCODE / COACH 
 
 -3- analysis of results on goh disease & omim
+    - situation of seeds:
+	- accumulate to initial scores is needed? Ideally scores can be normalized before accumulation in netshort but requires adding mapInitialScore
+	- dont accumulate for seed coverage (already checked on xval tests)
 
 -*/4- document all (combine presentation + report + README notes)
     - table w/ auc averaged over different phenotypes for each scoring method

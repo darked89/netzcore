@@ -9,21 +9,79 @@ from funcassociate import client
 from biana.utilities import TsvReader
 
 
-def check_functional_enrichment_of_high_scoring_modules(output_scores_file, node_scores_file, percentage, id_type, output_file, default_non_seed_score=0, exclude_seeds=False):
+def check_functional_enrichment_of_high_scoring_modules(network_file, module_detection_type, output_scores_file, node_scores_file, node_mapping_file, percentage, association_scores_file_identifier_type, output_method, default_non_seed_score = 0, exclude_seeds = False, specie = "Homo sapiens", mode = "unordered"):
     """
-	Check functional enrichment of highest scoring nodes at given percentage
+	Check functional enrichment of highest scoring modules at given percentage
     """
+    g = network_utilities.create_network_from_sif_file(network_file)
 
-    check_functional_enrichment(ids, node_to_score.keys(), id_type, output_file)
+    dummy, dummy, node_to_score, dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = output_scores_file, store_edge_type = False)
+    ids, n, i = get_top_scoring_nodes_at_given_percentage(node_to_score, percentage)
+
+    if module_detection_type != "greedy":
+	raise ValueError("Only greedy all highest neighbor node inclusion is supported!")
+
+    sub_graph = network_utilities.get_subgraph(g, ids)
+    modules = network_utilities.get_connected_components(sub_graph, return_as_graph_list=True)
+    #print "NetworkX way:"
+    print len(modules), map(len, modules)
+
+    #modules =  get_high_scoring_modules(g, node_to_score, ids)
+    #print "Handcrafted way:"
+    #print len(modules), map(len, modules)
 
     return
 
+    #!
+    #selected_ids, all_ids = get_top_scoring_node_ids_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file, percentage, id_type, default_non_seed_score, exclude_seeds)
 
-def check_functional_enrichment_coverage_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file, percentage, id_type, output_method, default_non_seed_score=0, exclude_seeds=False):
+    #for module in modules:
+    #	check_functional_enrichment(selected_ids, all_ids, id_type, output_method, specie = specie = "Home sapiens", mode="unordered")
+
+    #output_method("%d genes among %d\n" % (len(selected_ids), len(all_ids)))
+
+    #check_functional_enrichment(selected_ids, all_ids, id_type, output_method, specie = specie, mode = mode)
+    return
+
+
+def get_high_scoring_modules(g, node_to_score, ids):
     """
-	Check functional enrichment of highest scoring nodes at given percentage
+	Can use ids instead of node_to_score & min_score, helper function can be removed and made inline 
     """
 
+    def get_high_scoring_neighbors(v, g, node_to_score, min_score):
+	neighbors = set()
+	for u in g.neighbors(v):
+	    if node_to_score[u] >= min_score:
+		neighbors.add(u)
+	return neighbors
+
+    min_score = node_to_score[ids[-1]]
+    modules = []
+    current_module = set()
+    ids_included_in_modules = set()
+    #for u,v in g.edges_iter():
+    for v in ids:
+	if v in ids_included_in_modules:
+	    continue
+	else:
+	    modules.append(current_module)
+	    current_module = set()
+	current_module.add(v)
+	for u in current_module:
+	    if u in ids_included_in_modules:
+		continue
+	    neighbors = get_high_scoring_neighbors(u, g, node_to_score, min_score)
+	    ids_included_in_modules.add(u) 
+	    #! buggy below modifying set being iterated
+	    current_module |= neighbors
+    return modules
+
+
+def get_top_scoring_node_ids_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file, percentage, id_type, default_non_seed_score=0, exclude_seeds=False):
+    """
+	Get ids of highest scoring nodes at given percentage
+    """
     dummy, dummy, node_to_score, dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = output_scores_file, store_edge_type = False)
     ids, n, i = get_top_scoring_nodes_at_given_percentage(node_to_score, percentage)
 
@@ -31,6 +89,7 @@ def check_functional_enrichment_coverage_at_given_percentage(output_scores_file,
     columns, id_to_mapped_ids = reader.read(fields_to_include = None, merge_inner_values = True)
    
     selected_ids = []
+    all_ids = []
 
     if exclude_seeds:
 	dummy, dummy, node_to_score, dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = node_scores_file, store_edge_type = False)
@@ -43,18 +102,26 @@ def check_functional_enrichment_coverage_at_given_percentage(output_scores_file,
 	vals = reduce(lambda x,y: x+y, id_to_mapped_ids[id])
 	selected_ids.extend(vals)
 
-    all_ids = []
     for val_list in id_to_mapped_ids.values():
 	all_ids.extend(reduce(lambda x,y: x+y, val_list))
 
+    return selected_ids, all_ids
+
+
+def check_functional_enrichment_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file, percentage, id_type, output_method, default_non_seed_score=0, exclude_seeds=False, specie = "Home sapiens", mode="unordered"):
+    """
+	Check functional enrichment of highest scoring nodes at given percentage
+    """
+    selected_ids, all_ids = get_top_scoring_node_ids_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file, percentage, id_type, default_non_seed_score, exclude_seeds)
+
     output_method("%d genes among %d\n" % (len(selected_ids), len(all_ids)))
 
-    check_functional_enrichment(selected_ids, all_ids, id_type, output_method)
+    check_functional_enrichment(selected_ids, all_ids, id_type, output_method, specie = specie, mode = mode)
 
     return
 
 
-def check_functional_enrichment(subset_gene_ids, gene_ids, id_type, output_method, specie = "Homo sapiens", mode = "ordered"):
+def check_functional_enrichment(subset_gene_ids, gene_ids, id_type, output_method, specie = "Homo sapiens", mode = "unordered"):
     """
 	Check GO functional enrichment using funcassociate web service
     """
