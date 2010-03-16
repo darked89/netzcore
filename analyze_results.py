@@ -9,7 +9,7 @@ from funcassociate import client
 from biana.utilities import TsvReader
 
 
-def check_functional_enrichment_of_high_scoring_modules(network_file, module_detection_type, output_scores_file, node_scores_file, node_mapping_file, percentage, association_scores_file_identifier_type, output_method, default_non_seed_score = 0, exclude_seeds = False, specie = "Homo sapiens", mode = "unordered"):
+def check_functional_enrichment_of_high_scoring_modules(network_file, module_detection_type, output_scores_file, node_scores_file, node_mapping_file, percentage, id_type, output_method, default_non_seed_score = 0, exclude_seeds = False, specie = "Homo sapiens", mode = "unordered"):
     """
 	Check functional enrichment of highest scoring modules at given percentage
     """
@@ -30,17 +30,17 @@ def check_functional_enrichment_of_high_scoring_modules(network_file, module_det
     #print "Handcrafted way:"
     #print len(modules), map(len, modules)
 
-    return
+    id_to_mapped_ids = get_id_to_mapped_id_mapping(node_mapping_file)
 
-    #!
-    #selected_ids, all_ids = get_top_scoring_node_ids_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file, percentage, id_type, default_non_seed_score, exclude_seeds)
+    all_ids = reduce(lambda x,y: x+y, id_to_mapped_ids.values())
+    for module in modules:
+	if len(module) == 1:
+	    continue
+	selected_ids = reduce(lambda x,y: x+y, [ id_to_mapped_ids[id] for id in module])
+	output_method("Module: %d genes among %d\n" % (len(selected_ids), len(all_ids)))
+	output_method("%s\n" % ", ".join(selected_ids))
+	check_functional_enrichment(selected_ids, all_ids, id_type, output_method, specie = specie, mode = mode)
 
-    #for module in modules:
-    #	check_functional_enrichment(selected_ids, all_ids, id_type, output_method, specie = specie = "Home sapiens", mode="unordered")
-
-    #output_method("%d genes among %d\n" % (len(selected_ids), len(all_ids)))
-
-    #check_functional_enrichment(selected_ids, all_ids, id_type, output_method, specie = specie, mode = mode)
     return
 
 
@@ -78,6 +78,18 @@ def get_high_scoring_modules(g, node_to_score, ids):
     return modules
 
 
+def get_id_to_mapped_id_mapping(node_mapping_file):
+    reader = TsvReader.TsvReader(node_mapping_file, inner_delim = ",")
+    columns, id_to_mapped_ids = reader.read(fields_to_include = None, merge_inner_values = True)
+   
+    id_to_mapped_ids_formatted = {}
+    for id, vals in id_to_mapped_ids.iteritems():
+	vals = reduce(lambda x,y: x+y, vals)
+	id_to_mapped_ids_formatted[id] = vals
+
+    return id_to_mapped_ids_formatted
+
+
 def get_top_scoring_node_ids_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file, percentage, id_type, default_non_seed_score=0, exclude_seeds=False):
     """
 	Get ids of highest scoring nodes at given percentage
@@ -85,8 +97,9 @@ def get_top_scoring_node_ids_at_given_percentage(output_scores_file, node_scores
     dummy, dummy, node_to_score, dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = output_scores_file, store_edge_type = False)
     ids, n, i = get_top_scoring_nodes_at_given_percentage(node_to_score, percentage)
 
-    reader = TsvReader.TsvReader(node_mapping_file, inner_delim = ",")
-    columns, id_to_mapped_ids = reader.read(fields_to_include = None, merge_inner_values = True)
+    #reader = TsvReader.TsvReader(node_mapping_file, inner_delim = ",")
+    #columns, id_to_mapped_ids = reader.read(fields_to_include = None, merge_inner_values = True)
+    id_to_mapped_ids = get_id_to_mapped_id_mapping(node_mapping_file)
    
     selected_ids = []
     all_ids = []
@@ -99,11 +112,13 @@ def get_top_scoring_node_ids_at_given_percentage(output_scores_file, node_scores
 	    score = node_to_score[id]
 	    if score <= default_non_seed_score:
 		continue
-	vals = reduce(lambda x,y: x+y, id_to_mapped_ids[id])
+	#vals = reduce(lambda x,y: x+y, id_to_mapped_ids[id])
+	vals = id_to_mapped_ids[id]
 	selected_ids.extend(vals)
 
     for val_list in id_to_mapped_ids.values():
-	all_ids.extend(reduce(lambda x,y: x+y, val_list))
+    #	all_ids.extend(reduce(lambda x,y: x+y, val_list))
+    	all_ids.extend(val_list)
 
     return selected_ids, all_ids
 
@@ -113,6 +128,7 @@ def check_functional_enrichment_at_given_percentage(output_scores_file, node_sco
 	Check functional enrichment of highest scoring nodes at given percentage
     """
     selected_ids, all_ids = get_top_scoring_node_ids_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file, percentage, id_type, default_non_seed_score, exclude_seeds)
+    #print len(selected_ids), len(all_ids)
 
     output_method("%d genes among %d\n" % (len(selected_ids), len(all_ids)))
 

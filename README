@@ -1,6 +1,9 @@
 
 TODO:
 
+- finish fannotation of modules
+- analyze available data + parse README
+
 - Runs with
     -1- goh + omim + chen diseases on goh/biana/entrez ppi
     -5- chen09 (nr) on goh/entrez ppi then comparison w/ toppgene (chen) results

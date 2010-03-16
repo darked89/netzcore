@@ -55,19 +55,19 @@ goh_phenotypes = ["goh_developmental", "goh_connective_tissue", "goh_ear,nose,th
 omim_phenotypes = ["alzheimer", "breast cancer", "diabetes", "insulin", "anemia", "aneurysm", "myopathy", "neuropathy", "obesity", "parkinson disease", "prostate cancer", "hypertension", "leukemia", "lung cancer", "autism", "asthma", "ataxia", "epilepsy", "schizophrenia", "cardiomyopathy", "cataract", "spastic paraplegia", "lymphoma", "mental retardation", "systemic lupus erythematosus"]
 omim_phenotypes = [ "omim_" + "_".join(p.split()) for p in omim_phenotypes ]
 
-chen_phenotypes = ["atherosclerosis",  "ischaemic_stroke",  "systemic_scleroderma",  "migraine",  "epilepsy",  "cirrhosis",  "ulcerative_colitis",  "cervical_carcinoma",  "osteoarthritis",  "inflammatory_bowel_disease_(ibd)",  "myocardial_ischemia",  "endometrial_carcinoma",  "pancreatitis",  "grave's_disease",  "neural_tube_defects",  "lymphoma",  "endometriosis",  "autism",  "hypercholesterolaemia"]
+chen_phenotypes = ["atherosclerosis",  "ischaemic_stroke",  "systemic_scleroderma",  "migraine",  "epilepsy",  "cirrhosis",  "ulcerative_colitis",  "cervical_carcinoma",  "osteoarthritis",  "inflammatory_bowel_disease",  "myocardial_ischemia",  "endometrial_carcinoma",  "pancreatitis",  "graves_disease",  "neural_tube_defects",  "lymphoma",  "endometriosis",  "autism",  "hypercholesterolaemia"]
 chen_phenotypes = [ "chen_" + p for p in chen_phenotypes ]
 
 
 def main():
-    MODE = "all" # prepare, score, analyze
+    MODE = "prepare" # prepare, score, analyze, compare
     ignore_experiment_failures = False
     delay_experiment = True
 
-    ppis = ["goh"] #, "entrez", "biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] #["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
-    phenotypes = ["aneurysm"] # chen_phenotypes + omim_phenotypes + goh_phenotypes #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
+    ppis = ["javi"] #["goh"] #, "entrez", "biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] #["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
+    phenotypes = ["custom"] #["aneurysm"] # chen_phenotypes + omim_phenotypes + goh_phenotypes #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
 
-    scoring_parameters = [("nz", 1, 5)]
+    scoring_parameters = []
     #scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
     #scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
     #scoring_parameters += [("nd", 1, 1)]
@@ -99,14 +99,14 @@ def main():
 	else:
 	    run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION)
 	#experiment_count += 1
-	if MODE == "scoring" and use_cluster and delay_experiment:
+	if MODE in ("scoring", "all") and use_cluster and delay_experiment:
 	    delay = 10
 	    experiment_count = get_number_of_jobs_in_queues()
 	    while experiment_count > 60:
 		time.sleep(delay)
 		experiment_count = get_number_of_jobs_in_queues()
 
-    if MODE == "analyze":
+    if MODE == "compare":
 	compare_experiments(experiments)
 
     return
@@ -168,7 +168,11 @@ def decide_association_data(ASSOCIATION):
 	Decide disease association files (Association data to be used)
     """
     association_scores_validation_file = None
-    if ASSOCIATION == "aneurysm":
+    if ASSOCIATION == "custom":
+	association_dir = None 
+	association_scores_file = None
+	association_scores_file_identifier_type = None
+    elif ASSOCIATION == "aneurysm":
 	association_dir = data_dir + "aneurysm" + os.sep
 	#aneurysm_scores_file = association_dir + "aneurysm_associated_genes.txt"
 	association_scores_file = association_dir + "aneurysm_associated_genes_all_equal.txt"
@@ -328,6 +332,14 @@ def decide_interaction_data(PPI):
 	    network_file_filtered = network_file
 	    interaction_relevance_file = network_dir + "aneurist.eda"
 	    DEFAULT_NON_SEED_SCORE = 0.00001 
+    elif PPI == "javi":
+	network_dir = data_dir + "human_interactome_javi" + os.sep
+	node_description_file = None
+	network_file_identifier_type = "userentityid"
+	node_file = network_dir + "root_set.txt"
+	network_file = network_dir + "human_network.tab"
+	network_file_filtered = network_file
+	#DEFAULT_NON_SEED_SCORE = 0.00001 
     elif PPI == "david": #elif PPI.startswith("david"):
 	network_dir = data_dir + "human_interactome_david" + os.sep
 	network_file_identifier_type = "user entity id"
@@ -576,6 +588,7 @@ def compare_experiments(experiments):
 	labels_file, r_script_file, tex_script_file) = decide_scoring_and_analysis_files(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association)
 	# Get high scoring node ids
 	selected_ids, all_ids = analyze_results.get_top_scoring_node_ids_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_PERCENTAGE, association_scores_file_identifier_type, default_non_seed_score = DEFAULT_NON_SEED_SCORE, exclude_seeds = True)
+	#print len(selected_ids), len(all_ids)
 	if top_scoring_ids is None:
 	    top_scoring_ids = set(selected_ids)
 	else:
@@ -614,6 +627,8 @@ def prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix,
     # Get node to association mapping
     if PPI.startswith("ori"):
 	os.system("awk '{ if($2 == 1) print $1, $2}' %s > %s" % (node_file, seed_scores_file))
+    elif PPI.startswith("javi"):
+	os.system("awk '{ print $1, 1}' %s > %s" % (node_file, seed_scores_file))
     elif PPI.startswith("piana_joan"): # or PPI.startswith("david"):
 	#os.system("awk '{print $1, 1}' %s > %s" % (node_file, seed_scores_file))
     	all_nodes = set(prepare_data.get_nodes_in_network(network_file_filtered))
@@ -818,19 +833,6 @@ def analyze_original(PPI, output_scores_file, log_file, node_scores_file, associ
     #	else:
     #	    prepare_data.convert_file_using_new_id_mapping(output_scores_file, node_description_file, network_file_identifier_type, association_scores_file_identifier_type, output_scores_file+"."+association_scores_file_identifier_type)
 
-    if association_scores_file_identifier_type is not None and os.path.exists(node_mapping_file+"."+association_scores_file_identifier_type):
-    	f.write("\nFUNCTIONAL ENRICHMENT ANALYSIS (OVER TOP 10%% SCORING NODES)\n")
-    	analyze_results.check_functional_enrichment_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_PERCENTAGE, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, exclude_seeds = True, specie = specie, mode = "ordered")
-
-	#for percentage in (10, 25, 50):
-	#    f.write("---- %s:\n" % percentage)
-	#    f.close()
-	#    analyze_results.check_functional_enrichment_at_given_percentage(output_scores_file, node_scores_file, output_scores_file+"."+association_scores_file_identifier_type, percentage, association_scores_file_identifier_type, log_file, DEFAULT_NON_SEED_SCORE, exclude_seeds)
-	#    f = open(log_file, "a")
-
-    	f.write("\nFUNCTIONAL ENRICHMENT ANALYSIS OF MODULES (OVER TOP 10%% SCORING NODES)\n")
-	analyze_results.check_functional_enrichment_of_high_scoring_modules(network_file, "greedy", output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_PERCENTAGE, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, exclude_seeds = True, specie = specie, mode = "unordered")
-
     f.write("\nSEED COVERAGE ANALYSIS\n")
     for percentage in (10, 25, 50):
 	f.write("---- %s:\n" % percentage)
@@ -843,6 +845,20 @@ def analyze_original(PPI, output_scores_file, log_file, node_scores_file, associ
 	#   pass
 	#    else:
 	#	f.write("%s\n" % str(analyze_results.calculate_seed_coverage_at_given_percentage(output_scores_file+"."+association_scores_file_identifier_type, association_scores_validation_file, percentage, DEFAULT_NON_SEED_SCORE)))
+
+
+    if association_scores_file_identifier_type is not None and os.path.exists(node_mapping_file+"."+association_scores_file_identifier_type):
+    	f.write("\nFUNCTIONAL ENRICHMENT ANALYSIS (OVER TOP 10%% SCORING NODES)\n")
+    	analyze_results.check_functional_enrichment_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_PERCENTAGE, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, exclude_seeds = True, specie = specie, mode = "ordered")
+
+	#for percentage in (10, 25, 50):
+	#    f.write("---- %s:\n" % percentage)
+	#    f.close()
+	#    analyze_results.check_functional_enrichment_at_given_percentage(output_scores_file, node_scores_file, output_scores_file+"."+association_scores_file_identifier_type, percentage, association_scores_file_identifier_type, log_file, DEFAULT_NON_SEED_SCORE, exclude_seeds)
+	#    f = open(log_file, "a")
+
+    	f.write("\nFUNCTIONAL ENRICHMENT ANALYSIS OF MODULES (OVER TOP 10%% SCORING NODES)\n")
+	analyze_results.check_functional_enrichment_of_high_scoring_modules(network_file, "greedy", output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_PERCENTAGE, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, exclude_seeds = True, specie = specie, mode = "unordered")
 
     f.close()
 
@@ -888,7 +904,7 @@ def prepare_scoring_files(PPI, seed_scores_file, network_file_filtered, seed_to_
 	    #prepare_data.convert_file_using_new_id_mapping(node_scores_file, node_description_file, network_file_identifier_type, "geneid", node_mapping_file+".geneid", id_to_id_mapping=True)
 	    #prepare_data.convert_file_using_new_id_mapping(node_mapping_file+".geneid", gene_info_file, "geneid", association_scores_file_identifier_type, node_mapping_file+"."+association_scores_file_identifier_type, id_to_id_mapping=True)
 	    prepare_data.convert_file_using_new_id_mapping(node_scores_file, node_description_file, network_file_identifier_type, association_scores_file_identifier_type, node_mapping_file+association_scores_file_identifier_type, id_to_id_mapping=True)
-	elif PPI.startswith("ori") or PPI.startswith("david") or PPI.startswith("piana_joan"):
+	elif PPI.startswith("ori") or PPI == "javi" or PPI.startswith("david") or PPI.startswith("piana_joan"):
 	    pass
 	else:
 	    prepare_data.convert_file_using_new_id_mapping(node_scores_file, node_description_file, network_file_identifier_type, association_scores_file_identifier_type, node_mapping_file+"."+association_scores_file_identifier_type, id_to_id_mapping=True)
