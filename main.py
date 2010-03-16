@@ -55,12 +55,12 @@ goh_phenotypes = ["goh_developmental", "goh_connective_tissue", "goh_ear,nose,th
 omim_phenotypes = ["alzheimer", "breast cancer", "diabetes", "insulin", "anemia", "aneurysm", "myopathy", "neuropathy", "obesity", "parkinson disease", "prostate cancer", "hypertension", "leukemia", "lung cancer", "autism", "asthma", "ataxia", "epilepsy", "schizophrenia", "cardiomyopathy", "cataract", "spastic paraplegia", "lymphoma", "mental retardation", "systemic lupus erythematosus"]
 omim_phenotypes = [ "omim_" + "_".join(p.split()) for p in omim_phenotypes ]
 
-chen_phenotypes = ["atherosclerosis",  "ischaemic_stroke",  "systemic_scleroderma",  "migraine",  "epilepsy",  "cirrhosis",  "ulcerative_colitis",  "cervical_carcinoma",  "osteoarthritis",  "inflammatory_bowel_disease_(ibd)",  "myocardial_ischemia",  "endometrial_carcinoma",  "pancreatitis",  "grave's_disease",  "neural_tube_defects",  "lymphoma",  "endometriosis",  "autism",  "hypercholesterolaemia"]
+chen_phenotypes = ["atherosclerosis",  "ischaemic_stroke",  "systemic_scleroderma",  "migraine",  "epilepsy",  "cirrhosis",  "ulcerative_colitis",  "cervical_carcinoma",  "osteoarthritis",  "inflammatory_bowel_disease",  "myocardial_ischemia",  "endometrial_carcinoma",  "pancreatitis",  "graves_disease",  "neural_tube_defects",  "lymphoma",  "endometriosis",  "autism",  "hypercholesterolaemia"]
 chen_phenotypes = [ "chen_" + p for p in chen_phenotypes ]
 
 
 def main():
-    MODE = "all" # prepare, score, analyze
+    MODE = "score" # prepare, score, analyze
     ignore_experiment_failures = False
     delay_experiment = True
 
@@ -70,13 +70,13 @@ def main():
     #ppis += ["ori_no_tap_coexpression_1e-2", "ori_no_tap_network", "ori_no_tap_coexpression", "ori_no_tap_coexpression_colocalization", "ori_no_tap_colocalization", "ori_no_tap_coexpression_colocalization_1e-2"]
 
     phenotypes = []
-    phenotypes += omim_phenotypes + goh_phenotypes 
+    phenotypes += chen_phenotypes #+ omim_phenotypes + goh_phenotypes 
     #phenotypes += ["aneurysm"] #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
 
     scoring_parameters = []
-    #scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
-    #scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
-    #scoring_parameters += [("nd", 1, 1)]
+    scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
+    scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
+    scoring_parameters += [("nd", 1, 1)]
     #scoring_parameters += [("nw",1, 1)]
     #scoring_parameters += [("nx", 1, 1)]
     #scoring_parameters += [("ff", 1, i) for i in xrange(1,9)]
@@ -105,7 +105,7 @@ def main():
 	else:
 	    run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION)
 	#experiment_count += 1
-	if MODE == "scoring" and use_cluster and delay_experiment:
+	if MODE == "score" and use_cluster and delay_experiment:
 	    delay = 10
 	    experiment_count = get_number_of_jobs_in_queues()
 	    while experiment_count > 60:
