@@ -34,10 +34,12 @@ void Netshort::run()
 	for(vt = mapDistance.begin(), vtEnd = mapDistance.end(); vt != vtEnd; ++vt) 
 	{
 	    //std::cout << vt->second << " ";
-	    score += vt->second;
+	    //score += vt->second;
+	    if(vt->second != 0)
+		score += 1/vt->second;
 	}
 	//getNetwork().setVertexScoreUpdated(*it, score);
-	score = 1 / score; // # 1000/score #! depends on the initial weights
+	//score = 1 / score; // # 1000/score #! depends on the initial weights
 	if(flagAccumulateToInitialNodeScore) 
 	{
 	    score += getNetwork().getVertexScore(*it);

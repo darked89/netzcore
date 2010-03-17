@@ -1,17 +1,54 @@
 
 TODO:
 
-- finish fannotation of modules
-- analyze available data + parse README
+-1- goh + omim + chen diseases on goh/biana/entrez ppi
+
+-2- attach biological sense to the results, check if there is different data sources for the same phenotype coinciding when scores calculated with one of them or GO analysis or greedy expansion of complex from high scoring nodes and analyzing their functional enrichment
+    + GO enrichment check (on the high scoring nodes) using node_id - gene_symbol mapping 
+    - High scoring node check, check whether high scoring nodes in different methods are common, booststrapping possible?
+    - greedy search for high scoring modules and/or expanding high scoring nodes based on their connectedness in addition to score (start from lower scored highest scoring nodes repeat for each high scoring nodes that are not already included in modules)
+	- none
+	- greedy highest
+	- greedy w/ return 
+	- greedy all (since greedy w/out all does not make sense when within selected set there exist nodes with lower scores and excluded neighbors of them though having higher scores)
+	- greedy w/ all bigger than all avg (still has the problem mentioned above)
+    - near clique high scoring complexes
+	- greedy w/ best of above + near clique
+	- Create complexes using MCODE / COACH 
+
+-3- analysis of results on goh disease & omim
+    - situation of seeds:
+	- accumulate to initial scores is needed? Ideally scores can be normalized before accumulation in netshort but requires adding mapInitialScore
+	- dont accumulate for seed coverage (already checked on xval tests)
+
+-*/4- document all (combine presentation + report + README notes)
+    - table w/ auc averaged over different phenotypes for each scoring method
+    - method overview diagram
+    - bar plots of 10 percent seed coverages with confidence values averaged over phenotypes
+    - table/graph with comparison of nw and other methods
+    - another table?
+
 
 - Runs with
-    -1- goh + omim + chen diseases on goh/biana/entrez ppi
-    -5- chen09 (nr) on goh/entrez ppi then comparison w/ toppgene (chen) results
+    - chen09 (nr) on goh/entrez ppi then comparison w/ toppgene (chen) results
     - anna db on goh/entrez ppi/biana
     - dezso09 (nw) on biana/goh and compare w/ their results
     - vanunu10 comparison with OMIM prostate, AD, diabetes casual gene predictions
     - new biana netw reactome/string non-exp
     
+- comparison with other methods in the literature (with their data)
+    - ToppGene
+	- network and disease data available
+    - MetaCore topological score using shortest paths on psoriasis data
+	- network not available
+	- still their score on psoriasis data can be compared
+    - InfoFlow, lethality data on S. cervaise
+	- network not available
+	- still their scores on essentiality data can be compared
+    - FunctionalFlow functional annotation (use scoreN with acc to initial scores option)
+	- different type of data
+	- interaction network + all functions of nodes not available
+
 - New runs with (check performance on other disease data)
     - disease data
 	* goh07_genes_and_disease_classes
@@ -38,54 +75,15 @@ TODO:
 	- network from jonsson 
 	- BIANA ppis from different species
 
--2- attach biological sense to the results, check if there is different data sources for the same phenotype coinciding when scores calculated with one of them or GO analysis or greedy expansion of complex from high scoring nodes and analyzing their functional enrichment
-    + GO enrichment check (on the high scoring nodes) using node_id - gene_symbol mapping 
-    - High scoring node check, check whether high scoring nodes in different methods are common, booststrapping possible?
-    - greedy search for high scoring modules and/or expanding high scoring nodes based on their connectedness in addition to score (start from lower scored highest scoring nodes repeat for each high scoring nodes that are not already included in modules)
-	- none
-	- greedy highest
-	- greedy w/ return 
-	- greedy all (since greedy w/out all does not make sense when within selected set there exist nodes with lower scores and excluded neighbors of them though having higher scores)
-	- greedy w/ all bigger than all avg (still has the problem mentioned above)
-	- greedy w/ best of above + near clique
-    - Create complexes using MCODE / COACH 
-
--3- analysis of results on goh disease & omim
-    - situation of seeds:
-	- accumulate to initial scores is needed? Ideally scores can be normalized before accumulation in netshort but requires adding mapInitialScore
-	- dont accumulate for seed coverage (already checked on xval tests)
-
--*/4- document all (combine presentation + report + README notes)
-    - table w/ auc averaged over different phenotypes for each scoring method
-    - method overview diagram
-    - bar plots of 10 percent seed coverages with confidence values averaged over phenotypes
-    - table/graph with comparison of nw and other methods
-    - another table?
-
-- netscore robustness on different data types (see dittrich08, identifying functional...)
-
-- comparison with other methods in the literature (with their data)
-    - ToppGene
-	- network and disease data available
-    - MetaCore topological score using shortest paths on psoriasis data
-	- network not available
-	- still their score on psoriasis data can be compared
-    - InfoFlow, lethality data on S. cervaise
-	- network not available
-	- still their scores on essentiality data can be compared
-    - FunctionalFlow functional annotation (use scoreN with acc to initial scores option)
-	- different type of data
-	- interaction network + all functions of nodes not available
-
 - ml predictions based on feature described network (need to use the same training & test sets)
+
+- check performance on random seed assignment 
 
 - comparison of co-expression for correlation
     - Gemma
     - coexp network from stuart03
     - coexp network from 
     - from tissueinfo or p-values from HEFalMp with scores
-
-- check performance on random seed assignment 
 
 - filtering by localization (localization data from locate) (files from uri)
 

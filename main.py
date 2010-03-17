@@ -58,9 +58,11 @@ omim_phenotypes = [ "omim_" + "_".join(p.split()) for p in omim_phenotypes ]
 chen_phenotypes = ["atherosclerosis",  "ischaemic_stroke",  "systemic_scleroderma",  "migraine",  "epilepsy",  "cirrhosis",  "ulcerative_colitis",  "cervical_carcinoma",  "osteoarthritis",  "inflammatory_bowel_disease",  "myocardial_ischemia",  "endometrial_carcinoma",  "pancreatitis",  "graves_disease",  "neural_tube_defects",  "lymphoma",  "endometriosis",  "autism",  "hypercholesterolaemia"]
 chen_phenotypes = [ "chen_" + p for p in chen_phenotypes ]
 
+scoring_methods = ["nd", "nz", "ns", "ff", "nr", "nw", "nx", "nh", "n1"]
+
 
 def main():
-    MODE = "prepare" # prepare, score, analyze, compare
+    MODE = "summary" # prepare, score, analyze, compare, summary
     ignore_experiment_failures = False
     delay_experiment = True
 
@@ -94,28 +96,31 @@ def main():
 	    for parameters in scoring_parameters:
 		experiments.append((ppi, phenotype, parameters[0], parameters[1], parameters[2]))
 
-    #experiment_count = 0
-    for experiment in experiments:
-	PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION = experiment
-	print "Running experiment:", experiment
-	if ignore_experiment_failures:
-	    try:
-		run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION)
-	    except:
-		print "!Problem!"
-	else:
-	    run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION)
-	#experiment_count += 1
-	if MODE in ("score", "all") and use_cluster and delay_experiment:
-	    delay = 10
-	    experiment_count = get_number_of_jobs_in_queues()
-	    while experiment_count > 60:
-		time.sleep(delay)
-		experiment_count = get_number_of_jobs_in_queues()
-
     if MODE == "compare":
 	compare_experiments(experiments)
-
+    elif MODE == "summary":
+	sum_up_experiments(ppis, phenotypes, "auc")
+	sum_up_experiments(ppis, phenotypes, "cov")
+    else:
+	#experiment_count = 0
+	for experiment in experiments:
+	    PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION = experiment
+	    print "Running experiment:", experiment
+	    if ignore_experiment_failures:
+		try:
+		    run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION)
+		except:
+		    print "!Problem!"
+	    else:
+		run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION)
+	    #experiment_count += 1
+	    if MODE in ("score", "all") and use_cluster and delay_experiment:
+		delay = 10
+		experiment_count = get_number_of_jobs_in_queues()
+		while experiment_count > 60:
+		    time.sleep(delay)
+		    experiment_count = get_number_of_jobs_in_queues()
+   
     return
 
 # Scoring related parameters 
@@ -131,21 +136,6 @@ def main():
 #PPI = "biana_no_tap_reliability_relevance" # tap & reliability filtered & string edge score assigned lcc
 #PPI = "goh" 
 #PPI = "rhodes"
-#PPI = "ori_coexpression_1e-2"
-#PPI = "ori_network" # these are all in 1e-5
-#PPI = "ori_coexpression" 
-#PPI = "ori_coexpression_colocalization"
-#PPI = "ori_colocalization"
-#PPI = "ori_coexpression_colocalization_1e-2"
-#PPI = "david_CpOGU"
-#PPI = "david_CpOIN"
-#PPI = "david_RpOGU"
-#PPI = "david_RpOIN"
-
-#ASSOCIATION = "aneurysm"
-#ASSOCIATION = "breast_cancer"
-#ASSOCIATION = "apoptosis"
-#ASSOCIATION = "alzheimer"
 
 #SCORING = "ns" #"netscore"
 #SCORING = "nz" #"netzcore"
@@ -158,9 +148,6 @@ def main():
 #SCORING = "nx" #"netrandom"
 #SCORING = "nb" #"netZscore" (cortesy of baldo)
 #SCORING = "ff" #"FunctionalFlow" 
-
-#N_REPETITION = 2
-#N_ITERATION = 2
 
 
 def get_number_of_jobs_in_queues():
@@ -613,9 +600,78 @@ def compare_experiments(experiments):
 	else:
 	    prev_id_type = association_scores_file_identifier_type
 
-    sys_stdout.write("\n%s common genes among %s\n\n" % (len(top_scoring_ids), len(all_scoring_ids)))
+    sys_stdout.write("\nFUNCTIONAL ENRICHMENT OF COMMON HIGH SCORING NODES (AT 10% LEVEL) IN GIVEN EXPERIMENTS\n")
+    sys_stdout.write("%s common genes among %s\n\n" % (len(top_scoring_ids), len(all_scoring_ids)))
     analyze_results.check_functional_enrichment(list(top_scoring_ids), list(all_scoring_ids), prev_id_type, sys_stdout.write, specie = species.pop(), mode = "unordered")
     return
+
+
+def sum_up_experiments(ppis, phenotypes, type="auc"):
+    """
+	Gives an averaged performance summary of ppi and association data over different scoring methods
+	type: "auc" or "cov"
+    """
+    ppi_phenotype_auc_container = dict([ (ppi, dict([ (phenotype, {}) for phenotype in phenotypes ])) for ppi in ppis ])
+    for ppi in ppis:
+	for phenotype in phenotypes:
+	    # Project directory structure
+	    (input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association) = decide_directory_hierarchy(ppi, phenotype, "nx", 1, 1, N_LINKER_THRESHOLD)
+	    # Input/Output score, logging and analysis files
+	    (seed_scores_file, node_scores_file, node_mapping_file, edge_scores_file, edge_scores_as_node_scores_file, output_scores_file, \
+	    score_log_file, sampled_file_prefix, log_file, input_log_file, job_file, output_log_file, predictions_file, \
+	    labels_file, r_script_file, tex_script_file) = decide_scoring_and_analysis_files(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association)
+	    f = open(output_log_file)
+	    for line in f.readlines():
+		words = line.strip().split("\t")
+		sub_words = words[0].split('-')
+		method = sub_words[2].strip()
+		if len(sub_words) > 3:
+		    parameter = sub_words[3].strip()
+		auc = float(words[1])
+		auc_dev = float(words[2].strip("+/-"))
+		cov = float(words[3])
+		cov_dev = float(words[4].strip("+/-"))
+		if type == "auc":
+		    ppi_phenotype_auc_container[ppi][phenotype][method] = auc
+		else:
+		    ppi_phenotype_auc_container[ppi][phenotype][method] = cov
+	    f.close()
+
+    common_methods = [] + scoring_methods
+    for scoring in scoring_methods:
+	for ppi, phenotype_container in ppi_phenotype_auc_container.iteritems():
+	    for phenotype, method_to_auc in phenotype_container.iteritems():
+		if not method_to_auc.has_key(scoring):
+		    common_methods.remove(scoring)
+
+    if type == "auc":
+	sys_stdout.write("\nAVERAGE AUC OVER DIFFERENT PPIS\n")
+    else:
+	sys_stdout.write("\nAVERAGE SEED COVERAGE AT 10% OVER DIFFERENT PPIS\n")
+    for scoring in common_methods:
+	sys_stdout.write("\n%s\n" % scoring)
+	for ppi, phenotype_container in ppi_phenotype_auc_container.iteritems():
+	    auc_list = []
+	    for phenotype, method_to_auc in phenotype_container.iteritems():
+		auc_list.append(method_to_auc[scoring])
+	    mean, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(auc_list)
+	    sys_stdout.write("%s:\t%f\t+/- %f\n" % (ppi, mean, sigma))
+
+    if type == "auc":
+	sys_stdout.write("\nAVERAGE AUC OVER DIFFERENT PHENOTYPES\n")
+    else:
+	sys_stdout.write("\nAVERAGE SEED COVERAGE AT 10% OVER DIFFERENT PHENOTYPES\n")
+    for scoring in common_methods:
+	sys_stdout.write("\n%s\n" % scoring)
+	for phenotype in phenotypes:
+	    auc_list = []
+	    for ppi, phenotype_container in ppi_phenotype_auc_container.iteritems():
+		auc_list.append(phenotype_container[phenotype][scoring])
+	    mean, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(auc_list)
+	    sys_stdout.write("%s:\t%f\t+/- %f\n" % (phenotype, mean, sigma))
+
+    return
+
 
 
 def prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability, network_file, network_file_filtered, input_log_file, node_file, seed_scores_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, node_mapping_file, input_dir, node_scores_file, edge_scores_file, interaction_relevance_file, interaction_relevance_file2, edge_scores_as_node_scores_file, sampled_file_prefix):
@@ -637,9 +693,9 @@ def prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix,
     # Get node to association mapping
     if PPI.startswith("ori"):
 	os.system("awk '{ if($2 == 1) print $1, $2}' %s > %s" % (node_file, seed_scores_file))
-    elif PPI.startswith("javi"):
-	os.system("awk '{ print $1, 1}' %s > %s" % (node_file, seed_scores_file))
-    elif PPI.startswith("piana_joan"): # or PPI.startswith("david"):
+    #elif PPI.startswith("javi"):
+    #	os.system("awk '{ print $1, 1}' %s > %s" % (node_file, seed_scores_file))
+    elif PPI.startswith("piana_joan") or PPI == "javi": # or PPI.startswith("david"):
 	#os.system("awk '{print $1, 1}' %s > %s" % (node_file, seed_scores_file))
     	all_nodes = set(prepare_data.get_nodes_in_network(network_file_filtered))
     	seed_nodes = prepare_data.get_nodes_from_nodes_file(node_file)
