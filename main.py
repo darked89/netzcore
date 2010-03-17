@@ -60,7 +60,7 @@ chen_phenotypes = [ "chen_" + p for p in chen_phenotypes ]
 
 
 def main():
-    MODE = "prepare" # prepare, score, analyze, compare
+    MODE = "analyze" # prepare, score, analyze, compare
     ignore_experiment_failures = False
     delay_experiment = True
 
@@ -71,7 +71,7 @@ def main():
     #ppis += ["ori_no_tap_coexpression_1e-2", "ori_no_tap_network", "ori_no_tap_coexpression", "ori_no_tap_coexpression_colocalization", "ori_no_tap_colocalization", "ori_no_tap_coexpression_colocalization_1e-2"]
 
     phenotypes = []
-    #phenotypes += chen_phenotypes #+ omim_phenotypes + goh_phenotypes 
+    #phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes 
     phenotypes += ["custom"] #["aneurysm"] #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
 
     scoring_parameters = []
@@ -80,6 +80,7 @@ def main():
     #scoring_parameters += [("nd", 1, 1)]
     #scoring_parameters += [("nw",1, 1)]
     #scoring_parameters += [("nx", 1, 1)]
+    #scoring_parameters += [("ns", 2, 2), ("ns", 2, 3), ("ns", 2, 4), ("ns", 3, 3)]
     #scoring_parameters += [("ff", 1, i) for i in xrange(1,9)]
     #scoring_parameters += [("nz", 1, i) for i in xrange(4,6)]
     ##scoring_parameters += [("nz", 1, i) for i in xrange(1,9)]
