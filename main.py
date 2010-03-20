@@ -18,7 +18,7 @@ only_print_command = False
 use_cluster = True
 #use_cluster = False
 
-DEFAULT_TOP_SCORING_PERCENTAGE = 10
+DEFAULT_TOP_SCORING_PERCENTAGE = 1 #5 #10
 N_LINKER_THRESHOLD = 2
 DEFAULT_SEED_SCORE = 1.0 # Default score for seed nodes, used when no score given in assoc file
 DEFAULT_NON_SEED_SCORE = 0.01 # Default score for non-seed nodes
@@ -52,34 +52,36 @@ gene_info_file = data_dir + "gene_info" + os.sep + "genes.tsv"
 
 goh_phenotypes = ["goh_developmental", "goh_connective_tissue", "goh_ear,nose,throat", "goh_endocrine", "goh_psychiatric", "goh_immunological", "goh_neurological", "goh_respiratory", "goh_multiple", "goh_renal", "goh_skeletal", "goh_bone", "goh_dermatological", "goh_cancer", "goh_ophthamological", "goh_metabolic", "goh_nutritional", "goh_muscular", "goh_hematological", "goh_gastrointestinal", "goh_cardiovascular"] #,"goh_unclassified"] 
 
-omim_phenotypes = ["alzheimer", "breast cancer", "diabetes", "insulin", "anemia", "aneurysm", "myopathy", "neuropathy", "obesity", "parkinson disease", "prostate cancer", "hypertension", "leukemia", "lung cancer", "autism", "asthma", "ataxia", "epilepsy", "schizophrenia", "cardiomyopathy", "cataract", "spastic paraplegia", "lymphoma", "mental retardation", "systemic lupus erythematosus"]
+omim_phenotypes = ["alzheimer", "breast cancer", "diabetes", "insulin", "anemia", "myopathy", "neuropathy", "obesity", "parkinson disease", "prostate cancer", "hypertension", "leukemia", "lung cancer", "asthma", "ataxia", "epilepsy", "schizophrenia", "cardiomyopathy", "cataract", "spastic paraplegia", "lymphoma", "mental retardation", "systemic lupus erythematosus"] # "autism", "aneurysm",  
 omim_phenotypes = [ "omim_" + "_".join(p.split()) for p in omim_phenotypes ]
 
 chen_phenotypes = ["atherosclerosis",  "ischaemic_stroke",  "systemic_scleroderma",  "migraine",  "epilepsy",  "cirrhosis",  "ulcerative_colitis",  "cervical_carcinoma",  "osteoarthritis",  "inflammatory_bowel_disease",  "myocardial_ischemia",  "endometrial_carcinoma",  "pancreatitis",  "graves_disease",  "neural_tube_defects",  "lymphoma",  "endometriosis",  "autism",  "hypercholesterolaemia"]
 chen_phenotypes = [ "chen_" + p for p in chen_phenotypes ]
 
-scoring_methods = ["nd", "nz", "ns", "ff", "nr", "nw", "nx", "nh", "n1"]
+scoring_methods = ["nd", "nz", "ns", "ff", "nr", "nw", "nl", "nx", "nh", "n1", "nb"]
 
 
 def main():
-    MODE = "analyze" # prepare, score, analyze, compare, summary
+    MODE = "compare" # prepare, score, analyze, compare, summary
     ignore_experiment_failures = False
     delay_experiment = True
 
     ppis = []
-    #ppis += ["goh", "entrez", "biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
-    ppis += ["javi"] #["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
+    #ppis += ["goh", "entrez"]
+    ppis += ["biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
+    #ppis += ["javi"] #["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
     #ppis = ["ori_coexpression_1e-2", "ori_network", "ori_coexpression", "ori_coexpression_colocalization", "ori_colocalization", "ori_coexpression_colocalization_1e-2"]
     #ppis += ["ori_no_tap_coexpression_1e-2", "ori_no_tap_network", "ori_no_tap_coexpression", "ori_no_tap_coexpression_colocalization", "ori_no_tap_colocalization", "ori_no_tap_coexpression_colocalization_1e-2"]
 
     phenotypes = []
     #phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes 
-    phenotypes += ["custom"] #["aneurysm"] #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
+    phenotypes += ["omim_alzheimer"] 
+    #phenotypes += ["custom"] #["aneurysm"] #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
 
     scoring_parameters = []
     #scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
-    #scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
-    #scoring_parameters += [("nd", 1, 1)]
+    scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
+    scoring_parameters += [("nd", 1, 1)]
     #scoring_parameters += [("nw",1, 1)]
     #scoring_parameters += [("nx", 1, 1)]
     #scoring_parameters += [("ns", 2, 2), ("ns", 2, 3), ("ns", 2, 4), ("ns", 3, 3)]
@@ -601,8 +603,10 @@ def compare_experiments(experiments):
 	else:
 	    prev_id_type = association_scores_file_identifier_type
 
-    sys_stdout.write("\nFUNCTIONAL ENRICHMENT OF COMMON HIGH SCORING NODES (AT 10% LEVEL) IN GIVEN EXPERIMENTS\n")
-    sys_stdout.write("%s common genes among %s\n\n" % (len(top_scoring_ids), len(all_scoring_ids)))
+    sys_stdout.write("\nFUNCTIONAL ENRICHMENT OF COMMON HIGH SCORING NODES (AT %d%% LEVEL) IN GIVEN EXPERIMENTS\n" % DEFAULT_TOP_SCORING_PERCENTAGE)
+    sys_stdout.write("%s common gene names/ids among %s\n\n" % (len(top_scoring_ids), len(all_scoring_ids)))
+    for id in top_scoring_ids: print id
+    print 
     analyze_results.check_functional_enrichment(list(top_scoring_ids), list(all_scoring_ids), prev_id_type, sys_stdout.write, specie = species.pop(), mode = "unordered")
     return
 
@@ -638,12 +642,22 @@ def sum_up_experiments(ppis, phenotypes, type="auc"):
 		    ppi_phenotype_auc_container[ppi][phenotype][method] = cov
 	    f.close()
 
-    common_methods = [] + scoring_methods
+    scoring_methods_real = set()
+    for scoring in scoring_methods:
+    	for ppi, phenotype_container in ppi_phenotype_auc_container.iteritems():
+    	    for phenotype, method_to_auc in phenotype_container.iteritems():
+    		scoring_methods_real.add(scoring)
+    #print scoring_methods_real 
+
+    #common_methods = [] + scoring_methods
+    common_methods = list(scoring_methods_real)
     for scoring in scoring_methods:
 	for ppi, phenotype_container in ppi_phenotype_auc_container.iteritems():
 	    for phenotype, method_to_auc in phenotype_container.iteritems():
 		if not method_to_auc.has_key(scoring):
-		    common_methods.remove(scoring)
+		    #print scoring
+		    if scoring in common_methods:
+			common_methods.remove(scoring)
 
     if type == "auc":
 	sys_stdout.write("\nAVERAGE AUC OVER DIFFERENT PPIS\n")
@@ -915,7 +929,7 @@ def analyze_original(PPI, output_scores_file, log_file, node_scores_file, associ
 
 
     if association_scores_file_identifier_type is not None and os.path.exists(node_mapping_file+"."+association_scores_file_identifier_type):
-    	f.write("\nFUNCTIONAL ENRICHMENT ANALYSIS (OVER TOP 10%% SCORING NODES)\n")
+    	f.write("\nFUNCTIONAL ENRICHMENT ANALYSIS (OVER TOP %d%% SCORING NODES)\n" % DEFAULT_TOP_SCORING_PERCENTAGE)
     	analyze_results.check_functional_enrichment_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_PERCENTAGE, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, exclude_seeds = True, specie = specie, mode = "ordered")
 
 	#for percentage in (10, 25, 50):
@@ -924,8 +938,8 @@ def analyze_original(PPI, output_scores_file, log_file, node_scores_file, associ
 	#    analyze_results.check_functional_enrichment_at_given_percentage(output_scores_file, node_scores_file, output_scores_file+"."+association_scores_file_identifier_type, percentage, association_scores_file_identifier_type, log_file, DEFAULT_NON_SEED_SCORE, exclude_seeds)
 	#    f = open(log_file, "a")
 
-    	f.write("\nFUNCTIONAL ENRICHMENT ANALYSIS OF MODULES (OVER TOP 10%% SCORING NODES)\n")
-	analyze_results.check_functional_enrichment_of_high_scoring_modules(network_file, "greedy", output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_PERCENTAGE, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, exclude_seeds = True, specie = specie, mode = "unordered")
+    	f.write("\nFUNCTIONAL ENRICHMENT ANALYSIS OF MODULES (OVER TOP %d%% SCORING NODES)\n" % DEFAULT_TOP_SCORING_PERCENTAGE)
+	analyze_results.check_functional_enrichment_of_high_scoring_modules(network_file, "greedy", output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_PERCENTAGE, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, exclude_seeds = False, specie = specie, mode = "unordered")
 
     f.close()
 
@@ -968,9 +982,12 @@ def prepare_scoring_files(PPI, seed_scores_file, network_file_filtered, seed_to_
     if association_scores_file_identifier_type is not None and not os.path.exists(node_mapping_file+"."+association_scores_file_identifier_type):
 	print "Creating node mapping file", node_mapping_file+"."+association_scores_file_identifier_type
 	if PPI.startswith("biana"):
-	    #prepare_data.convert_file_using_new_id_mapping(node_scores_file, node_description_file, network_file_identifier_type, "geneid", node_mapping_file+".geneid", id_to_id_mapping=True)
-	    #prepare_data.convert_file_using_new_id_mapping(node_mapping_file+".geneid", gene_info_file, "geneid", association_scores_file_identifier_type, node_mapping_file+"."+association_scores_file_identifier_type, id_to_id_mapping=True)
-	    prepare_data.convert_file_using_new_id_mapping(node_scores_file, node_description_file, network_file_identifier_type, association_scores_file_identifier_type, node_mapping_file+association_scores_file_identifier_type, id_to_id_mapping=True)
+	    if association_scores_file_identifier_type == "genesymbol":
+		#prepare_data.convert_file_using_new_id_mapping(node_scores_file, node_description_file, network_file_identifier_type, "geneid", node_mapping_file+".geneid", id_to_id_mapping=True)
+		#prepare_data.convert_file_using_new_id_mapping(node_mapping_file+".geneid", gene_info_file, "geneid", association_scores_file_identifier_type, node_mapping_file+"."+association_scores_file_identifier_type, id_to_id_mapping=True)
+		prepare_data.convert_file_using_new_id_mapping(node_scores_file, node_description_file, network_file_identifier_type, association_scores_file_identifier_type, node_mapping_file+"."+association_scores_file_identifier_type, id_to_id_mapping=True, intermediate_mapping_file=gene_info_file, intermediate_mapping_id_type="geneid")
+	    else:
+		prepare_data.convert_file_using_new_id_mapping(node_scores_file, node_description_file, network_file_identifier_type, association_scores_file_identifier_type, node_mapping_file+"."+association_scores_file_identifier_type, id_to_id_mapping=True)
 	elif PPI.startswith("ori") or PPI == "javi" or PPI.startswith("david") or PPI.startswith("piana_joan"):
 	    pass
 	else:

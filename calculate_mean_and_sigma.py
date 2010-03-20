@@ -26,7 +26,15 @@ def sigma(list):
     n=len(list)
     m = mean(list)
     mSq=reduce(add, map(sq, list))/float(n)
-    return math.sqrt(mSq-sq(m))
+    s = mSq-sq(m)
+    try:
+	s = math.sqrt(s)
+    except:
+	if s<0.0000000001:
+	    s = 0
+	else:
+	    raise
+    return s
 
 def calc_mean_and_sigma(list):
     return mean(list), sigma(list)

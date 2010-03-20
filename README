@@ -2,6 +2,8 @@
 TODO:
 
 -1- goh + omim + chen diseases on goh/biana/entrez ppi
+-! func annot at 10% level on goh/entrez networks consider seeds
+-! no func annot on biana networks (gene symbols contain whitespace) - now corrected
 
 -2- attach biological sense to the results, check if there is different data sources for the same phenotype coinciding when scores calculated with one of them or GO analysis or greedy expansion of complex from high scoring nodes and analyzing their functional enrichment
     + GO enrichment check (on the high scoring nodes) using node_id - gene_symbol mapping 

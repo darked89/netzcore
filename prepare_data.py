@@ -163,17 +163,34 @@ def create_node_scores_file(nodes, node_to_score, node_scores_file, ignored_node
     return 
 
 
-def convert_file_using_new_id_mapping(file_to_be_converted, node_description_file, from_id_type, to_id_type, new_file, id_to_id_mapping=False):
+def convert_file_using_new_id_mapping(file_to_be_converted, node_description_file, from_id_type, to_id_type, new_file, id_to_id_mapping=False, intermediate_mapping_file=None, intermediate_mapping_id_type=None):
     """
 	Maps nodes given as from_id_type to their correspondants in to_id_type using node_description_file
 	Can convert node / network file in sif format (node file with data, network file with data in the middle)
 	id_to_id_mapping: Output id to id mapping as TSV file
     """
-    nodes, edges, node_to_data, edge_to_data = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_to_be_converted, store_edge_type = True)
+    nodes, edges, node_to_data, edge_to_data = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_to_be_converted, store_edge_type = True, data_to_float=False)
 
-    #node_id_to_new_ids, dummy = biana_output_converter.get_attribute_to_attribute_mapping(node_description_file, from_id_type, to_id_type, keys_to_include=nodes, include_inverse_mapping = False)
-    reader = TsvReader.TsvReader(node_description_file, inner_delim = ",")
-    columns, node_id_to_new_ids = reader.read(fields_to_include = [from_id_type, to_id_type], keys_to_include=nodes, merge_inner_values = True)
+    if intermediate_mapping_file is not None and intermediate_mapping_id_type is not None:
+	reader = TsvReader.TsvReader(node_description_file, inner_delim = ",")
+	columns, node_id_to_intermediate_ids = reader.read(fields_to_include = [from_id_type, intermediate_mapping_id_type], keys_to_include=nodes, merge_inner_values = True)
+	reader = TsvReader.TsvReader(intermediate_mapping_file, inner_delim = ",")
+	vals = reduce(lambda x,y: x+y, node_id_to_intermediate_ids.values())
+	vals = reduce(lambda x,y: x+y, vals)
+	columns, node_intermediate_id_to_new_ids = reader.read(fields_to_include = [intermediate_mapping_id_type, to_id_type], keys_to_include=vals, merge_inner_values = True)
+	node_id_to_new_ids = {}
+	for id in nodes:
+	    vals = reduce(lambda x,y: x+y, node_id_to_intermediate_ids[id])
+	    for val in vals:
+		if val == "-":
+		    in_val = ["-"]
+		else:
+		    in_val = node_intermediate_id_to_new_ids[val]
+		node_id_to_new_ids.setdefault(id, []).extend(in_val)
+    else:
+	#node_id_to_new_ids, dummy = biana_output_converter.get_attribute_to_attribute_mapping(node_description_file, from_id_type, to_id_type, keys_to_include=nodes, include_inverse_mapping = False)
+	reader = TsvReader.TsvReader(node_description_file, inner_delim = ",")
+	columns, node_id_to_new_ids = reader.read(fields_to_include = [from_id_type, to_id_type], keys_to_include=nodes, merge_inner_values = True)
 
     f = open(new_file, 'w')
     if id_to_id_mapping:
@@ -186,7 +203,9 @@ def convert_file_using_new_id_mapping(file_to_be_converted, node_description_fil
 		    vals = reduce(lambda x,y: x+y, node_id_to_new_ids[v])
 		    for id in vals:
 			if id_to_id_mapping:
-			    f.write("%s\t%s\n" % (v, id))
+			    id = id.strip()
+			    if id != "":
+				f.write("%s\t%s\n" % (v, id))
 			else:
 			    f.write("%s %s\n" % (id, node_to_data[v]))
 	    else:
@@ -194,7 +213,9 @@ def convert_file_using_new_id_mapping(file_to_be_converted, node_description_fil
 		    vals = reduce(lambda x,y: x+y, node_id_to_new_ids[v])
 		    for id in vals:
 			if id_to_id_mapping:
-			    f.write("%s\t%s\n" % (v, id))
+			    id = id.strip()
+			    if id != "":
+				f.write("%s\t%s\n" % (v, id))
 			else:
 			    f.write("%s\n", id)
     else:
@@ -512,8 +533,8 @@ def old_generate_cross_validation_node_score_files(g, node_to_score, seeds, node
 
 
 def old_create_edge_file_from_weight_and_score_files(edge_file_weights, edge_file_scores, out_file):
-    setNode, setEdge, dictNode, dictEdgeWeight = network_utilities.get_nodes_and_edges_from_sif_file(file_name = edge_file_weights[:-3]+"sif", store_edge_type = True)
-    setNode, setEdge, dictNode, dictEdge = network_utilities.get_nodes_and_edges_from_sif_file(file_name = edge_file_scores[:-3]+"sif", store_edge_type = True)
+    setNode, setEdge, dictNode, dictEdgeWeight = network_utilities.get_nodes_and_edges_from_sif_file(file_name = edge_file_weights[:-3]+"sif", store_edge_type = True, data_to_float=False)
+    setNode, setEdge, dictNode, dictEdge = network_utilities.get_nodes_and_edges_from_sif_file(file_name = edge_file_scores[:-3]+"sif", store_edge_type = True, data_to_float=False)
     f = open(out_file, "w")
     for e, s in dictEdge.iteritems():
 	u,v=e

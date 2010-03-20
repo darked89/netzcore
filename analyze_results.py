@@ -36,7 +36,11 @@ def check_functional_enrichment_of_high_scoring_modules(network_file, module_det
     for module in modules:
 	if len(module) == 1:
 	    continue
-	selected_ids = reduce(lambda x,y: x+y, [ id_to_mapped_ids[id] for id in module])
+	if exclude_seeds:
+	    ids_in_module = [ id for id in module if node_to_score[id] <= default_non_seed_score ]
+	else:
+	    ids_in_module = module
+	selected_ids = reduce(lambda x,y: x+y, [ id_to_mapped_ids[id] for id in ids_in_module])
 	output_method("Module: %d genes among %d\n" % (len(selected_ids), len(all_ids)))
 	output_method("%s\n" % ", ".join(selected_ids))
 	check_functional_enrichment(selected_ids, all_ids, id_type, output_method, specie = specie, mode = mode)
@@ -109,8 +113,7 @@ def get_top_scoring_node_ids_at_given_percentage(output_scores_file, node_scores
 
     for id in ids:
 	if exclude_seeds:
-	    score = node_to_score[id]
-	    if score <= default_non_seed_score:
+	    if node_to_score[id] > default_non_seed_score:
 		continue
 	#vals = reduce(lambda x,y: x+y, id_to_mapped_ids[id])
 	vals = id_to_mapped_ids[id]
@@ -130,16 +133,18 @@ def check_functional_enrichment_at_given_percentage(output_scores_file, node_sco
     selected_ids, all_ids = get_top_scoring_node_ids_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file, percentage, id_type, default_non_seed_score, exclude_seeds)
     #print len(selected_ids), len(all_ids)
 
-    output_method("%d genes among %d\n" % (len(selected_ids), len(all_ids)))
+    output_method("%d gene names/ids among %d\n" % (len(selected_ids), len(all_ids)))
 
     check_functional_enrichment(selected_ids, all_ids, id_type, output_method, specie = specie, mode = mode)
 
     return
 
 
-def check_functional_enrichment(subset_gene_ids, gene_ids, id_type, output_method, specie = "Homo sapiens", mode = "unordered"):
+def check_functional_enrichment(subset_gene_ids, gene_ids, id_type, output_method, specie = "Homo sapiens", mode = "unordered", request_info=False):
     """
 	Check GO functional enrichment using funcassociate web service
+	gene_ids is a list of gene symbols (without whitespace) or gene ids
+	id_type
     """
     #f = open(output_file, "a")
     #output_method = f.write
@@ -177,10 +182,11 @@ def check_functional_enrichment(subset_gene_ids, gene_ids, id_type, output_metho
             row[4] = zero
         output_method("%s\n" % "\t".join(map(str, row)))
 
-    #output_method("\nREQUEST INFO\n")
-    #info = response["request_info"]
-    #for k in info.keys():
-    #    output_method("%s: %s" % (k, info[k]))
+    if request_info:
+	output_method("\nREQUEST INFO\n")
+	info = response["request_info"]
+	for k in info.keys():
+	    output_method("%s: %s\n" % (k, info[k]))
 
     #f.close()
     return
