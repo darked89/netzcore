@@ -150,9 +150,8 @@ public:
     PredecessorList getAllShortestPaths(Vertex v);
     void getAllShortestPaths(Vertex v, PredecessorList & vertexToVertices);
     void getAllShortestPaths(Vertex v, std::map<Vertex, float> & vertexToFloat, PredecessorList & vertexToVertices);
-    //void calculatePageRank();
-    //void calculatePageRank(std::map<Vertex, float> & vertexToFloat, unsigned int nIteration = 20);
-    void calculatePageRankWithPriors(std::map<Vertex, float> & vertexToFloat, unsigned int nIteration = 20);
+    //void calculatePageRank(std::map<Vertex, float> & vertexToFloat, unsigned int nIteration = 20, float dFactor = 0.85);
+    void calculatePageRankWithPriors(std::map<Vertex, float> & vertexToFloat, unsigned int nIteration = 20, float dFactor = 0.85);
     // Processing graph scores
     void scaleVertexScores(ScaleType typeScale);
     std::pair<float, float> getMinAndMaxNodeScores();

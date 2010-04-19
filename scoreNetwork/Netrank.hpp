@@ -16,7 +16,7 @@ public:
     Netrank(std::string fileNode, std::string fileEdge, std::string fileOutput, bool flagAccumulateToInitialNodeScore = false);
     ~Netrank();
     Graph & getNetwork() { return network; };
-    void run(unsigned int nIteration = 20); 
+    void run(unsigned int nIteration = 20, float dFactor = 0.85); 
 };
 
 #endif // NETRANK_HPP_

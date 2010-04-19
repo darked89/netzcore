@@ -18,12 +18,12 @@ Netrank::Netrank(std::string fileNode, std::string fileEdge, std::string fileOut
 Netrank::~Netrank() {
 }
 
-void Netrank::run(unsigned int nIteration) 
+void Netrank::run(unsigned int nIteration, float dFactor) 
 { 
     std::map<Vertex, float>::iterator vt, vtEnd;
     std::map<Vertex, float> mapRank;
-    //getNetwork().calculatePageRank(mapRank, nIteration);
-    getNetwork().calculatePageRankWithPriors(mapRank, nIteration);
+    //getNetwork().calculatePageRank(mapRank, nIteration, dFactor);
+    getNetwork().calculatePageRankWithPriors(mapRank, nIteration, dFactor);
     float score = 0.0;
     for(vt = mapRank.begin(), vtEnd = mapRank.end(); vt != vtEnd; ++vt) 
     {

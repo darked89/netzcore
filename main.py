@@ -15,10 +15,10 @@ from sys import stdout as sys_stdout
 
 #only_print_command = True
 only_print_command = False
-use_cluster = True
-#use_cluster = False
+#use_cluster = True
+use_cluster = False
 
-DEFAULT_TOP_SCORING_PERCENTAGE = 1 #5 #10
+DEFAULT_TOP_SCORING_PERCENTAGE = 5 #5 #10 #! At the time of analysis it was 10
 N_LINKER_THRESHOLD = 2
 DEFAULT_SEED_SCORE = 1.0 # Default score for seed nodes, used when no score given in assoc file
 DEFAULT_NON_SEED_SCORE = 0.01 # Default score for non-seed nodes
@@ -62,26 +62,30 @@ scoring_methods = ["nd", "nz", "ns", "ff", "nr", "nw", "nl", "nx", "nh", "n1", "
 
 
 def main():
-    MODE = "compare" # prepare, score, analyze, compare, summary
+    MODE = "summary" # prepare, score, analyze, compare, summary
     ignore_experiment_failures = False
     delay_experiment = True
+    tex_format = False #True
+    functional_enrichment = False
 
-    ppis = []
+    ppis = ["goh"]
     #ppis += ["goh", "entrez"]
-    ppis += ["biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
+    #ppis += ["biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
+    #ppis += ["biana_no_tap_no_reliability", "biana_no_tap_relevance"] 
     #ppis += ["javi"] #["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
     #ppis = ["ori_coexpression_1e-2", "ori_network", "ori_coexpression", "ori_coexpression_colocalization", "ori_colocalization", "ori_coexpression_colocalization_1e-2"]
     #ppis += ["ori_no_tap_coexpression_1e-2", "ori_no_tap_network", "ori_no_tap_coexpression", "ori_no_tap_coexpression_colocalization", "ori_no_tap_colocalization", "ori_no_tap_coexpression_colocalization_1e-2"]
+    #ppi += ["goh_1e5", "biana_coexpression"]
 
-    phenotypes = []
+    phenotypes = ["omim_prostate_cancer"]
     #phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes 
-    phenotypes += ["omim_alzheimer"] 
+    #phenotypes += ["omim_alzheimer"] 
     #phenotypes += ["custom"] #["aneurysm"] #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
 
     scoring_parameters = []
     #scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
-    scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
-    scoring_parameters += [("nd", 1, 1)]
+    #scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
+    #scoring_parameters += [("nd", 1, 1)]
     #scoring_parameters += [("nw",1, 1)]
     #scoring_parameters += [("nx", 1, 1)]
     #scoring_parameters += [("ns", 2, 2), ("ns", 2, 3), ("ns", 2, 4), ("ns", 3, 3)]
@@ -100,10 +104,10 @@ def main():
 		experiments.append((ppi, phenotype, parameters[0], parameters[1], parameters[2]))
 
     if MODE == "compare":
-	compare_experiments(experiments)
+	compare_experiments(experiments, tex_format, functional_enrichment)
     elif MODE == "summary":
-	sum_up_experiments(ppis, phenotypes, "auc")
-	sum_up_experiments(ppis, phenotypes, "cov")
+	sum_up_experiments(ppis, phenotypes, "auc", tex_format)
+	sum_up_experiments(ppis, phenotypes, "cov", tex_format)
     else:
 	#experiment_count = 0
 	for experiment in experiments:
@@ -111,11 +115,11 @@ def main():
 	    print "Running experiment:", experiment
 	    if ignore_experiment_failures:
 		try:
-		    run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION)
+		    run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, functional_enrichment)
 		except:
 		    print "!Problem!"
 	    else:
-		run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION)
+		run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, functional_enrichment)
 	    #experiment_count += 1
 	    if MODE in ("score", "all") and use_cluster and delay_experiment:
 		delay = 10
@@ -238,6 +242,11 @@ def decide_interaction_data(PPI):
 	    biana_network_file_filtered_by_method = biana_network_file_prefix + ".sif"
 	    biana_network_file_filtered_by_reliability = biana_network_file_filtered_by_method[:-4] + "_reliability_filtered.sif"
 	    network_file = biana_network_file_filtered_by_reliability 
+	elif PPI == "biana_coexpression":
+	    network_file = biana_network_file_prefix + "_coexpression_filtered.sif"
+	elif PPI == "biana_coexpression_relevance":
+	    network_file = biana_network_file_prefix + "_coexpression_filtered.sif"
+	    interaction_relevance_file = biana_network_file_prefix + "_stringscore_coexpression.eda"
 	elif PPI.startswith("biana_no_tap"):
 	    biana_network_file_filtered_by_method = biana_network_file_prefix + "_no_tap.sif"
 	    biana_network_file_filtered_by_reliability = biana_network_file_filtered_by_method[:-4] + "_reliability_filtered.sif"
@@ -272,6 +281,12 @@ def decide_interaction_data(PPI):
 	network_file_identifier_type = "geneid"
 	network_file = goh_network_file
 	network_file_filtered = goh_network_file_filtered_by_degree 
+    elif PPI == "goh_1e5":
+	node_description_file = gene_info_file 
+	network_file_identifier_type = "geneid"
+	network_file = goh_network_file
+	network_file_filtered = goh_network_file_filtered_by_degree 
+	DEFAULT_NON_SEED_SCORE = 0.00001 
     # Entrez ppi
     elif PPI == "entrez":
 	node_description_file = gene_info_file 
@@ -523,7 +538,7 @@ def decide_score_commands(node_scores_file, edge_scores_file, output_scores_file
 
 
 #def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability, network_file, network_file_filtered, input_log_file, node_file, seed_scores_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, input_dir, node_scores_file, edge_scores_file, sampled_file_prefix, output_scores_file, log_file):
-def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
+def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, functional_enrichment):
 
     # Create experiment parameters
     # Disease association files (Association data to be used)
@@ -554,17 +569,17 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION):
     elif MODE == "score":
 	score(SCORING, score_commands, score_xval_commands, output_scores_file, log_file, job_file)
     elif MODE == "analyze":
-	analyze(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, specie, network_file_filtered)
+	analyze(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, specie, network_file_filtered, functional_enrichment)
     elif MODE == "all":
 	prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability, network_file, network_file_filtered, input_log_file, node_file, seed_scores_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, node_mapping_file, input_dir, node_scores_file, edge_scores_file, interaction_relevance_file, interaction_relevance_file2, edge_scores_as_node_scores_file, sampled_file_prefix)
 	score(SCORING, score_commands, score_xval_commands, output_scores_file, log_file, job_file)
-	analyze(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, specie, network_file_filtered)
+	analyze(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, specie, network_file_filtered, functional_enrichment)
     else:
 	raise ValueError("Unrecognized mode!")
     return
 
 
-def compare_experiments(experiments):
+def compare_experiments(experiments, tex_format=False, functional_enrichment=False):
     """
 	Selects and checks functional annotation of common highest scoring nodes (mapping their genesymols) in different experiments
     """
@@ -603,15 +618,25 @@ def compare_experiments(experiments):
 	else:
 	    prev_id_type = association_scores_file_identifier_type
 
-    sys_stdout.write("\nFUNCTIONAL ENRICHMENT OF COMMON HIGH SCORING NODES (AT %d%% LEVEL) IN GIVEN EXPERIMENTS\n" % DEFAULT_TOP_SCORING_PERCENTAGE)
-    sys_stdout.write("%s common gene names/ids among %s\n\n" % (len(top_scoring_ids), len(all_scoring_ids)))
-    for id in top_scoring_ids: print id
+    if "-" in top_scoring_ids:
+	top_scoring_ids.remove("-")
+    if "-" in all_scoring_ids:
+	all_scoring_ids.remove("-")
+    for id in top_scoring_ids: 
+	if tex_format:
+	    print id, "\\\\"
+	else:
+	    print id
     print 
-    analyze_results.check_functional_enrichment(list(top_scoring_ids), list(all_scoring_ids), prev_id_type, sys_stdout.write, specie = species.pop(), mode = "unordered")
+    if functional_enrichment:
+	#sys_stdout.write("\nFUNCTIONAL ENRICHMENT OF COMMON HIGH SCORING NODES (AT %d%% LEVEL) IN GIVEN EXPERIMENTS\n" % DEFAULT_TOP_SCORING_PERCENTAGE)
+	sys_stdout.write("\nFUNCTIONAL ENRICHMENT OF COMMON HIGH SCORING NODES IN GIVEN EXPERIMENTS\n")
+	sys_stdout.write("%s common gene names/ids among %s\n\n" % (len(top_scoring_ids), len(all_scoring_ids)))
+	analyze_results.check_functional_enrichment(list(top_scoring_ids), list(all_scoring_ids), prev_id_type, sys_stdout.write, specie = species.pop(), mode = "unordered", tex_format=tex_format)
     return
 
 
-def sum_up_experiments(ppis, phenotypes, type="auc"):
+def sum_up_experiments(ppis, phenotypes, type="auc", tex_format=False):
     """
 	Gives an averaged performance summary of ppi and association data over different scoring methods
 	type: "auc" or "cov"
@@ -659,31 +684,65 @@ def sum_up_experiments(ppis, phenotypes, type="auc"):
 		    if scoring in common_methods:
 			common_methods.remove(scoring)
 
-    if type == "auc":
-	sys_stdout.write("\nAVERAGE AUC OVER DIFFERENT PPIS\n")
-    else:
-	sys_stdout.write("\nAVERAGE SEED COVERAGE AT 10% OVER DIFFERENT PPIS\n")
-    for scoring in common_methods:
-	sys_stdout.write("\n%s\n" % scoring)
-	for ppi, phenotype_container in ppi_phenotype_auc_container.iteritems():
-	    auc_list = []
-	    for phenotype, method_to_auc in phenotype_container.iteritems():
-		auc_list.append(method_to_auc[scoring])
-	    mean, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(auc_list)
-	    sys_stdout.write("%s:\t%f\t+/- %f\n" % (ppi, mean, sigma))
+    #i = 0
+    for method in reversed(["ns", "nz", "nd", "ff", "nr"]):
+	if method in common_methods:
+	    common_methods.remove(method)
+	    common_methods.insert(0, method) #i
+	    #i += 1
 
     if type == "auc":
 	sys_stdout.write("\nAVERAGE AUC OVER DIFFERENT PHENOTYPES\n")
     else:
-	sys_stdout.write("\nAVERAGE SEED COVERAGE AT 10% OVER DIFFERENT PHENOTYPES\n")
-    for scoring in common_methods:
-	sys_stdout.write("\n%s\n" % scoring)
-	for phenotype in phenotypes:
-	    auc_list = []
+	#sys_stdout.write("\nAVERAGE SEED COVERAGE AT %d%% OVER DIFFERENT PHENOTYPES\n" % DEFAULT_TOP_SCORING_PERCENTAGE)
+	sys_stdout.write("\nAVERAGE SEED COVERAGE OVER DIFFERENT PHENOTYPES\n")
+
+    if tex_format:
+	sys_stdout.write("\n%s\n" % " & ".join(common_methods))
+	for ppi, phenotype_container in ppi_phenotype_auc_container.iteritems():
+	    ppi_methods = [ (0, 0) ]*len(common_methods)
+	    for i, scoring in enumerate(common_methods):
+		auc_list = []
+		for phenotype, method_to_auc in phenotype_container.iteritems():
+		    auc_list.append(method_to_auc[scoring])
+		mean, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(auc_list)
+		ppi_methods[i] = (mean, sigma)
+	    sys_stdout.write("%s & %s\\\\\n" % (ppi, " & ".join([ "%.2f ($\\pm$%.2f)" % (100*m, 100*s) for m,s in ppi_methods ])))
+    else:
+	for scoring in common_methods:
+	    sys_stdout.write("\n%s\n" % scoring)
 	    for ppi, phenotype_container in ppi_phenotype_auc_container.iteritems():
-		auc_list.append(phenotype_container[phenotype][scoring])
-	    mean, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(auc_list)
-	    sys_stdout.write("%s:\t%f\t+/- %f\n" % (phenotype, mean, sigma))
+		auc_list = []
+		for phenotype, method_to_auc in phenotype_container.iteritems():
+		    auc_list.append(method_to_auc[scoring])
+		mean, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(auc_list)
+		sys_stdout.write("%s:\t%f\t+/- %f\n" % (ppi, mean, sigma))
+
+    if type == "auc":
+	sys_stdout.write("\nAVERAGE AUC OVER DIFFERENT PPIS\n")
+    else:
+	#sys_stdout.write("\nAVERAGE SEED COVERAGE AT %d%% OVER DIFFERENT PPIS\n" % DEFAULT_TOP_SCORING_PERCENTAGE)
+	sys_stdout.write("\nAVERAGE SEED COVERAGE OVER DIFFERENT PPIS\n") 
+    if tex_format:
+	sys_stdout.write("\n%s\n" % " & ".join(common_methods))
+	for phenotype in phenotypes:
+	    phenotype_methods = [ (0, 0) ]*len(common_methods)
+	    for i, scoring in enumerate(common_methods):
+		auc_list = []
+		for ppi, phenotype_container in ppi_phenotype_auc_container.iteritems():
+		    auc_list.append(phenotype_container[phenotype][scoring])
+		mean, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(auc_list)
+		phenotype_methods[i] = (mean, sigma)
+	    sys_stdout.write("%s & %s\\\\\n" % (phenotype, " & ".join([ "%.2f ($\\pm$%.2f)" % (100*m, 100*s) for m,s in phenotype_methods ])))
+    else:
+	for scoring in common_methods:
+	    sys_stdout.write("\n%s\n" % scoring)
+	    for phenotype in phenotypes:
+		auc_list = []
+		for ppi, phenotype_container in ppi_phenotype_auc_container.iteritems():
+		    auc_list.append(phenotype_container[phenotype][scoring])
+		mean, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(auc_list)
+		sys_stdout.write("%s:\t%f\t+/- %f\n" % (phenotype, mean, sigma))
 
     return
 
@@ -743,14 +802,14 @@ def score(SCORING, score_commands, score_xval_commands, output_scores_file, log_
     return
 
 
-def analyze(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, specie, network_file):
+def analyze(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, specie, network_file, functional_enrichment):
     """
 	Does cross validation and percentage analysis on the output files
     """
     analyzed = analyze_xval(r_script_file, output_scores_file, node_scores_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, log_file) 
     if analyzed:
 	analyze_xval_percentage(log_file, output_scores_file, node_scores_file, output_log_file)
-	analyze_original(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, specie, network_file)
+	analyze_original(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, specie, network_file, functional_enrichment)
     return
 
 
@@ -899,7 +958,7 @@ def analyze_xval_percentage(log_file, output_scores_file, node_scores_file, outp
     return
 
 
-def analyze_original(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, specie, network_file):
+def analyze_original(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, specie, network_file, functional_enrichment = False):
     if not os.path.exists(output_scores_file):
 	raise Exception("Output score file does not exist!")
 
@@ -927,8 +986,7 @@ def analyze_original(PPI, output_scores_file, log_file, node_scores_file, associ
 	#    else:
 	#	f.write("%s\n" % str(analyze_results.calculate_seed_coverage_at_given_percentage(output_scores_file+"."+association_scores_file_identifier_type, association_scores_validation_file, percentage, DEFAULT_NON_SEED_SCORE)))
 
-
-    if association_scores_file_identifier_type is not None and os.path.exists(node_mapping_file+"."+association_scores_file_identifier_type):
+    if functional_enrichment and association_scores_file_identifier_type is not None and os.path.exists(node_mapping_file+"."+association_scores_file_identifier_type):
     	f.write("\nFUNCTIONAL ENRICHMENT ANALYSIS (OVER TOP %d%% SCORING NODES)\n" % DEFAULT_TOP_SCORING_PERCENTAGE)
     	analyze_results.check_functional_enrichment_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_PERCENTAGE, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, exclude_seeds = True, specie = specie, mode = "ordered")
 

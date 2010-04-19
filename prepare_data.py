@@ -308,7 +308,7 @@ def create_degree_filtered_network_file(network_file, network_file_filtered, deg
 	Creates a network file removing nodes that has connections more than given degree
     """
     # Load network
-    g = network_utilities.create_network_from_sif_file(network_file, use_edge_data = True)
+    g = network_utilities.create_network_from_sif_file(network_file, use_edge_data = False) #True)
     #network_utilities.analyze_network(g)
     g = network_utilities.filter_network(g = g, degree_threshold = degree, largest_connected_component=True) 
     # Get degrees of highly connected nodes

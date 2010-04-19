@@ -1,8 +1,8 @@
 data_dir="../../data/toy_data/"
-#node_file=$data_dir"test_proteins_small.sif"
-#network_file=$data_dir"test_interactions_small.sif"
-node_file=$data_dir"test_proteins_middle.sif"
-network_file=$data_dir"test_interactions_middle.sif"
+node_file=$data_dir"test_proteins_small.sif"
+network_file=$data_dir"test_interactions_small.sif"
+#node_file=$data_dir"test_proteins_middle.sif"
+#network_file=$data_dir"test_interactions_middle.sif"
 #node_file=$data_dir"test_proteins_larger.sif"
 #network_file=$data_dir"test_interactions_larger.sif"
 sampling_dir=$data_dir"sampled_graphs_toy/"
@@ -17,7 +17,7 @@ sampling_dir=$data_dir"sampled_graphs_toy/"
 #./scoreN -n $node_file -e $network_file -o test/test_netshort.txt -s d 
 
 # Netrank
-#./scoreN -n $node_file -e $network_file -o test/test_netrank.txt -s r 
+./scoreN -n $node_file -e $network_file -o test/test_netrank.txt -s r 
 
 # Netween
 #./scoreN -n $node_file -e $network_file -o test/test_netween.txt -s w 
@@ -29,7 +29,7 @@ sampling_dir=$data_dir"sampled_graphs_toy/"
 #./scoreN -n $node_file -e $network_file -o test/test_netscore.txt -d -s s -r 1 -i 1
 
 # Netzcore
-./scoreN -n $node_file -e $network_file -o test/test_netzcore.txt -d $sampling_dir -x 4 -s z -r 1 -i 1
+#./scoreN -n $node_file -e $network_file -o test/test_netzcore.txt -d $sampling_dir -x 4 -s z -r 1 -i 1
 
 # Netzscore
 #./scoreN -n $node_file -e $network_file -o test/test_netzscore.txt -d $sampling_dir -x 4 -s h -r 1 -i 1

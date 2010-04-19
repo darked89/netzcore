@@ -121,8 +121,7 @@ void Graph::loadEdges(string const &fileName, bool flagInverseWeights) throw(Gen
     while(file >> name1 >> value >> name2) {
 	if(flagInverseWeights)
 	{
-	    value = 1/value; 
-	    //value /= 1000; //! dont forget to change this, to arrange relevance scores in shortest path calculation
+	    value = 1/value; // for converting edge relevance to edge weigth e.g. in shortest path
 	}
         addEdge(name1, name2, value); 
     }
@@ -279,7 +278,19 @@ void Graph::getAllShortestPaths(Vertex v, map<Vertex, float> & vertexToFloat, Pr
 }
 
 /*
-void Graph::calculatePageRank(map<Vertex, float> & vertexToFloat, unsigned int nIteration) 
+// PageRank
+void Graph::calculatePageRank(map<Vertex, float> & vertexToFloat, unsigned int nIteration, float dFactor) 
+{
+    associative_property_map< map<Vertex, float> > mapRank(vertexToFloat);
+    //page_rank(container, rank(mapRank));
+    page_rank(container, mapRank, graph::n_iterations(nIteration), dFactor);
+    return;
+}
+*/
+
+/*
+// PageRank using initial ranks
+void Graph::calculatePageRank(map<Vertex, float> & vertexToFloat, unsigned int nIteration, float dFactor) 
 {
     map<Vertex, float> vertexToNormalizedScore;
     float sum = 0.0;
@@ -295,12 +306,13 @@ void Graph::calculatePageRank(map<Vertex, float> & vertexToFloat, unsigned int n
     }
     associative_property_map< map<Vertex, float> > mapRankInitial(vertexToNormalizedScore);
     associative_property_map< map<Vertex, float> > mapRank(vertexToFloat);
-    page_rank(container, mapRankInitial, mapRank, graph::n_iterations(nIteration));
+    page_rank(container, mapRankInitial, mapRank, graph::n_iterations(nIteration), dFactor);
     return;
 }
 */
 
-void Graph::calculatePageRankWithPriors(map<Vertex, float> & vertexToFloat, unsigned int nIteration) 
+// PageRank with priors in addition to using initial ranks (using pre-assignment of initial ranks has very minor effect)
+void Graph::calculatePageRankWithPriors(map<Vertex, float> & vertexToFloat, unsigned int nIteration, float dFactor) 
 {
     map<Vertex, float> vertexToNormalizedScore;
     float sum = 0.0;
@@ -313,7 +325,7 @@ void Graph::calculatePageRankWithPriors(map<Vertex, float> & vertexToFloat, unsi
     }
     associative_property_map< map<Vertex, float> > mapRankInitial(vertexToNormalizedScore);
     associative_property_map< map<Vertex, float> > mapRank(vertexToFloat);
-    page_rank_with_priors(container, mapRankInitial, mapRank, graph::n_iterations(nIteration));
+    page_rank_with_priors(container, mapRankInitial, mapRank, graph::n_iterations(nIteration), dFactor);
     return;
 }
 
@@ -332,14 +344,6 @@ void Graph::calculatePageRank()
     }
     associative_property_map< map<Vertex, float> > mapRankInitial(vertexToNormalizedScore);
     page_rank(container, mapRankInitial, get(&VertexProperties::score, container));
-    return;
-}
-
-void Graph::calculatePageRank(map<Vertex, float> & vertexToFloat) 
-{
-    associative_property_map< map<Vertex, float> > mapRank(vertexToFloat);
-    //page_rank(container, rank(mapRank));
-    page_rank(container, mapRank);
     return;
 }
 */

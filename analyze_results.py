@@ -140,7 +140,7 @@ def check_functional_enrichment_at_given_percentage(output_scores_file, node_sco
     return
 
 
-def check_functional_enrichment(subset_gene_ids, gene_ids, id_type, output_method, specie = "Homo sapiens", mode = "unordered", request_info=False):
+def check_functional_enrichment(subset_gene_ids, gene_ids, id_type, output_method, specie = "Homo sapiens", mode = "unordered", request_info=False, tex_format=False):
     """
 	Check GO functional enrichment using funcassociate web service
 	gene_ids is a list of gene symbols (without whitespace) or gene ids
@@ -171,16 +171,37 @@ def check_functional_enrichment(subset_gene_ids, gene_ids, id_type, output_metho
 
     #output_method("OVERREPRESENTED ATTRIBUTES"\n)
 
-    headers = ("N", "M", "X", "LOD", "P", "P_adj", "attrib ID", "attrib name")
-    output_method("%s\n" % "\t".join(headers))
+    headers = ["N", "M", "X", "LOD", "P", "P_adj", "attrib ID", "attrib name"]
+    if mode == "unordered":
+	headers.pop(1)
+    if tex_format:
+	output_method("%s\\\\\n" % " & ".join(headers))
+    else:
+	output_method("%s\n" % "\t".join(headers))
 
     zero = "< %f" % (1.0/float(reps))
 
     for row in response["over"]:
-        row.pop(1)
+	if mode == "unordered":
+	    row.pop(1)
         if row[4] is 0:
             row[4] = zero
-        output_method("%s\n" % "\t".join(map(str, row)))
+	if mode == "unordered":
+	    interval = range(2,5)
+	else:
+	    interval = range(3,6)
+	#print row
+	for i in interval:
+	    if isinstance(row[i], str) and row[i].startswith("<"):
+		#print row[i]
+		val = float(row[i].lstrip("<"))
+		row[i] = "<%.5f" % val
+	    else:
+		row[i] = "%.5f" % row[i]
+	if tex_format:
+	    output_method("%s\\\\\n" % " & ".join(map(str, row)))
+	else:
+	    output_method("%s\n" % "\t".join(map(str, row)))
 
     if request_info:
 	output_method("\nREQUEST INFO\n")
