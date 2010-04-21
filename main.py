@@ -65,27 +65,35 @@ def main():
     MODE = "summary" # prepare, score, analyze, compare, summary
     ignore_experiment_failures = False
     delay_experiment = True
-    tex_format = False #True
+    tex_format = True #False 
     functional_enrichment = False
+    user_friendly_id = "biana_no_tap-all_seed20below" #"biana_no_tap-chen" #"omim_alzheimer-diabetes" #"all_vs_all" # a.k.a. emre friendly id for compare and summary
+    summary_seed_cutoff = 20 #None
 
-    ppis = ["goh"]
+    ppis = [] 
     #ppis += ["goh", "entrez"]
     #ppis += ["biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
-    #ppis += ["biana_no_tap_no_reliability", "biana_no_tap_relevance"] 
+    #ppis += ["goh"]
+    ppis += ["biana_no_tap_no_reliability"] 
+    #ppis += ["biana_no_tap_relevance"]
     #ppis += ["javi"] #["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
     #ppis = ["ori_coexpression_1e-2", "ori_network", "ori_coexpression", "ori_coexpression_colocalization", "ori_colocalization", "ori_coexpression_colocalization_1e-2"]
     #ppis += ["ori_no_tap_coexpression_1e-2", "ori_no_tap_network", "ori_no_tap_coexpression", "ori_no_tap_coexpression_colocalization", "ori_no_tap_colocalization", "ori_no_tap_coexpression_colocalization_1e-2"]
     #ppi += ["goh_1e5", "biana_coexpression"]
 
-    phenotypes = ["omim_prostate_cancer"]
-    #phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes 
+    phenotypes = [] 
+    phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes 
+    #phenotypes += chen_phenotypes 
+    #phenotypes += ["omim_prostate_cancer"]
     #phenotypes += ["omim_alzheimer"] 
+    #phenotypes += ["omim_diabetes"]
     #phenotypes += ["custom"] #["aneurysm"] #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
 
     scoring_parameters = []
-    #scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
-    #scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
-    #scoring_parameters += [("nd", 1, 1)]
+    scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
+    scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
+    scoring_parameters += [("nd", 1, 1)]
+    #scoring_parameters += [("ns", 3, 2)]
     #scoring_parameters += [("nw",1, 1)]
     #scoring_parameters += [("nx", 1, 1)]
     #scoring_parameters += [("ns", 2, 2), ("ns", 2, 3), ("ns", 2, 4), ("ns", 3, 3)]
@@ -104,10 +112,10 @@ def main():
 		experiments.append((ppi, phenotype, parameters[0], parameters[1], parameters[2]))
 
     if MODE == "compare":
-	compare_experiments(experiments, tex_format, functional_enrichment)
+	compare_experiments(experiments, tex_format, functional_enrichment, user_friendly_id)
     elif MODE == "summary":
-	sum_up_experiments(ppis, phenotypes, "auc", tex_format)
-	sum_up_experiments(ppis, phenotypes, "cov", tex_format)
+	sum_up_experiments(ppis, phenotypes, "auc", tex_format, user_friendly_id, summary_seed_cutoff)
+	sum_up_experiments(ppis, phenotypes, "cov", tex_format, user_friendly_id, summary_seed_cutoff)
     else:
 	#experiment_count = 0
 	for experiment in experiments:
@@ -434,6 +442,8 @@ def decide_directory_hierarchy(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERAT
     output_base_dir_network = output_base_dir + PPI + os.sep
     output_base_dir_association = output_base_dir_network + ASSOCIATION + os.sep
     output_dir = output_base_dir_association + SCORING + os.sep
+    summary_dir = data_dir + "summary" + os.sep
+    compare_dir = data_dir + "compare" + os.sep
 
     # Create directory hirerarchy
     if not os.path.exists(input_base_dir): 
@@ -454,6 +464,10 @@ def decide_directory_hierarchy(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERAT
 	os.mkdir(output_base_dir_association)
     if not os.path.exists(output_dir): 
 	os.mkdir(output_dir)
+    if not os.path.exists(summary_dir): 
+	os.mkdir(summary_dir)
+    if not os.path.exists(compare_dir): 
+	os.mkdir(compare_dir)
 
     if SCORING == "ns" or SCORING == "nh" or SCORING == "n1":
 	output_dir = output_dir + "r%di%d" % (N_REPETITION, N_ITERATION) + os.sep
@@ -468,7 +482,7 @@ def decide_directory_hierarchy(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERAT
 	if not os.path.exists(output_dir): 
 	    os.mkdir(output_dir)
 
-    return (input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association)
+    return (input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association, summary_dir, compare_dir)
 
 
 def decide_scoring_and_analysis_files(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association):
@@ -553,7 +567,7 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, f
     title = decide_title(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, N_LINKER_THRESHOLD)
 
     # Project directory structure
-    (input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association) = decide_directory_hierarchy(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, N_LINKER_THRESHOLD)
+    (input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association, summary_dir, compare_dir) = decide_directory_hierarchy(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, N_LINKER_THRESHOLD)
 
     # Input/Output score, logging and analysis files
     (seed_scores_file, node_scores_file, node_mapping_file, edge_scores_file, edge_scores_as_node_scores_file, output_scores_file, \
@@ -579,7 +593,7 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, f
     return
 
 
-def compare_experiments(experiments, tex_format=False, functional_enrichment=False):
+def compare_experiments(experiments, tex_format=False, functional_enrichment=False, user_friendly_id="test"):
     """
 	Selects and checks functional annotation of common highest scoring nodes (mapping their genesymols) in different experiments
     """
@@ -596,7 +610,7 @@ def compare_experiments(experiments, tex_format=False, functional_enrichment=Fal
 	    biana_network_file_filtered_by_reliability, node_file, node_description_file, \
 	    network_file_identifier_type, network_file, network_file_filtered, specie) = decide_interaction_data(PPI)
 	# Project directory structure
-	(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association) = decide_directory_hierarchy(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, N_LINKER_THRESHOLD)
+	(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association, summary_dir, compare_dir) = decide_directory_hierarchy(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, N_LINKER_THRESHOLD)
 	# Input/Output score, logging and analysis files
 	(seed_scores_file, node_scores_file, node_mapping_file, edge_scores_file, edge_scores_as_node_scores_file, output_scores_file, \
 	score_log_file, sampled_file_prefix, log_file, input_log_file, job_file, output_log_file, predictions_file, \
@@ -618,34 +632,69 @@ def compare_experiments(experiments, tex_format=False, functional_enrichment=Fal
 	else:
 	    prev_id_type = association_scores_file_identifier_type
 
+    compare_dir += user_friendly_id + os.sep
+    if not os.path.exists(compare_dir): 
+	os.mkdir(compare_dir)
+
+    f = open(compare_dir + "README", "a")
+    #f.write("\n" % "-".join(phenotypes))
+    f.write("%s\n" % (experiments))
+    f.close()
+    #out_file = sys_stdout
+    #out_file = sys_stdout
+    #out_file = open(compare_dir + "-".join(map(lambda x: "_".join(x), experiments)) + ".txt", "w")
+    out_file = open(compare_dir + "comparison.txt", "w")
     if "-" in top_scoring_ids:
 	top_scoring_ids.remove("-")
     if "-" in all_scoring_ids:
 	all_scoring_ids.remove("-")
     for id in top_scoring_ids: 
 	if tex_format:
-	    print id, "\\\\"
+	    #print id, "\\\\"
+	    out_file.write("%s\\\\\n" % id)
 	else:
-	    print id
+	    #print id
+	    out_file.write("%s\n" % id)
     print 
     if functional_enrichment:
-	#sys_stdout.write("\nFUNCTIONAL ENRICHMENT OF COMMON HIGH SCORING NODES (AT %d%% LEVEL) IN GIVEN EXPERIMENTS\n" % DEFAULT_TOP_SCORING_PERCENTAGE)
-	sys_stdout.write("\nFUNCTIONAL ENRICHMENT OF COMMON HIGH SCORING NODES IN GIVEN EXPERIMENTS\n")
-	sys_stdout.write("%s common gene names/ids among %s\n\n" % (len(top_scoring_ids), len(all_scoring_ids)))
-	analyze_results.check_functional_enrichment(list(top_scoring_ids), list(all_scoring_ids), prev_id_type, sys_stdout.write, specie = species.pop(), mode = "unordered", tex_format=tex_format)
+	#out_file.write("\nFUNCTIONAL ENRICHMENT OF COMMON HIGH SCORING NODES (AT %d%% LEVEL) IN GIVEN EXPERIMENTS\n" % DEFAULT_TOP_SCORING_PERCENTAGE)
+	out_file.write("\nFUNCTIONAL ENRICHMENT OF COMMON HIGH SCORING NODES IN GIVEN EXPERIMENTS\n")
+	out_file.write("%s common gene names/ids among %s\n\n" % (len(top_scoring_ids), len(all_scoring_ids)))
+	analyze_results.check_functional_enrichment(list(top_scoring_ids), list(all_scoring_ids), prev_id_type, out_file.write, specie = species.pop(), mode = "unordered", tex_format=tex_format)
+    out_file.close()
     return
 
 
-def sum_up_experiments(ppis, phenotypes, type="auc", tex_format=False):
+def sum_up_experiments(ppis, phenotypes, type="auc", tex_format=False, user_friendly_id="test", seed_cutoff=None):
     """
 	Gives an averaged performance summary of ppi and association data over different scoring methods
 	type: "auc" or "cov"
     """
+    phenotypes_to_skip = set()
+    if seed_cutoff is not None:
+	for ppi in ppis:
+	    for phenotype in phenotypes:
+		if phenotype in phenotypes_to_skip:
+		    continue
+		(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association, summary_dir, compare_dir) = decide_directory_hierarchy(ppi, phenotype, "nx", 1, 1, N_LINKER_THRESHOLD)
+		f = open(input_dir + "README")
+		n_seed = None
+		for line in f.readlines():
+		    if line.startswith("Covered gene products (seed nodes):"):
+			n_seed = int(line.split(":")[1].split()[0])
+		f.close()
+		#if n_seed < seed_cutoff: 
+		if n_seed >= seed_cutoff: 
+		    phenotypes_to_skip.add(phenotype)
+		    print "Skipping", phenotype, n_seed
+		    continue
+	phenotypes = list(set(phenotypes)-phenotypes_to_skip)
+
     ppi_phenotype_auc_container = dict([ (ppi, dict([ (phenotype, {}) for phenotype in phenotypes ])) for ppi in ppis ])
     for ppi in ppis:
 	for phenotype in phenotypes:
 	    # Project directory structure
-	    (input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association) = decide_directory_hierarchy(ppi, phenotype, "nx", 1, 1, N_LINKER_THRESHOLD)
+	    (input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association, summary_dir, compare_dir) = decide_directory_hierarchy(ppi, phenotype, "nx", 1, 1, N_LINKER_THRESHOLD)
 	    # Input/Output score, logging and analysis files
 	    (seed_scores_file, node_scores_file, node_mapping_file, edge_scores_file, edge_scores_as_node_scores_file, output_scores_file, \
 	    score_log_file, sampled_file_prefix, log_file, input_log_file, job_file, output_log_file, predictions_file, \
@@ -662,6 +711,8 @@ def sum_up_experiments(ppis, phenotypes, type="auc", tex_format=False):
 		cov = float(words[3])
 		cov_dev = float(words[4].strip("+/-"))
 		if type == "auc":
+		    #if auc<=0.5 and n_seed <= 20 and (method == "ns" or method == "nd"):
+		    #	print ppi, phenotype, n_seed, method, auc
 		    ppi_phenotype_auc_container[ppi][phenotype][method] = auc
 		else:
 		    ppi_phenotype_auc_container[ppi][phenotype][method] = cov
@@ -691,14 +742,34 @@ def sum_up_experiments(ppis, phenotypes, type="auc", tex_format=False):
 	    common_methods.insert(0, method) #i
 	    #i += 1
 
+
+    summary_dir += user_friendly_id + os.sep
+    if not os.path.exists(summary_dir): 
+	os.mkdir(summary_dir)
+
+    log_file = open(summary_dir + "README", "a")
+    log_file.write("%s\n%s\n" % (phenotypes, ppis))
+    log_file.write("Skipped %s\n" % (phenotypes_to_skip))
+    log_file.close()
+
+    #out_file = sys_stdout
+    file_name = type + "_phenotypes" 
+    #if file_name > 60:
+    #	file_name_new =  "cropped_" + file_name[:60]
+    #	print "Cropping\n", file_name, "\nto\n", file_name_new
+    #	file_name = file_name_new 
+    out_file = open(summary_dir + file_name + ".txt", "w")
+
     if type == "auc":
-	sys_stdout.write("\nAVERAGE AUC OVER DIFFERENT PHENOTYPES\n")
+	out_file.write("\nAVERAGE AUC OVER DIFFERENT PHENOTYPES\n")
     else:
-	#sys_stdout.write("\nAVERAGE SEED COVERAGE AT %d%% OVER DIFFERENT PHENOTYPES\n" % DEFAULT_TOP_SCORING_PERCENTAGE)
-	sys_stdout.write("\nAVERAGE SEED COVERAGE OVER DIFFERENT PHENOTYPES\n")
+	#out_file.write("\nAVERAGE SEED COVERAGE AT %d%% OVER DIFFERENT PHENOTYPES\n" % DEFAULT_TOP_SCORING_PERCENTAGE)
+	out_file.write("\nAVERAGE SEED COVERAGE OVER DIFFERENT PHENOTYPES\n")
 
     if tex_format:
-	sys_stdout.write("\n%s\n" % " & ".join(common_methods))
+	out_file.write("\n%s\n" % " & ".join(common_methods))
+	data_file = open(summary_dir + file_name + ".dat", 'w')
+	data_file.write("\t%s\n" % "\t".join(common_methods))
 	for ppi, phenotype_container in ppi_phenotype_auc_container.iteritems():
 	    ppi_methods = [ (0, 0) ]*len(common_methods)
 	    for i, scoring in enumerate(common_methods):
@@ -707,24 +778,31 @@ def sum_up_experiments(ppis, phenotypes, type="auc", tex_format=False):
 		    auc_list.append(method_to_auc[scoring])
 		mean, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(auc_list)
 		ppi_methods[i] = (mean, sigma)
-	    sys_stdout.write("%s & %s\\\\\n" % (ppi, " & ".join([ "%.2f ($\\pm$%.2f)" % (100*m, 100*s) for m,s in ppi_methods ])))
+	    out_file.write("%s & %s\\\\\n" % (ppi, " & ".join([ "%.2f ($\\pm$%.2f)" % (100*m, 100*s) for m,s in ppi_methods ])))
+	    data_file.write("%s\t%s\n" % (ppi, "\t".join(map(lambda x: str(100*x[0]), ppi_methods))))
+	data_file.close()
     else:
 	for scoring in common_methods:
-	    sys_stdout.write("\n%s\n" % scoring)
+	    out_file.write("\n%s\n" % scoring)
 	    for ppi, phenotype_container in ppi_phenotype_auc_container.iteritems():
 		auc_list = []
 		for phenotype, method_to_auc in phenotype_container.iteritems():
 		    auc_list.append(method_to_auc[scoring])
 		mean, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(auc_list)
-		sys_stdout.write("%s:\t%f\t+/- %f\n" % (ppi, mean, sigma))
+		out_file.write("%s:\t%f\t+/- %f\n" % (ppi, mean, sigma))
+    out_file.close()
 
+    file_name = type + "_ppis" #+ "-".join(ppis)
+    out_file = open(summary_dir + file_name + ".txt", "w")
     if type == "auc":
-	sys_stdout.write("\nAVERAGE AUC OVER DIFFERENT PPIS\n")
+	out_file.write("\nAVERAGE AUC OVER DIFFERENT PPIS\n")
     else:
-	#sys_stdout.write("\nAVERAGE SEED COVERAGE AT %d%% OVER DIFFERENT PPIS\n" % DEFAULT_TOP_SCORING_PERCENTAGE)
-	sys_stdout.write("\nAVERAGE SEED COVERAGE OVER DIFFERENT PPIS\n") 
+	#out_file.write("\nAVERAGE SEED COVERAGE AT %d%% OVER DIFFERENT PPIS\n" % DEFAULT_TOP_SCORING_PERCENTAGE)
+	out_file.write("\nAVERAGE SEED COVERAGE OVER DIFFERENT PPIS\n") 
     if tex_format:
-	sys_stdout.write("\n%s\n" % " & ".join(common_methods))
+	out_file.write("\n%s\n" % " & ".join(common_methods))
+	data_file = open(summary_dir + file_name + ".dat", 'w')
+	data_file.write("\t%s\n" % "\t".join(common_methods))
 	for phenotype in phenotypes:
 	    phenotype_methods = [ (0, 0) ]*len(common_methods)
 	    for i, scoring in enumerate(common_methods):
@@ -733,16 +811,19 @@ def sum_up_experiments(ppis, phenotypes, type="auc", tex_format=False):
 		    auc_list.append(phenotype_container[phenotype][scoring])
 		mean, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(auc_list)
 		phenotype_methods[i] = (mean, sigma)
-	    sys_stdout.write("%s & %s\\\\\n" % (phenotype, " & ".join([ "%.2f ($\\pm$%.2f)" % (100*m, 100*s) for m,s in phenotype_methods ])))
+	    out_file.write("%s & %s\\\\\n" % (phenotype, " & ".join([ "%.2f ($\\pm$%.2f)" % (100*m, 100*s) for m,s in phenotype_methods ])))
+	    data_file.write("%s\t%s\n" % (phenotype, "\t".join(map(lambda x: str(100*x[0]), phenotype_methods))))
+	data_file.close()
     else:
 	for scoring in common_methods:
-	    sys_stdout.write("\n%s\n" % scoring)
+	    out_file.write("\n%s\n" % scoring)
 	    for phenotype in phenotypes:
 		auc_list = []
 		for ppi, phenotype_container in ppi_phenotype_auc_container.iteritems():
 		    auc_list.append(phenotype_container[phenotype][scoring])
 		mean, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(auc_list)
-		sys_stdout.write("%s:\t%f\t+/- %f\n" % (phenotype, mean, sigma))
+		out_file.write("%s:\t%f\t+/- %f\n" % (phenotype, mean, sigma))
+    out_file.close()
 
     return
 
