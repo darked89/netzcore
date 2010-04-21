@@ -1,3 +1,14 @@
+
+# Correlation of two random variables
+#df<-read.table("aneurysm_seed_scores.txt")
+d<-read.table("/home/emre/arastirma/data/aneurist/aneurist_Jul_05/aneursym_scores.txt")#, header=T)
+e<-read.table("/home/emre/arastirma/data/HEFalMp_predicted_gene_disease_associations/aneurysm_seed_pvalues.txt")
+df<-cbind(d,e)
+cor(df[,1], 1/df[,2])
+plot(df[,1], 1/df[,2], xlab="tm score", ylab="1 / p value")
+
+
+# Behaviour of some polynomials
 x<-seq(1,10)
 xl<-seq(1,10) # seq(0,100,1)
 e<-exp(1)
