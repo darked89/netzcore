@@ -27,7 +27,7 @@ N_SAMPLE_GRAPH = 100 # Number of random graphs to be generated
 N_X_VAL = 5 #182 # Number of cross validation folds
 N_RANDOM_NEGATIVE_FOLDS = None #0 #None #10 # Number of non-seed scores to be averaged for negative score calculation, 
 			    # If 0 all non seeds are included as they are, If None all non seeds are included averaged to scale with the size of test seeds
-REPLICABLE = True #False # Assign a predefined seed in randomization for N_RANDOM_NEGATIVE_FOLD generation
+REPLICABLE = 9871354 #123 #None # Assign a predefined seed in randomization for initial test folds creation and N_RANDOM_NEGATIVE_FOLD generation
 
 # Directory of the project
 base_dir = ".."
@@ -62,24 +62,27 @@ scoring_methods = ["nd", "nz", "ns", "ff", "nr", "nw", "nx", "nh", "n1"]
 
 
 def main():
-    MODE = "analyze" # prepare, score, analyze, compare, summary
+    MODE = "analysis" # prepare, score, analyze, compare, summary
     ignore_experiment_failures = False
     delay_experiment = True
 
     ppis = []
+    ppis += ["biana_no_tap_no_reliability"]
     #ppis += ["goh", "entrez", "biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
-    ppis += ["javi"] #["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
+    #ppis += ["javi"] #["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
     #ppis = ["ori_coexpression_1e-2", "ori_network", "ori_coexpression", "ori_coexpression_colocalization", "ori_colocalization", "ori_coexpression_colocalization_1e-2"]
     #ppis += ["ori_no_tap_coexpression_1e-2", "ori_no_tap_network", "ori_no_tap_coexpression", "ori_no_tap_coexpression_colocalization", "ori_no_tap_colocalization", "ori_no_tap_coexpression_colocalization_1e-2"]
 
     phenotypes = []
     #phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes 
-    phenotypes += ["custom"] #["aneurysm"] #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
+    phenotypes += omim_phenotypes 
+    #phenotypes += ["custom"] #["aneurysm"] #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
 
     scoring_parameters = []
-    #scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
+    scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
     #scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
     #scoring_parameters += [("nd", 1, 1)]
+    scoring_parameters += [("ns", 3, 2)]
     #scoring_parameters += [("nw",1, 1)]
     #scoring_parameters += [("nx", 1, 1)]
     #scoring_parameters += [("ns", 2, 2), ("ns", 2, 3), ("ns", 2, 4), ("ns", 3, 3)]
@@ -962,7 +965,7 @@ def prepare_scoring_files(PPI, seed_scores_file, network_file_filtered, seed_to_
 	nodes = prepare_data.get_nodes_in_network(network_file = network_file_filtered)
 	seed_to_score = prepare_data.get_node_to_score_from_node_scores_file(seed_scores_file)
 	prepare_data.create_node_scores_file(nodes = nodes, node_to_score = seed_to_score, node_scores_file = node_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
-	prepare_data.generate_cross_validation_node_score_files(nodes = nodes, seed_to_score = seed_to_score, node_scores_file = node_scores_file, xval = N_X_VAL, default_score = DEFAULT_NON_SEED_SCORE)
+	prepare_data.generate_cross_validation_node_score_files(nodes = nodes, seed_to_score = seed_to_score, node_scores_file = node_scores_file, xval = N_X_VAL, default_score = DEFAULT_NON_SEED_SCORE, replicable = REPLICABLE)
 
     # Create node id to genesymbol mapping
     if association_scores_file_identifier_type is not None and not os.path.exists(node_mapping_file+"."+association_scores_file_identifier_type):
@@ -1000,7 +1003,7 @@ def prepare_scoring_files(PPI, seed_scores_file, network_file_filtered, seed_to_
 	    edges = prepare_data.get_edges_in_network(network_file = network_file_filtered)
 	seed_to_score = prepare_data.get_node_to_score_from_node_scores_file(seed_scores_file)
 	prepare_data.create_edge_scores_as_node_scores_file(edges = edges, node_to_score = seed_to_score, edge_scores_file = edge_scores_as_node_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
-	prepare_data.generate_cross_validation_edge_score_as_node_score_files(edges = edges, seed_to_score = seed_to_score, edge_scores_file = edge_scores_as_node_scores_file, xval = N_X_VAL, default_score = DEFAULT_NON_SEED_SCORE)
+	prepare_data.generate_cross_validation_edge_score_as_node_score_files(edges = edges, seed_to_score = seed_to_score, edge_scores_file = edge_scores_as_node_scores_file, xval = N_X_VAL, default_score = DEFAULT_NON_SEED_SCORE, replicable = REPLICABLE)
     # Create random network files
     if not os.path.exists(sampled_file_prefix + ".sif.1"): 
 	print "Creating sampled networks"
