@@ -2,19 +2,20 @@
 TODO:
 
 -1- goh + omim + chen diseases on goh/biana/entrez ppi
+-! func annot at 10% level on goh/entrez networks consider seeds
+-! no func annot on biana networks (gene symbols contain whitespace) - now corrected
 
 -2- attach biological sense to the results, check if there is different data sources for the same phenotype coinciding when scores calculated with one of them or GO analysis or greedy expansion of complex from high scoring nodes and analyzing their functional enrichment
     + GO enrichment check (on the high scoring nodes) using node_id - gene_symbol mapping 
     - High scoring node check, check whether high scoring nodes in different methods are common, booststrapping possible?
     - greedy search for high scoring modules and/or expanding high scoring nodes based on their connectedness in addition to score (start from lower scored highest scoring nodes repeat for each high scoring nodes that are not already included in modules)
-	- none
-	- greedy highest
-	- greedy w/ return 
 	- greedy all (since greedy w/out all does not make sense when within selected set there exist nodes with lower scores and excluded neighbors of them though having higher scores)
 	- greedy w/ all bigger than all avg (still has the problem mentioned above)
+	- greedy w/ all bigger than avg score at highest 5% (or 1%) of all distribution 
+	- Start with highest greedy w/ all bigger than 75% of current cluster average or max (if avg still has the problem mentioned above)
     - near clique high scoring complexes
 	- greedy w/ best of above + near clique
-	- Create complexes using MCODE / COACH 
+	- Create complexes using MCODE / COACH / heinz / spici
 
 -3- analysis of results on goh disease & omim
     - situation of seeds:
@@ -48,6 +49,9 @@ TODO:
     - FunctionalFlow functional annotation (use scoreN with acc to initial scores option)
 	- different type of data
 	- interaction network + all functions of nodes not available
+    - CGI ppi + gexp code available for windows
+    - FS weighted average used in fucntional annotation using levels 1,2,3 perl code
+
 
 - New runs with (check performance on other disease data)
     - disease data
@@ -65,6 +69,8 @@ TODO:
 	- AES 
 	- uniprot
 	- data from Hefalmp 
+
+    - how about essentiality data
 
     - ppi data
 	- goh07
@@ -180,7 +186,7 @@ NOTES:
 
 - Proofchecked netween & fflow 
 
-- Checked goh aneurysm nz i4, ns r2i2 and r2i3 with different random seed assignment. Performances change similarly (all drop 2-4% when seed 5123 is used instead of 123). Also modified non-negative score calculation a bit so that all randoms are used -for sure- (previously the folds might not be covering all non-negatives but almost all)
+- Checked goh aneurysm nz i4, ns r2i2 and r2i3 with different random seed fold segmentation. Performances change similarly (all drop 2-4% when seed 5123 is used instead of 123). Also modified non-negative score calculation a bit so that all randoms are used -for sure- (previously the folds might not be covering all non-negatives but almost all)
 
 - Using a different random sampling on nz on goh - aneurysm, has insignificant effect on the performance (<0.1%)
 
@@ -199,6 +205,12 @@ NOTES:
 - Checked auc & recovery (check %10 coverages) rates for all runs. Also observed effects of parameters. In aneurysm on GOH and somewhat slightly in bc on BIANA, parameters have a considerable effect (probably due to number of seeds vs interactions). Apart from that, change of parameters around r2i2, r2i3, r3i2, r3i3 for Netscore, i4, i5, i6 for Netzcore and fFlow seems to have little effect. Selected parameters: r3i2 and i5. 
 
 - For piana apoptosis network NetRank surprising performs as good as others (so does ns r1i1 -- need to see whether due to a speacial characteristic of network, e.g. seeds connected with each other) 
+
+- Checked pagerank beta parameter (0.15 vs 0.3) on goh aneurysm, results are not affected (<0.1% change)
+
+- Checked non-seed initial score (0.01 vs 0.00001) on goh aneurysm, ns, nz not changes, nr increased a bit (~3%), nd halved (44%)
+
+- When edges for which string coexpression values are available are used there are very few seeds left for biana_coexpression on aneurysm
 
 
 aneurysim

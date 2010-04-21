@@ -86,6 +86,7 @@ page_rank_with_priors(const Graph& g, RankMap initial_rank_map, RankMap rank_map
 
   //rank_type initial_rank = rank_type(rank_type(1) / n);
   //BGL_FORALL_VERTICES_T(v, g, Graph) put(rank_map, v, initial_rank);
+  // Assigning given initial ranks at the begining of the algorithm as pageranks at step 0 - has insignificant effect
   BGL_FORALL_VERTICES_T(v, g, Graph) put(rank_map, v, rank_type(get(initial_rank_map, v)));
 
   bool to_map_2 = true;

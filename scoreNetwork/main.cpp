@@ -201,7 +201,7 @@ void runNetrank(string fileNode, string fileEdge, string fileOutput, unsigned in
 {
     // flagAccumulateToInitialNodeScore
     Netrank sN(fileNode, fileEdge, fileOutput, true);
-    sN.run(20); // number of pagerank iterations
+    sN.run(20, 0.85); // number of pagerank iterations, damping factor
 }
 
 void runNetrandom(string fileNode, string fileEdge, string fileOutput) 
