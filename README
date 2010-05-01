@@ -1,11 +1,25 @@
 
 TODO:
 
--1- goh + omim + chen diseases on goh/biana/entrez ppi
--! func annot at 10% level on goh/entrez networks consider seeds
--! no func annot on biana networks (gene symbols contain whitespace) - now corrected
+- Comparison with navlaka2010
 
--2- attach biological sense to the results, check if there is different data sources for the same phenotype coinciding when scores calculated with one of them or GO analysis or greedy expansion of complex from high scoring nodes and analyzing their functional enrichment
+- check avg seed connectivity & ratio of nieghboring seeds vs AUC & PPV
+
+- adding edge weight in nd and nr
+
+- rw implementation
+
+- implement pagerank, k step markov, krischoff using JUNG and run on the data
+
+- run ppv analysis with top 1%
+
+- adding hprd network
+
+- goh + omim + chen diseases on goh/biana/entrez ppi
+    - func annot at 10% level on goh/entrez networks consider seeds
+    - no func annot on biana networks (gene symbols contain whitespace) - now corrected
+
+- attach biological sense to the results, check if there is different data sources for the same phenotype coinciding when scores calculated with one of them or GO analysis or greedy expansion of complex from high scoring nodes and analyzing their functional enrichment
     + GO enrichment check (on the high scoring nodes) using node_id - gene_symbol mapping 
     - High scoring node check, check whether high scoring nodes in different methods are common, booststrapping possible?
     - greedy search for high scoring modules and/or expanding high scoring nodes based on their connectedness in addition to score (start from lower scored highest scoring nodes repeat for each high scoring nodes that are not already included in modules)
@@ -17,12 +31,12 @@ TODO:
 	- greedy w/ best of above + near clique
 	- Create complexes using MCODE / COACH / heinz / spici
 
--3- analysis of results on goh disease & omim
+- analysis of results on goh disease & omim
     - situation of seeds:
 	- accumulate to initial scores is needed? Ideally scores can be normalized before accumulation in netshort but requires adding mapInitialScore
 	- dont accumulate for seed coverage (already checked on xval tests)
 
--*/4- document all (combine presentation + report + README notes)
+- document all (combine presentation + report + README notes)
     - table w/ auc averaged over different phenotypes for each scoring method
     - method overview diagram
     - bar plots of 10 percent seed coverages with confidence values averaged over phenotypes
@@ -35,6 +49,7 @@ TODO:
     - anna db on goh/entrez ppi/biana
     - dezso09 (nw) on biana/goh and compare w/ their results
     - vanunu10 comparison with OMIM prostate, AD, diabetes casual gene predictions
+    - futreal cancer data
     - new biana netw reactome/string non-exp
     
 - comparison with other methods in the literature (with their data)
@@ -212,6 +227,7 @@ NOTES:
 
 - When edges for which string coexpression values are available are used there are very few seeds left for biana_coexpression on aneurysm
 
+- Rechecked effect of random test fold seperation in 5 fold setting on biana_no_tap_no_reliability with ns r3i2 for all omim diseases with 3 different initial random seeds (123, 9871354, 63826) Performances change similarly (all drop or increase 1-2% on average AUC over all omim diseases)
 
 aneurysim
 
