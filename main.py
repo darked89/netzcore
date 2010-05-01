@@ -27,7 +27,7 @@ N_SAMPLE_GRAPH = 100 # Number of random graphs to be generated
 N_X_VAL = 5 #182 # Number of cross validation folds
 N_RANDOM_NEGATIVE_FOLDS = None #0 #None #10 # Number of non-seed scores to be averaged for negative score calculation, 
 			    # If 0 all non seeds are included as they are, If None all non seeds are included averaged to scale with the size of test seeds
-REPLICABLE = 9871354 #123 #None # Assign a predefined seed in randomization for initial test folds creation and N_RANDOM_NEGATIVE_FOLD generation
+REPLICABLE = 123 #63826 #9871354 #123 #None # Assign a predefined seed in randomization for initial test folds creation and N_RANDOM_NEGATIVE_FOLD generation
 
 # Directory of the project
 base_dir = ".."
@@ -58,24 +58,28 @@ omim_phenotypes = [ "omim_" + "_".join(p.split()) for p in omim_phenotypes ]
 chen_phenotypes = ["atherosclerosis",  "ischaemic_stroke",  "systemic_scleroderma",  "migraine",  "epilepsy",  "cirrhosis",  "ulcerative_colitis",  "cervical_carcinoma",  "osteoarthritis",  "inflammatory_bowel_disease",  "myocardial_ischemia",  "endometrial_carcinoma",  "pancreatitis",  "graves_disease",  "neural_tube_defects",  "lymphoma",  "endometriosis",  "autism",  "hypercholesterolaemia"]
 chen_phenotypes = [ "chen_" + p for p in chen_phenotypes ]
 
+navlakha_phenotypes = ["Macular","Pick","Pontocerebellar","Larsen","Opitz","CPT","Pituitary","Sensory","Leber","Thrombophilia","Corneal","Orofacial","Hemophilia","Chondrodysplasia","Noonan","Hypoglycemia","Meckel","Brachydactyly","Hypophosphat","Lethal","Endometrial","Nasopharyngeal","Long","Generalized","Aldosterone","Phenylketonuria","Bethlem","Cystinuria","Cerebellar","Atelosteogenesis","IgA","Myasthenic","Carnitine","Myoclonic","Short","Hyperthyroidism","Osteopetrosis","Nonsmall","Esophageal","Nephrotic","Colon","Urolithiasis","Juvenile","Nicotine","Pfeiffer","Becker","Keratosis","Cone","Megakaryoblastic","von_Hippel-Lindau","Insulin","Thrombocytopenia","Melanoma","Hereditary","Chorea","Trifunctional","Sick","Brugada","Pheochromocytoma","Myocardial","Creatine","Polyposis","Porphyria","Neutral","Ullrich","Pachyonychia","Orthostatic","Prader-Willi","Diabetes","Oguchi","Neuropathy","Osteolysis","Mast","Joubert","Hepatic","Paragangliomas","Ichthyosiform","Angelman","Agammaglobulinemia","Epilepsy","Crohn","Lung","Polycystic","SARS","Skin,hair,eye","Anorexia","Glomerulosclerosis","Jervell","Mucolipidosis","Li","Glucocorticoid","Longevity","Osteogenesis","HIV","Enolase","Attention","Scapuloperoneal","H.","Carcinoid","Focal","Lupus","Hepatocellular","Simpson-Golabi-Behmel","Dyskeratosis","Pseudohypoaldosteronism","Myeloproliferative","Jackson-Weiss","Pulmonary","Homocystinuria","Fetal","Arrhythmogenic","Autoimmune","Optic","Rieger","Muscular","Syndactyly","Histiocytoma","Hemolytic","Dandy-Walker","Coloboma","Giant","Psoriasis","Insensitivity","Multiple","Bladder","Hypodontia","Blood","LADD","Pancreatic","Hyperinsulin","Retinitis","Leprosy","Dystonia","Obesity","Keratitis","Nephrolithiasis","ACTH","Cerebrooculofacioskeletal","Choreoathetosis","Arthrogryposis","Epiphyseal","Cone-rod","Hepatitis","Neutropenia","Factor","Corpus","HDL","Malaria","Leopard","Breast","Ceroid-lipofuscinosis","Congenital","Renal","Paraganglioma","Adrenoleukodystrophy","Trichothiodystrophy","Male","Heterotaxy","Spastic","Bleeding","Symphalangism","Gonadal","Huntington","Hemolytic-uremic","Abdominal","Migraine","Cold-induced","Refsum","AIDS","Myotonia","Atherosclerosis","Osteoarthritis","Lipoprotein","Iridogoniodysgenesis","Beckwith-Wiedemann","Alexander","Tetralogy","Abacavir","Premature","Parietal","Immunodeficiency","Metachromatic","Stature","Boomerang","Mucoepidermoid","Medullary","Anterior","Propionicacidemia","Zellweger","Pancreatitis","Amyotrophic","Hypercholesterolemia","Usher","Fletcher","Pelvic","Tuberous","Alcohol","C1r,C1s","Germ","Emphysema","Campomelic","Adenocarcinoma","Griscelli","Vohwinkel","Pseudohypoparathyroidism","Intracranial","Sitosterolemia","Mitochondrial","Intervertebral","Myelogenous","Exudative","Nasu-Hakola","Amyloidosis","Pigmented","QT","Glycine","Lumbar","High","Azoospermia","Coenzyme","Growth","SCID","Hemangioma","Waardenburg","Dementia","Chromosome","Psoriatic","Hyperlipoproteinemia","Glycogen","Cerebral","Cholestasis","Cutis","Coronary","Amelogenesis","Bernard-Soulier","Colorectal","Myopathy","Pseudohermaphroditism","Fanconi","Phosphoglycerate","Bardet-Biedl","Carney","Blue-cone","Progressive","Pseudoxanthoma","Thalassemia","Squamous","Muscle","Glutaricaciduria","Protoporphyria","Mowat-Wilson","Lymphoproliferative","Mycobacterium","Glycogenosis","Invasive","Sarcoma","Adrenocortical","Craniofacial","Bamforth-Lazarus","Graves","Aplastic","Erythremia","T-cell","Elliptocytosis","Branchiootorenal","Xeroderma","Smith-Magenis","Liddle","Rhizomelic","Insomnia","Hypertriglyceridemia","Tuberculosis","Kallmann","Hypermethioninemia","Central","Wilms","Emery-Dreifuss","Myeloid","Glanzmann","Hypomagnesemia","Omenn","Rheumatoid","Stevens-Johnson","Albinism","Methylmalonic","Intrauterine","Inclusion","Oligodontia","Charcot-Marie-Tooth","Parkinson","Chronic","Hypertension","Atopy","Adrenal","Senior-Loken","Autism","Ceroid","BCG","Epileptic","Paroxysmal","Platelet","Thyrotropin-releasing","Fibromatosis","Dyslexia","Hepatoblastoma","Carbohydrate-deficient","Complement","Hemochromatosis","Leukemia","Hyperparathyroidism","Transient","Fructose","Prostate","Placental","C4","Subcortical","Ehlers-Danlos","Episodic","Glaucoma","Dent","Antley-Bixler","Night","Atrioventricular","Ciliary","Creutzfeldt-Jakob","Heinz","Colorblindness","Ectodermal","Hyperoxaluria","Hypogonadotropic","Schizophrenia","Muir-Torre","Ataxia","Spondyloepimetaphyseal","Neurofibromatosis","Combined","Afibrinogenemia","Asthma","Atrial","Stickler","Loeys-Dietz","Ovarian","Peters","Cystic","Hypotrichosis","Cleft","Convulsions","Hyperekplexia","MODY","Adenomas","Pyogenic","Synpolydactyly","Obsessive-compulsive","Roussy-Levy","Medulloblastoma","Myelodysplastic","Caudal","Celiac","Iron","Tyrosinemia","C1q","Methemoglobinemia","Lymphangioleiomyomatosis","Lipoid","Peroxisomal","Hirschsprung","Leuko","Stroke","Hypercholanemia","Exostoses","Gaucher","Walker-Warburg","Cockayne","Thyroid","Kaposi","Pyruvate","Ectopia","Thrombocythemia","Spondylocarpotarsal","Acromesomelic","Angioedema","Amyotrophy","Blepharophimosis","Dysfibrinogenemia","Epidermolytic","Hyperprolinemia","Hemorrhagic","Nephronophthisis","Williams-Beuren","Epidermolysis","Microphthalmia","Inflammatory","Spinal","Systemic","Hypothyroidism","Hermansky","Osteoporosis","Aicardi-Goutieres","Bradyopsia","Meningioma","Niemann","Rett","Butterfly","Leiomyomatosis","Hypokalemic","Megaloblastic","Adrenomyeloneuropathy","Alzheimer","Hemophagocytic","Rubenstein-Taybi","Microcephaly","Ventricular","Mucopolysaccharidosis","Ossification","Lipoma","Acyl-CoA","Mental","Leigh","Apolipoprotein","UV","Ovarioleukodystrophy","Bare","Dejerine-Sottas","Hypoparathyroidism","Bartter","Retinal","Mandibuloacral","Venous","Nevus","Spondyloepiphyseal","von_Willebrand","Ichthyosis","Basal","C8","Acampomelic","Cardiomyopathy","Maturity-onset","DNA","Holoprosencephaly","Mycobacterial","Persistent","Severe","Fraser","Cataract","Aortic","Foveomacular","Deafness","Marfan","Complex","Krabbe","Erythrocytosis","Gastrointestinal","Spherocytosis","Fundus","Dermatitis","Polycythemia","Rhabdomyosarcoma","Parathyroid","Memory","Hematuria","Alport","GM2-gangliosidosis","Goiter","Brain","Neural","Mismatch","Cirrhosis","Budd-Chiari","Metaphyseal","Crouzon","Lipodystrophy","Paget","Lymphoma","Anemia","Gastric","Macrothrombocytopenia","Cornelia","Alagille","Major","Craniosynostosis","Osteosarcoma","Neuroblastoma","Glioblastoma","Chondrosarcoma","Lissencephaly","Sleep","Spinocerebellar","Malignant","Encephalopathy","Maple"]
+navlakha_phenotypes = [ "navlakha_" + "_".join(p.split()) for p in navlakha_phenotypes ]
+
 scoring_methods = ["nd", "nz", "ns", "ff", "nr", "nw", "nl", "nx", "nh", "n1", "nb"]
 
 
 def main():
-    MODE = "analysis" # prepare, score, analyze, compare, summary
+    MODE = "analyze" # prepare, score, analyze, compare, summary
     ignore_experiment_failures = False
     delay_experiment = True
     tex_format = True #False 
     functional_enrichment = False
-    user_friendly_id = "biana_no_tap-all_seed20below" #"biana_no_tap-chen" #"omim_alzheimer-diabetes" #"all_vs_all" # a.k.a. emre friendly id for compare and summary
-    summary_seed_cutoff = 20 #None
+    user_friendly_id = "test" #"biana_no_tap-chen" #"omim_alzheimer-diabetes" #"all_vs_all" # a.k.a. emre friendly id for compare and summary
+    summary_seed_cutoff = None #20 #None
 
     ppis = []
-    ppis += ["biana_no_tap_no_reliability"]
+    #ppis += ["biana_no_tap_no_reliability"]
     #ppis += ["goh", "entrez", "biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
     #ppis += ["biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
     #ppis += ["goh"]
     #ppis += ["biana_no_tap_relevance"]
+    #ppis += ["david"]
     #ppis += ["javi"] #["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
     #ppis = ["ori_coexpression_1e-2", "ori_network", "ori_coexpression", "ori_coexpression_colocalization", "ori_colocalization", "ori_coexpression_colocalization_1e-2"]
     #ppis += ["ori_no_tap_coexpression_1e-2", "ori_no_tap_network", "ori_no_tap_coexpression", "ori_no_tap_coexpression_colocalization", "ori_no_tap_colocalization", "ori_no_tap_coexpression_colocalization_1e-2"]
@@ -83,18 +87,19 @@ def main():
 
     phenotypes = []
     #phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes 
-    phenotypes += omim_phenotypes 
+    #phenotypes += omim_phenotypes 
     #phenotypes += chen_phenotypes 
     #phenotypes += ["omim_prostate_cancer"]
     #phenotypes += ["omim_alzheimer"] 
     #phenotypes += ["omim_diabetes"]
+    #phenotypes += ["apoptosis_joan"]
     #phenotypes += ["custom"] #["aneurysm"] #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
 
     scoring_parameters = []
-    scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
+    #scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
     #scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
     #scoring_parameters += [("nd", 1, 1)]
-    scoring_parameters += [("ns", 3, 2)]
+    #scoring_parameters += [("ns", 3, 2)]
     #scoring_parameters += [("nw",1, 1)]
     #scoring_parameters += [("nx", 1, 1)]
     #scoring_parameters += [("ns", 2, 2), ("ns", 2, 3), ("ns", 2, 4), ("ns", 3, 3)]
@@ -369,6 +374,8 @@ def decide_interaction_data(PPI):
 	network_file_identifier_type = "user entity id"
 	network_file = network_dir + "human_network.sif"
 	node_description_file = network_dir + "human_nodes.tsv"
+	network_file_filtered = network_file
+	#network_file_filtered = network_file[:-4] + "_degree_filtered.sif" # Using only the largest strongly connected component
 	#if PPI == "david_CpOGU":
 	    #association_scores_file = association_dir + "alzheimer_CpOGU_seed.list"
 	    #node_file = network_dir + "alzheimer_CpOGU_seed.list"
@@ -393,7 +400,6 @@ def decide_interaction_data(PPI):
 	    #network_file = network_dir + "alzheimer_RpOIN_network.sif"
 	    #node_description_file = network_dir + "alzheimer_RpOIN_network_all.tab"
 	    #network_file_filtered = network_file
-	network_file_filtered = network_file[:-4] + "_degree_filtered.sif" # Using only the largest strongly connected component
     elif PPI.startswith("piana_joan"):
 	network_dir = data_dir + "apoptosis_joan" + os.sep
 	node_description_file = None #biana_node_file_prefix + ".tsv"
