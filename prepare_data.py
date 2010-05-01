@@ -42,22 +42,22 @@ def get_nodes_from_nodes_file(node_scores_file):
 def get_edge_to_score_from_sif_attribute_file(interaction_relevance_file):
     return network_utilities.get_edge_values_from_sif_attribute_file(file_name = interaction_relevance_file, store_edge_type = False)
 
-def generate_cross_validation_edge_score_as_node_score_files(edges, seed_to_score, edge_scores_file, xval = 5, default_score = 0):
+def generate_cross_validation_edge_score_as_node_score_files(edges, seed_to_score, edge_scores_file, xval = 5, default_score = 0, replicable = 123):
     seeds = seed_to_score.keys()
-    for k, training, test in k_fold_cross_validation(seeds, xval, randomize = True, replicable = True):
+    for k, training, test in k_fold_cross_validation(seeds, xval, randomize = True, replicable = replicable):
 	create_edge_scores_as_node_scores_file(edges = edges, node_to_score = seed_to_score, edge_scores_file = edge_scores_file+".%i"%k, ignored_nodes = test, default_score = default_score)
     return
 
 
-def generate_cross_validation_node_score_files(nodes, seed_to_score, node_scores_file, xval = 5, default_score = 0):
+def generate_cross_validation_node_score_files(nodes, seed_to_score, node_scores_file, xval = 5, default_score = 0, replicable = 123):
     seeds = seed_to_score.keys()
-    for k, training, test in k_fold_cross_validation(seeds, xval, randomize = True, replicable = True):
+    for k, training, test in k_fold_cross_validation(seeds, xval, randomize = True, replicable = replicable):
 	create_node_scores_file(nodes = nodes, node_to_score = seed_to_score, node_scores_file = node_scores_file+".%i"%k, ignored_nodes = test, default_score = default_score )
 	create_node_scores_file(nodes = test, node_to_score = seed_to_score, node_scores_file = node_scores_file+".%i.test"%k, ignored_nodes = None, default_score = default_score )
     return
 
 
-def k_fold_cross_validation(X, K, randomize = False, replicable = False):
+def k_fold_cross_validation(X, K, randomize = False, replicable = None):
     """
     By John Reid (code.activestate.com)
     Generates K (training, validation) pairs from the items in X.
@@ -68,14 +68,14 @@ def k_fold_cross_validation(X, K, randomize = False, replicable = False):
     If randomise is true, a copy of X is shuffled before partitioning,
     otherwise its order is preserved in training and validation.
 
-    If replicable is true, an internal number (123) is used to create the same random splits at each call
+    If replicable is not None, this number is used to create the same random splits at each call
     """
     #if randomize: from random import shuffle; X=list(X); shuffle(X)
     if randomize: 
 	from random import shuffle, seed
 	X=list(X)
-	if replicable: 
-	    seed(123)
+	if replicable is not None: 
+	    seed(replicable)
 	shuffle(X)
     for k in xrange(K):
 	training = [x for i, x in enumerate(X) if i % K != k]

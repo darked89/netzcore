@@ -27,7 +27,7 @@ N_SAMPLE_GRAPH = 100 # Number of random graphs to be generated
 N_X_VAL = None #5 #182 # Number of cross validation folds
 N_RANDOM_NEGATIVE_FOLDS = None #0 #None #10 # Number of non-seed scores to be averaged for negative score calculation, 
 			    # If 0 all non seeds are included as they are, If None all non seeds are included averaged to scale with the size of test seeds
-REPLICABLE = True #False # Assign a predefined seed in randomization for N_RANDOM_NEGATIVE_FOLD generation
+REPLICABLE = 9871354 #123 #None # Assign a predefined seed in randomization for initial test folds creation and N_RANDOM_NEGATIVE_FOLD generation
 
 # Directory of the project
 base_dir = ".."
@@ -70,8 +70,9 @@ def main():
     user_friendly_id = "biana_relevance-omim_alzheimer-nd-0.5" #biana_relevance-omim_2cancer_leukemia-ns" #"biana_no_tap-chen" #"omim_alzheimer-diabetes" #"all_vs_all" # a.k.a. emre friendly id for compare and summary
     summary_seed_cutoff = None #20
 
-    ppis = [] 
-    #ppis += ["goh", "entrez"]
+    ppis = []
+    #ppis += ["goh", "entrez", "biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
+    #ppis += ["biana_no_tap_no_reliability"]
     #ppis += ["biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
     #ppis += ["goh"]
     #ppis += ["entrez"]
@@ -83,9 +84,10 @@ def main():
     #ppis += ["ori_no_tap_coexpression_1e-2", "ori_no_tap_network", "ori_no_tap_coexpression", "ori_no_tap_coexpression_colocalization", "ori_no_tap_colocalization", "ori_no_tap_coexpression_colocalization_1e-2"]
     #ppi += ["goh_1e5", "biana_coexpression"]
 
-    phenotypes = [] 
+    phenotypes = []
     #phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes 
     #phenotypes += omim_phenotypes 
+    #phenotypes += chen_phenotypes 
     #phenotypes += ["omim_prostate_cancer"]
     #phenotypes += ["omim_breast_cancer", "omim_lung_cancer"]
     #phenotypes += ["omim_leukemia"]
@@ -1150,7 +1152,7 @@ def prepare_scoring_files(PPI, seed_scores_file, network_file_filtered, seed_to_
 	nodes = prepare_data.get_nodes_in_network(network_file = network_file_filtered)
 	seed_to_score = prepare_data.get_node_to_score_from_node_scores_file(seed_scores_file)
 	prepare_data.create_node_scores_file(nodes = nodes, node_to_score = seed_to_score, node_scores_file = node_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
-	prepare_data.generate_cross_validation_node_score_files(nodes = nodes, seed_to_score = seed_to_score, node_scores_file = node_scores_file, xval = N_X_VAL, default_score = DEFAULT_NON_SEED_SCORE)
+	prepare_data.generate_cross_validation_node_score_files(nodes = nodes, seed_to_score = seed_to_score, node_scores_file = node_scores_file, xval = N_X_VAL, default_score = DEFAULT_NON_SEED_SCORE, replicable = REPLICABLE)
 
     # Create node id to genesymbol mapping
     if association_scores_file_identifier_type is not None and not os.path.exists(node_mapping_file+"."+association_scores_file_identifier_type):
@@ -1190,7 +1192,7 @@ def prepare_scoring_files(PPI, seed_scores_file, network_file_filtered, seed_to_
 	    edges = prepare_data.get_edges_in_network(network_file = network_file_filtered)
 	seed_to_score = prepare_data.get_node_to_score_from_node_scores_file(seed_scores_file)
 	prepare_data.create_edge_scores_as_node_scores_file(edges = edges, node_to_score = seed_to_score, edge_scores_file = edge_scores_as_node_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
-	prepare_data.generate_cross_validation_edge_score_as_node_score_files(edges = edges, seed_to_score = seed_to_score, edge_scores_file = edge_scores_as_node_scores_file, xval = N_X_VAL, default_score = DEFAULT_NON_SEED_SCORE)
+	prepare_data.generate_cross_validation_edge_score_as_node_score_files(edges = edges, seed_to_score = seed_to_score, edge_scores_file = edge_scores_as_node_scores_file, xval = N_X_VAL, default_score = DEFAULT_NON_SEED_SCORE, replicable = REPLICABLE)
     # Create random network files
     if not os.path.exists(sampled_file_prefix + ".sif.1"): 
 	print "Creating sampled networks"

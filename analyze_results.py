@@ -319,7 +319,7 @@ def create_ROCR_files(list_node_scores_and_labels, file_predictions, file_labels
     return
 
 
-def get_validation_node_scores_and_labels(file_result, file_seed_test_scores, file_node_scores, n_random_negative_folds = None, default_score = 0, replicable = True):
+def get_validation_node_scores_and_labels(file_result, file_seed_test_scores, file_node_scores, n_random_negative_folds = None, default_score = 0, replicable = 123):
     """
 	Returns a list of scores and labels [ ([0-1], [01]) ] for validation
 	file_result: File to parse output scores 
@@ -349,15 +349,15 @@ def get_validation_node_scores_and_labels(file_result, file_seed_test_scores, fi
     return node_validation_data
 
 
-def generate_samples_from_list_without_replacement(elements, sample_size, n_folds = None, replicable = False):
+def generate_samples_from_list_without_replacement(elements, sample_size, n_folds = None, replicable = None):
     """
 	Iteratively returns (yields) n_folds sublists of elements with a size of sample_size 
 	n_folds: If None calculated to cover as much elements as possible
-	replicable: If True uses a pre-defined constant seed
+	replicable: If not None uses this replicable as the seed for random
     """
     from random import shuffle, seed
-    if replicable:
-	seed(123)
+    if replicable is not None:
+	seed(replicable)
     shuffle(elements)
     if n_folds is None:
 	from math import ceil
@@ -380,7 +380,7 @@ def get_non_seeds_from_node_scores_file(file_node_scores, default_score = 0):
     return non_seeds
 
 
-def calculate_performance_metric_counts(file_result, file_seed_test_scores, file_node_scores, score_threshold, n_random_negative_folds = None, default_score = 0, replicable=True):
+def calculate_performance_metric_counts(file_result, file_seed_test_scores, file_node_scores, score_threshold, n_random_negative_folds = None, default_score = 0, replicable=123):
     """
 	Calculate and return TP, FP, TN, FN (FP and TN based on random selected non-seed nodes)
 	file_result: output scores file
