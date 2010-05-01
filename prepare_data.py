@@ -8,6 +8,15 @@ from biana.utilities import biana_output_converter
 from biana.utilities import TsvReader
 from biana.utilities import graph_utilities as network_utilities
 
+def get_number_of_mapped_seeds(filename):
+    f = open(filename)
+    n_seed = None
+    for line in f.readlines():
+	if line.startswith("Covered gene products (seed nodes):"):
+	    n_seed = int(line.split(":")[1].split()[0])
+    f.close()
+    return n_seed
+
 
 def get_nodes_in_network(network_file):
     g = network_utilities.create_network_from_sif_file(network_file)

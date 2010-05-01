@@ -195,7 +195,10 @@ def check_functional_enrichment(subset_gene_ids, gene_ids, id_type, output_metho
 	    if isinstance(row[i], str) and row[i].startswith("<"):
 		#print row[i]
 		val = float(row[i].lstrip("<"))
-		row[i] = "<%.5f" % val
+		if tex_format:
+		    row[i] = "$<$%.5f" % val
+		else:
+		    row[i] = "<%.5f" % val
 	    else:
 		row[i] = "%.5f" % row[i]
 	if tex_format:

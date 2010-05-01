@@ -18,13 +18,13 @@ only_print_command = False
 #use_cluster = True
 use_cluster = False
 
-DEFAULT_TOP_SCORING_PERCENTAGE = 5 #5 #10 #! At the time of analysis it was 10
+DEFAULT_TOP_SCORING_PERCENTAGE = 0.5 #1 #5 #10 #! At the time of analysis it was 10
 N_LINKER_THRESHOLD = 2
 DEFAULT_SEED_SCORE = 1.0 # Default score for seed nodes, used when no score given in assoc file
 DEFAULT_NON_SEED_SCORE = 0.01 # Default score for non-seed nodes
 ALLOWED_MAX_DEGREE = 100000 #175 #90 # Max degree allowed in the graph filtering
 N_SAMPLE_GRAPH = 100 # Number of random graphs to be generated
-N_X_VAL = 5 #182 # Number of cross validation folds
+N_X_VAL = None #5 #182 # Number of cross validation folds
 N_RANDOM_NEGATIVE_FOLDS = None #0 #None #10 # Number of non-seed scores to be averaged for negative score calculation, 
 			    # If 0 all non seeds are included as they are, If None all non seeds are included averaged to scale with the size of test seeds
 REPLICABLE = True #False # Assign a predefined seed in randomization for N_RANDOM_NEGATIVE_FOLD generation
@@ -62,37 +62,42 @@ scoring_methods = ["nd", "nz", "ns", "ff", "nr", "nw", "nl", "nx", "nh", "n1", "
 
 
 def main():
-    MODE = "summary" # prepare, score, analyze, compare, summary
+    MODE = "analyze" # prepare, score, analyze, compare, summary
     ignore_experiment_failures = False
     delay_experiment = True
     tex_format = True #False 
-    functional_enrichment = False
-    user_friendly_id = "biana_no_tap-all_seed20below" #"biana_no_tap-chen" #"omim_alzheimer-diabetes" #"all_vs_all" # a.k.a. emre friendly id for compare and summary
-    summary_seed_cutoff = 20 #None
+    functional_enrichment = True #False
+    user_friendly_id = "biana_relevance-omim_alzheimer-nd-0.5" #biana_relevance-omim_2cancer_leukemia-ns" #"biana_no_tap-chen" #"omim_alzheimer-diabetes" #"all_vs_all" # a.k.a. emre friendly id for compare and summary
+    summary_seed_cutoff = None #20
 
     ppis = [] 
     #ppis += ["goh", "entrez"]
     #ppis += ["biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
     #ppis += ["goh"]
-    ppis += ["biana_no_tap_no_reliability"] 
+    #ppis += ["entrez"]
+    #ppis += ["biana_no_tap_no_reliability"] 
     #ppis += ["biana_no_tap_relevance"]
+    #ppis += ["biana_no_reliability"]
     #ppis += ["javi"] #["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
     #ppis = ["ori_coexpression_1e-2", "ori_network", "ori_coexpression", "ori_coexpression_colocalization", "ori_colocalization", "ori_coexpression_colocalization_1e-2"]
     #ppis += ["ori_no_tap_coexpression_1e-2", "ori_no_tap_network", "ori_no_tap_coexpression", "ori_no_tap_coexpression_colocalization", "ori_no_tap_colocalization", "ori_no_tap_coexpression_colocalization_1e-2"]
     #ppi += ["goh_1e5", "biana_coexpression"]
 
     phenotypes = [] 
-    phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes 
-    #phenotypes += chen_phenotypes 
+    #phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes 
+    #phenotypes += omim_phenotypes 
     #phenotypes += ["omim_prostate_cancer"]
+    #phenotypes += ["omim_breast_cancer", "omim_lung_cancer"]
+    #phenotypes += ["omim_leukemia"]
     #phenotypes += ["omim_alzheimer"] 
+    #phenotypes += ["omim_insulin"] 
     #phenotypes += ["omim_diabetes"]
     #phenotypes += ["custom"] #["aneurysm"] #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
 
     scoring_parameters = []
-    scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
-    scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
-    scoring_parameters += [("nd", 1, 1)]
+    #scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
+    #scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
+    #scoring_parameters += [("nd", 1, 1)]
     #scoring_parameters += [("ns", 3, 2)]
     #scoring_parameters += [("nw",1, 1)]
     #scoring_parameters += [("nx", 1, 1)]
@@ -217,6 +222,10 @@ def decide_association_data(ASSOCIATION):
 	association_dir = data_dir + "chen_disease_data" + os.sep
 	association_scores_file = association_dir + ASSOCIATION + ".txt"
 	association_scores_file_identifier_type = "genesymbol"
+    elif ASSOCIATION.startswith("navlakha_"):
+	association_dir = data_dir + "navlakha" + os.sep
+	association_scores_file = association_dir + ASSOCIATION + ".txt"
+	association_scores_file_identifier_type = "genesymbol"
     else:
 	raise ValueError("Unrecognized association!")
     return (association_scores_file, association_scores_file_identifier_type, association_scores_validation_file)
@@ -234,6 +243,7 @@ def decide_interaction_data(PPI):
     biana_network_file_filtered_by_method = None
     biana_network_file_filtered_by_reliability = None
     node_file = None
+    node_description_file = None 
     # BIANA ppi
     if PPI.startswith("biana"):
 	node_description_file = biana_node_file_prefix + ".tsv"
@@ -300,6 +310,18 @@ def decide_interaction_data(PPI):
 	node_description_file = gene_info_file 
 	network_file_identifier_type = "geneid"
 	network_file = data_dir + "entrez_human_ppi" + os.sep + "ppi.sif"
+	network_file_filtered = network_file[:-4] + "_degree_filtered.sif"
+    # Navlakha HPRD ppi
+    elif PPI == "hprd":
+	node_description_file = None 
+	network_file_identifier_type = "genesymbol"
+	network_file = data_dir + "navlakha" + os.sep + "hprd.sif"
+	network_file_filtered = network_file[:-4] + "_degree_filtered.sif"
+    # Navlakha OPHID ppi
+    elif PPI == "ophid":
+	node_description_file = None 
+	network_file_identifier_type = "genesymbol"
+	network_file = data_dir + "navlakha" + os.sep + "ophid.sif"
 	network_file_filtered = network_file[:-4] + "_degree_filtered.sif"
     # Rhodes ppi
     elif PPI == "rhodes":
@@ -577,12 +599,17 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, f
     # Scoring commands
     score_xval_commands, score_commands = decide_score_commands(node_scores_file, edge_scores_file, output_scores_file, edge_scores_as_node_scores_file, N_REPETITION, N_ITERATION, sampling_dir, score_log_file)
 
+    global N_X_VAL
     # Conduct experiment
     if MODE == "prepare":
 	prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability, network_file, network_file_filtered, input_log_file, node_file, seed_scores_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, node_mapping_file, input_dir, node_scores_file, edge_scores_file, interaction_relevance_file, interaction_relevance_file2, edge_scores_as_node_scores_file, sampled_file_prefix)
     elif MODE == "score":
+	if N_X_VAL is None:
+	    N_X_VAL = prepare_data.get_number_of_mapped_seeds( input_log_file)
 	score(SCORING, score_commands, score_xval_commands, output_scores_file, log_file, job_file)
     elif MODE == "analyze":
+	if N_X_VAL is None:
+	    N_X_VAL = prepare_data.get_number_of_mapped_seeds( input_log_file)
 	analyze(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, specie, network_file_filtered, functional_enrichment)
     elif MODE == "all":
 	prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability, network_file, network_file_filtered, input_log_file, node_file, seed_scores_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, node_mapping_file, input_dir, node_scores_file, edge_scores_file, interaction_relevance_file, interaction_relevance_file2, edge_scores_as_node_scores_file, sampled_file_prefix)
@@ -644,24 +671,30 @@ def compare_experiments(experiments, tex_format=False, functional_enrichment=Fal
     #out_file = sys_stdout
     #out_file = open(compare_dir + "-".join(map(lambda x: "_".join(x), experiments)) + ".txt", "w")
     out_file = open(compare_dir + "comparison.txt", "w")
+    out_file_tex = open(compare_dir + "comparison.tex", "w")
     if "-" in top_scoring_ids:
 	top_scoring_ids.remove("-")
     if "-" in all_scoring_ids:
 	all_scoring_ids.remove("-")
     for id in top_scoring_ids: 
-	if tex_format:
+	#if tex_format:
 	    #print id, "\\\\"
-	    out_file.write("%s\\\\\n" % id)
-	else:
+	out_file_tex.write("%s\\\\\n" % id)
+	#else:
 	    #print id
-	    out_file.write("%s\n" % id)
-    print 
+	out_file.write("%s\n" % id)
+    out_file_tex.write("\n")
     if functional_enrichment:
 	#out_file.write("\nFUNCTIONAL ENRICHMENT OF COMMON HIGH SCORING NODES (AT %d%% LEVEL) IN GIVEN EXPERIMENTS\n" % DEFAULT_TOP_SCORING_PERCENTAGE)
-	out_file.write("\nFUNCTIONAL ENRICHMENT OF COMMON HIGH SCORING NODES IN GIVEN EXPERIMENTS\n")
-	out_file.write("%s common gene names/ids among %s\n\n" % (len(top_scoring_ids), len(all_scoring_ids)))
-	analyze_results.check_functional_enrichment(list(top_scoring_ids), list(all_scoring_ids), prev_id_type, out_file.write, specie = species.pop(), mode = "unordered", tex_format=tex_format)
+	if tex_format:
+	    file = out_file_tex
+	else:
+	    file = out_file
+	file.write("\nFUNCTIONAL ENRICHMENT OF COMMON HIGH SCORING NODES IN GIVEN EXPERIMENTS\n")
+	file.write("%s common gene names/ids among %s\n\n" % (len(top_scoring_ids), len(all_scoring_ids)))
+	analyze_results.check_functional_enrichment(list(top_scoring_ids), list(all_scoring_ids), prev_id_type, file.write, specie = species.pop(), mode = "unordered", tex_format=tex_format)
     out_file.close()
+    out_file_tex.close()
     return
 
 
@@ -677,12 +710,10 @@ def sum_up_experiments(ppis, phenotypes, type="auc", tex_format=False, user_frie
 		if phenotype in phenotypes_to_skip:
 		    continue
 		(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association, summary_dir, compare_dir) = decide_directory_hierarchy(ppi, phenotype, "nx", 1, 1, N_LINKER_THRESHOLD)
-		f = open(input_dir + "README")
-		n_seed = None
-		for line in f.readlines():
-		    if line.startswith("Covered gene products (seed nodes):"):
-			n_seed = int(line.split(":")[1].split()[0])
-		f.close()
+		(seed_scores_file, node_scores_file, node_mapping_file, edge_scores_file, edge_scores_as_node_scores_file, output_scores_file, \
+		score_log_file, sampled_file_prefix, log_file, input_log_file, job_file, output_log_file, predictions_file, \
+		labels_file, r_script_file, tex_script_file) = decide_scoring_and_analysis_files(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association)
+		n_seed = prepare_data.get_number_of_mapped_seeds(input_log_file)
 		#if n_seed < seed_cutoff: 
 		if n_seed >= seed_cutoff: 
 		    phenotypes_to_skip.add(phenotype)
@@ -846,19 +877,23 @@ def prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix,
 
     seed_to_score = None
     # Get node to association mapping
-    if PPI.startswith("ori"):
-	os.system("awk '{ if($2 == 1) print $1, $2}' %s > %s" % (node_file, seed_scores_file))
-    #elif PPI.startswith("javi"):
-    #	os.system("awk '{ print $1, 1}' %s > %s" % (node_file, seed_scores_file))
-    elif PPI.startswith("piana_joan") or PPI == "javi": # or PPI.startswith("david"):
-	#os.system("awk '{print $1, 1}' %s > %s" % (node_file, seed_scores_file))
-    	all_nodes = set(prepare_data.get_nodes_in_network(network_file_filtered))
-    	seed_nodes = prepare_data.get_nodes_from_nodes_file(node_file)
-    	seed_to_score = dict([(node, 1) for node in seed_nodes])
-    	prepare_data.create_node_scores_file(nodes = (all_nodes & seed_nodes), node_to_score = seed_to_score, node_scores_file = seed_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
+    if node_description_file is None:
+	if PPI.startswith("ori"):
+	    os.system("awk '{ if($2 == 1) print $1, $2}' %s > %s" % (node_file, seed_scores_file))
+	#elif PPI.startswith("piana_joan") or PPI == "javi": # or PPI.startswith("david"):
+	else: 
+	    #os.system("awk '{print $1, 1}' %s > %s" % (node_file, seed_scores_file))
+	    all_nodes = set(prepare_data.get_nodes_in_network(network_file_filtered))
+	    seed_nodes = prepare_data.get_nodes_from_nodes_file(node_file)
+	    seed_to_score = dict([(node, 1) for node in seed_nodes])
+	    prepare_data.create_node_scores_file(nodes = (all_nodes & seed_nodes), node_to_score = seed_to_score, node_scores_file = seed_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
 
     if not os.path.exists(seed_scores_file): 
 	seed_to_score = prepare_data.get_node_association_score_mapping(network_file = network_file_filtered, network_file_identifier_type = network_file_identifier_type, node_description_file = node_description_file, association_scores_file = association_scores_file, association_scores_file_identifier_type = association_scores_file_identifier_type, log_file = input_log_file, default_seed_score=DEFAULT_SEED_SCORE)
+
+    global N_X_VAL
+    if N_X_VAL is None:
+	N_X_VAL = prepare_data.get_number_of_mapped_seeds( input_log_file)
 
     # Create initial data analysis file
     if not os.path.exists(input_dir + "analyze_network.r") and seed_to_score is not None:
@@ -1120,17 +1155,16 @@ def prepare_scoring_files(PPI, seed_scores_file, network_file_filtered, seed_to_
     # Create node id to genesymbol mapping
     if association_scores_file_identifier_type is not None and not os.path.exists(node_mapping_file+"."+association_scores_file_identifier_type):
 	print "Creating node mapping file", node_mapping_file+"."+association_scores_file_identifier_type
-	if PPI.startswith("biana"):
-	    if association_scores_file_identifier_type == "genesymbol":
-		#prepare_data.convert_file_using_new_id_mapping(node_scores_file, node_description_file, network_file_identifier_type, "geneid", node_mapping_file+".geneid", id_to_id_mapping=True)
-		#prepare_data.convert_file_using_new_id_mapping(node_mapping_file+".geneid", gene_info_file, "geneid", association_scores_file_identifier_type, node_mapping_file+"."+association_scores_file_identifier_type, id_to_id_mapping=True)
-		prepare_data.convert_file_using_new_id_mapping(node_scores_file, node_description_file, network_file_identifier_type, association_scores_file_identifier_type, node_mapping_file+"."+association_scores_file_identifier_type, id_to_id_mapping=True, intermediate_mapping_file=gene_info_file, intermediate_mapping_id_type="geneid")
+	if node_description_file is not None:
+	    if PPI.startswith("biana"):
+		if association_scores_file_identifier_type == "genesymbol":
+		    #prepare_data.convert_file_using_new_id_mapping(node_scores_file, node_description_file, network_file_identifier_type, "geneid", node_mapping_file+".geneid", id_to_id_mapping=True)
+		    #prepare_data.convert_file_using_new_id_mapping(node_mapping_file+".geneid", gene_info_file, "geneid", association_scores_file_identifier_type, node_mapping_file+"."+association_scores_file_identifier_type, id_to_id_mapping=True)
+		    prepare_data.convert_file_using_new_id_mapping(node_scores_file, node_description_file, network_file_identifier_type, association_scores_file_identifier_type, node_mapping_file+"."+association_scores_file_identifier_type, id_to_id_mapping=True, intermediate_mapping_file=gene_info_file, intermediate_mapping_id_type="geneid")
+		else:
+		    prepare_data.convert_file_using_new_id_mapping(node_scores_file, node_description_file, network_file_identifier_type, association_scores_file_identifier_type, node_mapping_file+"."+association_scores_file_identifier_type, id_to_id_mapping=True)
 	    else:
 		prepare_data.convert_file_using_new_id_mapping(node_scores_file, node_description_file, network_file_identifier_type, association_scores_file_identifier_type, node_mapping_file+"."+association_scores_file_identifier_type, id_to_id_mapping=True)
-	elif PPI.startswith("ori") or PPI == "javi" or PPI.startswith("david") or PPI.startswith("piana_joan"):
-	    pass
-	else:
-	    prepare_data.convert_file_using_new_id_mapping(node_scores_file, node_description_file, network_file_identifier_type, association_scores_file_identifier_type, node_mapping_file+"."+association_scores_file_identifier_type, id_to_id_mapping=True)
 
     # Create edge scores (original + xval) files as well as node scores as edge scores files
     edges = None
