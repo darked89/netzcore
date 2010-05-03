@@ -15,8 +15,8 @@ from sys import stdout as sys_stdout
 
 #only_print_command = True
 only_print_command = False
-#use_cluster = True
-use_cluster = False
+use_cluster = True
+#use_cluster = False
 
 DEFAULT_TOP_SCORING_PERCENTAGE = 0.5 #1 #5 #10 #! At the time of analysis it was 10
 N_LINKER_THRESHOLD = 2
@@ -65,7 +65,7 @@ scoring_methods = ["nd", "nz", "ns", "ff", "nr", "nw", "nl", "nx", "nh", "n1", "
 
 
 def main():
-    MODE = "analyze" # prepare, score, analyze, compare, summary
+    MODE = "score" # prepare, score, analyze, compare, summary
     ignore_experiment_failures = False
     delay_experiment = True
     tex_format = True #False 
