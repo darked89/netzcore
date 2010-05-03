@@ -5,6 +5,8 @@ TODO:
 
 - check avg seed connectivity & ratio of nieghboring seeds vs AUC & PPV
 
+- find good working examples/use cases
+
 - adding edge weight in nd and nr
 
 - rw implementation
