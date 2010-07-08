@@ -2,6 +2,7 @@
 TODO:
 
 - Comparison with navlaka2010
+awk '$3 < 0.41 && match($1, "nz") { print }' results.dat | sort -k 3
 
 - check avg seed connectivity & ratio of nieghboring seeds vs AUC & PPV
 

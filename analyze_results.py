@@ -319,7 +319,7 @@ def create_ROCR_files(list_node_scores_and_labels, file_predictions, file_labels
     return
 
 
-def get_validation_node_scores_and_labels(file_result, file_seed_test_scores, file_node_scores, n_random_negative_folds = None, default_score = 0, replicable = 123):
+def get_validation_node_scores_and_labels(file_result, file_seed_test_scores, file_node_scores, n_random_negative_folds = None, default_score = 0, replicable = 123, candidates_file = None):
     """
 	Returns a list of scores and labels [ ([0-1], [01]) ] for validation
 	file_result: File to parse output scores 
@@ -330,13 +330,14 @@ def get_validation_node_scores_and_labels(file_result, file_seed_test_scores, fi
 				 If 0 all negative data is used
 	default_score: All nodes that have a higher score than this score in file_node_scores will be considered as seeds
     """
-    setNodeResult, setDummy, dictNodeResult, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_result, store_edge_type = False)
-    setNodeTest, setDummy, dictNodeTest, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_seed_test_scores, store_edge_type = False)
-    non_seeds = get_non_seeds_from_node_scores_file(file_node_scores, default_score = default_score)
+    dictNodeResult, setNodeTest, non_seeds = get_values_from_files_for_performance_metric_counts(file_result, file_seed_test_scores, file_node_scores, default_score, candidates_file=None)
+    setCandidates, setDummy, dictCandidates, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = candidates_file, store_edge_type = False)
     node_validation_data = [ (dictNodeResult[id], 1) for id in setNodeTest ]
+    dictNodeResult = dictNodeResult.fromkeys(setCandidates)
 
     if n_random_negative_folds == 0:
-	node_validation_data.extend([(dictNodeResult[id], 0) for id in non_seeds ])
+	#node_validation_data.extend([(dictNodeResult[id], 0) for id in non_seeds ])
+	node_validation_data.extend([(dictNodeResult[id], 0) for id in set(dictNodeResult.keys()) & set(non_seeds) ])
     else:
 	n_actual_folds = 0
 	negative_sample_size = len(setNodeTest)
@@ -380,22 +381,7 @@ def get_non_seeds_from_node_scores_file(file_node_scores, default_score = 0):
     return non_seeds
 
 
-def calculate_performance_metric_counts(file_result, file_seed_test_scores, file_node_scores, score_threshold, n_random_negative_folds = None, default_score = 0, replicable=123):
-    """
-	Calculate and return TP, FP, TN, FN (FP and TN based on random selected non-seed nodes)
-	file_result: output scores file
-	file_seed_test_scores: seed nodes separated for test
-	file_node_scores: initial node/seed scores
-	score_threshold: threshold for considering data as P, N
-	n_random_negative_folds: Number of negative data selection folds (each fold contain same number of test nodes) to be averaged for FP and TN calculation
-				 FP and TN are not necesserily integers when n_random_negative_folds > 1
-				 If None calculated to cover as much as non-seed scores as possible
-				 If 0 all negative data is used
-    """
-    setNodeResult, setDummy, dictNodeResult, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_result, store_edge_type = False)
-    setNodeTest, setDummy, dictNodeTest, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_seed_test_scores, store_edge_type = False)
-    non_seeds = get_non_seeds_from_node_scores_file(file_node_scores, default_score = default_score)
-
+def calculate_performance_metric_counts(dictNodeResult, setNodeTest, non_seeds, score_threshold, n_random_negative_folds = None, replicable=123):
     (nTP, nFP, nFN, nTN) = (0.0, 0.0, 0.0, 0.0)
     for id, score in dictNodeResult.iteritems():
         if id in setNodeTest:
@@ -427,8 +413,41 @@ def calculate_performance_metric_counts(file_result, file_seed_test_scores, file
     return (nTP, nFP, nFN, nTN)
 
 
+def calculate_performance_metric_counts_using_files(file_result, file_seed_test_scores, file_node_scores, score_threshold, n_random_negative_folds = None, default_score = 0, replicable=123, candidates_file = None):
+    """
+	Calculate and return TP, FP, TN, FN (FP and TN based on random selected non-seed nodes)
+	file_result: output scores file
+	file_seed_test_scores: seed nodes separated for test
+	file_node_scores: initial node/seed scores
+	score_threshold: threshold for considering data as P, N
+	n_random_negative_folds: Number of negative data selection folds (each fold contain same number of test nodes) to be averaged for FP and TN calculation
+				 FP and TN are not necesserily integers when n_random_negative_folds > 1
+				 If None calculated to cover as much as non-seed scores as possible
+				 If 0 all negative data is used
+    """
+    dictNodeResult, setNodeTest, non_seeds = get_values_from_files_for_performance_metric_counts(file_result, file_seed_test_scores, file_node_scores, default_score, candidates_file)
+    return calculate_performance_metric_counts(dictNodeResult, setNodeTest, non_seeds, score_threshold, n_random_negative_folds, replicable)
+
+
+def get_values_from_files_for_performance_metric_counts(file_result, file_seed_test_scores, file_node_scores, default_score, candidates_file = None):
+    setNodeResult, setDummy, dictNodeResult, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_result, store_edge_type = False)
+    setNodeTest, setDummy, dictNodeTest, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_seed_test_scores, store_edge_type = False)
+    non_seeds = get_non_seeds_from_node_scores_file(file_node_scores, default_score = default_score)
+    if candidates_file is not None:
+	setNode, setDummy, dictNode, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = candidates_file, store_edge_type = False)
+	#dictNodeResult = dictNodeResult.fromkeys(setNode)
+	nodes = dictNodeResult.keys()
+	for node in nodes:
+	    if node not in setNode:
+		del dictNodeResult[node]
+    return dictNodeResult, setNodeTest, non_seeds
+
+
 def calculatePerformance(nTP, nFP, nFN, nTN):
-    acc = (nTP + nTN) / (nTP + nFP + nTN + nFN)
+    try:
+	acc = (nTP + nTN) / (nTP + nFP + nTN + nFN)
+    except ZeroDivisionError:
+	acc = None
     try:
         sens = nTP / (nTP + nFN)
     except:

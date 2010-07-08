@@ -15,18 +15,19 @@ from sys import stdout as sys_stdout
 
 #only_print_command = True
 only_print_command = False
-use_cluster = True
-#use_cluster = False
+#use_cluster = True
+use_cluster = False
+leave_one_out_xval = False #True 
 
-DEFAULT_TOP_SCORING_PERCENTAGE = 0.5 #1 #5 #10 #! At the time of analysis it was 10
+DEFAULT_TOP_SCORING_PERCENTAGE = 10 #1 #5 #10 
 N_LINKER_THRESHOLD = 2
 DEFAULT_SEED_SCORE = 1.0 # Default score for seed nodes, used when no score given in assoc file
 DEFAULT_NON_SEED_SCORE = 0.01 # Default score for non-seed nodes
 ALLOWED_MAX_DEGREE = 100000 #175 #90 # Max degree allowed in the graph filtering
 N_SAMPLE_GRAPH = 100 # Number of random graphs to be generated
-N_X_VAL = None #5 #182 # Number of cross validation folds
+N_X_VAL = 5 #182 # Number of cross validation folds, readjusted if leave_one_out_xval is True
 N_SEED = None #Will be set during run
-N_RANDOM_NEGATIVE_FOLDS = None #0 #None #10 # Number of non-seed scores to be averaged for negative score calculation, 
+N_RANDOM_NEGATIVE_FOLDS = None #10 # Number of non-seed scores to be averaged for negative score calculation, 
 			    # If 0 all non seeds are included as they are, If None all non seeds are included averaged to scale with the size of test seeds
 REPLICABLE = 123 #63826 #9871354 #123 #None # Assign a predefined seed in randomization for initial test folds creation and N_RANDOM_NEGATIVE_FOLD generation
 
@@ -66,15 +67,28 @@ navlakha_phenotypes = [ "navlakha_" + p.replace(" ", "_").lower() for p in navla
 
 scoring_methods = ["nd", "nz", "ns", "ff", "nr", "nw", "nl", "nx", "nh", "n1", "nb"]
 
+THRESHOLDS = { "nr": [ 4e-6, 2e-5, 5e-5, 1e-4, 2e-4, 3e-4, 4e-4, 5e-4, 1e-3, 0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9 ],
+		"ff": [ 1e-3, 1e-2, 2e-2, 5e-2, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3 ], 
+		"nd": [ 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 0.9 ],  
+		"nz": [ 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.018, 0.02, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9 ],
+		"ns": [ 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.018, 0.02, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9 ] }
+
+THRESHOLDS = { "nr": [ j*10**-i for i in xrange(2,7) for j in xrange(1,10) ] + [ 0.05*i for i in xrange(1,21) ],
+		"ff": [ j*10**-i for i in xrange(2,5) for j in xrange(1,10) ] + [ 0.05*i for i in xrange(1,31) ], 
+		"nd": [ 0.01*i for i in xrange(1,101) ],  
+		"nz": [ 0.01*i for i in xrange(1,101) ],
+		"ns": [ 0.01*i for i in xrange(1,101) ] }
+
+
 
 def main():
-    MODE = "score" # prepare, score, analyze, compare, summary
+    MODE = "analyze" # prepare, score, analyze, compare, summary
     ignore_experiment_failures = False
     delay_experiment = True
     tex_format = True #False 
     functional_enrichment = False
     user_friendly_id = "test" #"biana_no_tap-chen" #"omim_alzheimer-diabetes" #"all_vs_all" # a.k.a. emre friendly id for compare and summary
-    summary_seed_cutoff = None #20 # Seed cutoff considered for inclusion of an experiment in sum_up_experiments
+    summary_seed_cutoff = 1 #20 # Seed cutoff considered for inclusion of an experiment in sum_up_experiments
 
     ppis = []
     ppis += ["hprd"] #, "ophid"]
@@ -93,6 +107,7 @@ def main():
     #ppi += ["goh_1e5", "biana_coexpression"]
 
     phenotypes = []
+    #phenotypes += ["navlakha_keratosis"] #["navlakha_abdominal"] 
     phenotypes += navlakha_phenotypes
     #phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes 
     #phenotypes += omim_phenotypes 
@@ -107,8 +122,8 @@ def main():
     #phenotypes += ["custom"] #["aneurysm"] #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
 
     scoring_parameters = []
-    #scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
-    #scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
+    scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
+    scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
     scoring_parameters += [("nd", 1, 1)]
     #scoring_parameters += [("ns", 3, 2)]
     #scoring_parameters += [("nw",1, 1)]
@@ -129,7 +144,7 @@ def main():
 		experiments.append((ppi, phenotype, parameters[0], parameters[1], parameters[2]))
 
     if MODE == "compare":
-	compare_experiments(experiments, tex_format, functional_enrichment, user_friendly_id)
+	compare_experiments(experiments, tex_format, functional_enrichment, user_friendly_id, summary_seed_cutoff, analysis_type = "common") # "user")
     elif MODE == "summary":
 	sum_up_experiments(ppis, phenotypes, "auc", tex_format, user_friendly_id, summary_seed_cutoff)
 	sum_up_experiments(ppis, phenotypes, "cov", tex_format, user_friendly_id, summary_seed_cutoff)
@@ -153,8 +168,8 @@ def main():
 		    time.sleep(delay)
 		    experiment_count = get_number_of_jobs_in_queues()
     
-    if MODE == "prepare" and use_cluster == False:
-	os.system("scp -r ../data/input gaudi:netzcore/data/")
+    #if MODE == "prepare" and use_cluster == False:
+    #	os.system("scp -r ../data/input gaudi:netzcore/data/")
     return
 
 # Scoring related parameters 
@@ -196,6 +211,7 @@ def decide_association_data(ASSOCIATION):
 	Decide disease association files (Association data to be used)
     """
     association_scores_validation_file = None
+    candidates_file = None
     if ASSOCIATION == "custom":
 	association_dir = None 
 	association_scores_file = None
@@ -237,12 +253,13 @@ def decide_association_data(ASSOCIATION):
 	association_scores_file = association_dir + ASSOCIATION + ".txt"
 	association_scores_file_identifier_type = "genesymbol"
     elif ASSOCIATION.startswith("navlakha_"):
-	association_dir = data_dir + "navlakha" + os.sep
-	association_scores_file = association_dir + ASSOCIATION + ".txt"
+	association_dir = data_dir + "navlakha" + os.sep 
+	association_scores_file = association_dir + "associations" + os.sep + ASSOCIATION + ".txt"
+	candidates_file = association_dir + "candidates" + os.sep + ASSOCIATION + ".txt"
 	association_scores_file_identifier_type = "genesymbol"
     else:
 	raise ValueError("Unrecognized association!")
-    return (association_scores_file, association_scores_file_identifier_type, association_scores_validation_file)
+    return (association_scores_file, association_scores_file_identifier_type, association_scores_validation_file, candidates_file)
 
 
 def decide_interaction_data(PPI, association_scores_file):
@@ -590,12 +607,11 @@ def decide_score_commands(node_scores_file, edge_scores_file, output_scores_file
     return score_xval_commands, score_commands
 
 
-#def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability, network_file, network_file_filtered, input_log_file, node_file, seed_scores_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, input_dir, node_scores_file, edge_scores_file, sampled_file_prefix, output_scores_file, log_file):
 def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, functional_enrichment):
 
     # Create experiment parameters
     # Disease association files (Association data to be used)
-    association_scores_file, association_scores_file_identifier_type, association_scores_validation_file = decide_association_data(ASSOCIATION)
+    association_scores_file, association_scores_file_identifier_type, association_scores_validation_file, candidates_file = decide_association_data(ASSOCIATION)
 
     # Interaction files (Interaction data to be used)
     (interaction_relevance_file, interaction_relevance_file2, biana_network_file_filtered_by_method, \
@@ -621,27 +637,25 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, f
     if MODE == "prepare":
 	prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability, network_file, network_file_filtered, input_log_file, node_file, seed_scores_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, node_mapping_file, input_dir, node_scores_file, edge_scores_file, interaction_relevance_file, interaction_relevance_file2, edge_scores_as_node_scores_file, sampled_file_prefix)
     elif MODE == "score":
-	if N_SEED is None:
-	    N_SEED = prepare_data.get_number_of_mapped_seeds(input_log_file)
-	if N_X_VAL is None:
+	N_SEED = prepare_data.get_number_of_mapped_seeds(input_log_file)
+	if leave_one_out_xval:
 	    N_X_VAL = N_SEED
 	score(SCORING, score_commands, score_xval_commands, output_scores_file, log_file, job_file)
     elif MODE == "analyze":
-	if N_SEED is None:
-	    N_SEED = prepare_data.get_number_of_mapped_seeds(input_log_file)
-	if N_X_VAL is None:
+	N_SEED = prepare_data.get_number_of_mapped_seeds(input_log_file)
+	if leave_one_out_xval:
 	    N_X_VAL = N_SEED
-	analyze(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, specie, network_file_filtered, functional_enrichment)
+	analyze(PPI, SCORING, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, specie, network_file_filtered, candidates_file, functional_enrichment)
     elif MODE == "all":
 	prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability, network_file, network_file_filtered, input_log_file, node_file, seed_scores_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, node_mapping_file, input_dir, node_scores_file, edge_scores_file, interaction_relevance_file, interaction_relevance_file2, edge_scores_as_node_scores_file, sampled_file_prefix)
 	score(SCORING, score_commands, score_xval_commands, output_scores_file, log_file, job_file)
-	analyze(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, specie, network_file_filtered, functional_enrichment)
+	analyze(PPI, SCORING, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, specie, network_file_filtered, candidates_file, functional_enrichment)
     else:
 	raise ValueError("Unrecognized mode!")
     return
 
 
-def compare_experiments(experiments, tex_format=False, functional_enrichment=False, user_friendly_id="test"):
+def compare_experiments(experiments, tex_format=False, functional_enrichment=False, user_friendly_id="test", seed_cutoff=None, analysis_type = "common"):
     """
 	Selects and checks functional annotation of common highest scoring nodes (mapping their genesymols) in different experiments
     """
@@ -649,10 +663,11 @@ def compare_experiments(experiments, tex_format=False, functional_enrichment=Fal
     all_scoring_ids = set()
     species = set()
     prev_id_type = None
+    scoring_to_values = {}
     for experiment in experiments:
 	PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION = experiment
 	# Disease association files (Association data to be used)
-	association_scores_file, association_scores_file_identifier_type, association_scores_validation_file = decide_association_data(ASSOCIATION)
+	association_scores_file, association_scores_file_identifier_type, association_scores_validation_file, candidates_file = decide_association_data(ASSOCIATION)
 	# Interaction files (Interaction data to be used)
 	(interaction_relevance_file, interaction_relevance_file2, biana_network_file_filtered_by_method, \
 	    biana_network_file_filtered_by_reliability, node_file, node_description_file, \
@@ -663,34 +678,66 @@ def compare_experiments(experiments, tex_format=False, functional_enrichment=Fal
 	(seed_scores_file, node_scores_file, node_mapping_file, edge_scores_file, edge_scores_as_node_scores_file, output_scores_file, \
 	score_log_file, sampled_file_prefix, log_file, input_log_file, job_file, output_log_file, predictions_file, \
 	labels_file, r_script_file, tex_script_file) = decide_scoring_and_analysis_files(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association)
-	# Get high scoring node ids
-	selected_ids, all_ids = analyze_results.get_top_scoring_node_ids_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_PERCENTAGE, association_scores_file_identifier_type, default_non_seed_score = DEFAULT_NON_SEED_SCORE, exclude_seeds = True)
-	#print len(selected_ids), len(all_ids)
-	if top_scoring_ids is None:
-	    top_scoring_ids = set(selected_ids)
+	if analysis_type == "common":
+	    # Get high scoring node ids
+	    selected_ids, all_ids = analyze_results.get_top_scoring_node_ids_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_PERCENTAGE, association_scores_file_identifier_type, default_non_seed_score = DEFAULT_NON_SEED_SCORE, exclude_seeds = True)
+	    #print len(selected_ids), len(all_ids)
+	    if top_scoring_ids is None:
+		top_scoring_ids = set(selected_ids)
+	    else:
+		top_scoring_ids &= set(selected_ids)
+	    all_scoring_ids |= set(all_ids)
+	    species.add(specie)
+	    if len(species) > 1:
+		raise ValueError("Comparison can be made only on the data from same specie")
+	    if prev_id_type is not None:
+		if prev_id_type != association_scores_file_identifier_type:
+		    raise ValueError("Comparison can be made only on the association data that provides the same nomenclature")
+	    else:
+		prev_id_type = association_scores_file_identifier_type
+	elif analysis_type == "user": # avg ppv and sens at given thresholds
+	    n_seed = prepare_data.get_number_of_mapped_seeds(input_log_file)
+	    if leave_one_out_xval and n_seed == 1: 
+		#print "Skipping", PPI, ASSOCIATION, SCORING
+		continue
+	    elif seed_cutoff is not None and n_seed < seed_cutoff:
+		continue
+	    threshold_to_values = scoring_to_values.setdefault(SCORING, {})
+	    f = open(r_script_file.rsplit('.')[0] + ".dat")
+	    for line in f.readlines():
+		if line.startswith(" ppv sens"):
+		    continue
+		tScore, ppv, sens = line.strip().split()#map(float, line.strip().split())
+		if ppv == 'None' or sens == 'None':
+		    continue
+		tScore, ppv, sens = map(float, line.strip().split())
+		#threshold_to_values[tScore] = (ppv_sum + ppv, sens_sum + sens)
+		threshold_to_values.setdefault(tScore, []).append((ppv, sens))
+	    f.close()
 	else:
-	    top_scoring_ids &= set(selected_ids)
-	all_scoring_ids |= set(all_ids)
-	species.add(specie)
-	if len(species) > 1:
-	    raise ValueError("Comparison can be made only on the data from same specie")
-	if prev_id_type is not None:
-	    if prev_id_type != association_scores_file_identifier_type:
-		raise ValueError("Comparison can be made only on the association data that provides the same nomenclature")
-	else:
-	    prev_id_type = association_scores_file_identifier_type
+	    raise ValueErro("Unrecognized analysis_type")
 
     compare_dir += user_friendly_id + os.sep
     if not os.path.exists(compare_dir): 
 	os.mkdir(compare_dir)
 
+    if analysis_type == "user":
+	f = open(compare_dir + "results.dat", "w")
+	f.write(" ppv sens\n")
+	for scoring, threshold_to_values in scoring_to_values.iteritems():
+	    #print scoring
+	    for tScore, values in threshold_to_values.iteritems():
+		ppv_values, sens_values =(zip(*values))
+		ppv_mean, ppv_sigma = calculate_mean_and_sigma.calc_mean_and_sigma(ppv_values)
+		sens_mean, sens_sigma = calculate_mean_and_sigma.calc_mean_and_sigma(sens_values)
+		f.write("%s_%s %f %f\n" % (scoring, tScore, ppv_mean, sens_mean))
+	f.close()
+	return
+
     f = open(compare_dir + "README", "a")
-    #f.write("\n" % "-".join(phenotypes))
     f.write("%s\n" % (experiments))
     f.close()
     #out_file = sys_stdout
-    #out_file = sys_stdout
-    #out_file = open(compare_dir + "-".join(map(lambda x: "_".join(x), experiments)) + ".txt", "w")
     out_file = open(compare_dir + "comparison.txt", "w")
     out_file_tex = open(compare_dir + "comparison.tex", "w")
     if "-" in top_scoring_ids:
@@ -698,15 +745,10 @@ def compare_experiments(experiments, tex_format=False, functional_enrichment=Fal
     if "-" in all_scoring_ids:
 	all_scoring_ids.remove("-")
     for id in top_scoring_ids: 
-	#if tex_format:
-	    #print id, "\\\\"
 	out_file_tex.write("%s\\\\\n" % id)
-	#else:
-	    #print id
 	out_file.write("%s\n" % id)
     out_file_tex.write("\n")
     if functional_enrichment:
-	#out_file.write("\nFUNCTIONAL ENRICHMENT OF COMMON HIGH SCORING NODES (AT %d%% LEVEL) IN GIVEN EXPERIMENTS\n" % DEFAULT_TOP_SCORING_PERCENTAGE)
 	if tex_format:
 	    file = out_file_tex
 	else:
@@ -719,10 +761,10 @@ def compare_experiments(experiments, tex_format=False, functional_enrichment=Fal
     return
 
 
-def sum_up_experiments(ppis, phenotypes, type="auc", tex_format=False, user_friendly_id="test", seed_cutoff=None):
+def sum_up_experiments(ppis, phenotypes, analysis_type="auc", tex_format=False, user_friendly_id="test", seed_cutoff=None):
     """
 	Gives an averaged performance summary of ppi and association data over different scoring methods
-	type: "auc" or "cov"
+	analysis_type: "auc" or "cov"
     """
     phenotypes_to_skip = set()
     if seed_cutoff is not None:
@@ -762,7 +804,7 @@ def sum_up_experiments(ppis, phenotypes, type="auc", tex_format=False, user_frie
 		auc_dev = float(words[2].strip("+/-"))
 		cov = float(words[3])
 		cov_dev = float(words[4].strip("+/-"))
-		if type == "auc":
+		if analysis_type == "auc":
 		    #if auc<=0.5 and n_seed <= 20 and (method == "ns" or method == "nd"):
 		    #	print ppi, phenotype, n_seed, method, auc
 		    ppi_phenotype_auc_container[ppi][phenotype][method] = auc
@@ -805,14 +847,14 @@ def sum_up_experiments(ppis, phenotypes, type="auc", tex_format=False, user_frie
     log_file.close()
 
     #out_file = sys_stdout
-    file_name = type + "_phenotypes" 
+    file_name = analysis_type + "_phenotypes" 
     #if file_name > 60:
     #	file_name_new =  "cropped_" + file_name[:60]
     #	print "Cropping\n", file_name, "\nto\n", file_name_new
     #	file_name = file_name_new 
     out_file = open(summary_dir + file_name + ".txt", "w")
 
-    if type == "auc":
+    if analysis_type == "auc":
 	out_file.write("\nAVERAGE AUC OVER DIFFERENT PHENOTYPES\n")
     else:
 	#out_file.write("\nAVERAGE SEED COVERAGE AT %d%% OVER DIFFERENT PHENOTYPES\n" % DEFAULT_TOP_SCORING_PERCENTAGE)
@@ -844,9 +886,9 @@ def sum_up_experiments(ppis, phenotypes, type="auc", tex_format=False, user_frie
 		out_file.write("%s:\t%f\t+/- %f\n" % (ppi, mean, sigma))
     out_file.close()
 
-    file_name = type + "_ppis" #+ "-".join(ppis)
+    file_name = analysis_type + "_ppis" #+ "-".join(ppis)
     out_file = open(summary_dir + file_name + ".txt", "w")
-    if type == "auc":
+    if analysis_type == "auc":
 	out_file.write("\nAVERAGE AUC OVER DIFFERENT PPIS\n")
     else:
 	#out_file.write("\nAVERAGE SEED COVERAGE AT %d%% OVER DIFFERENT PPIS\n" % DEFAULT_TOP_SCORING_PERCENTAGE)
@@ -918,7 +960,7 @@ def prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix,
 
     global N_X_VAL, N_SEED
     N_SEED = prepare_data.get_number_of_mapped_seeds(input_log_file)
-    if N_X_VAL is None:
+    if leave_one_out_xval:
 	N_X_VAL = N_SEED
 
     # Create initial data analysis file
@@ -946,13 +988,13 @@ def score(SCORING, score_commands, score_xval_commands, output_scores_file, log_
     return
 
 
-def analyze(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, specie, network_file, functional_enrichment):
+def analyze(PPI, SCORING, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, specie, network_file, candidates_file, functional_enrichment):
     """
 	Does cross validation and percentage analysis on the output files
     """
     if N_SEED == 1:
 	return
-    analyzed = analyze_xval(r_script_file, output_scores_file, node_scores_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, log_file) 
+    analyzed = analyze_xval(SCORING, r_script_file, output_scores_file, node_scores_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, log_file, candidates_file, analysis_type = "auc") #"user") 
     if analyzed:
 	analyze_xval_percentage(log_file, output_scores_file, node_scores_file, output_log_file)
 	analyze_original(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, specie, network_file, functional_enrichment)
@@ -981,16 +1023,10 @@ def score_xval(SCORING, score_xval_commands, output_scores_file, log_file, job_f
 	    else:
 		f.write("%s\n" % generate_score_xval_command(SCORING, score_xval_commands, k))
 		if use_cluster:
-		    #f2 = NamedTemporaryFile(delete=False)
-		    #f2 = open("%s.%d" % (job_file, k), 'w') 
-		    #f2.write("#!/usr/bin/env sh\n%s" % generate_score_xval_command(SCORING, score_xval_commands, k))
-		    #f2.close()
-		    #os.system( "qsub -o out.%d -e err.%d -l hostname=node52 -N %s -b y %s" % (k, k, SCORING, f2.name) )
 		    #os.system( "qsub -cwd -o out.%d -e err.%d -l hostname=node52 -N %s -b y %s" % (k, k, SCORING, generate_score_xval_command(SCORING, score_xval_commands, k)) )
 		    #if k % 2 != 0:
 		    #	continue
 		    os.system( "qsub -cwd -o out.%d -e err.%d -q %s -N %s -b y %s" % (k, k, qname, SCORING, generate_score_xval_command(SCORING, score_xval_commands, k)) )
-		    #os.unlink(f2.name)
 		else:
 		    os.system( generate_score_xval_command(SCORING, score_xval_commands, k) )
     f.close()
@@ -1014,10 +1050,6 @@ def score_original(SCORING, score_commands, output_scores_file, log_file, job_fi
 	else:
 	    f.write("%s\n" % score_commands[SCORING])
 	    if use_cluster:
-		#f2 = open(job_file, 'w') 
-		#f2.write("#!/usr/bin/env sh\n%s" % score_commands[SCORING])
-		#f2.close()
-		#os.system("qsub -o out -e err -l hostname=node34 -N %s -b y %s" % (SCORING, f2.name))
 		#os.system("qsub -cwd -o out -e err -l hostname=node34 -N %s -b y %s" % (SCORING, score_commands[SCORING]))
 		os.system("qsub -cwd -o out -e err -q %s -N %s -b y %s" % (qname, SCORING, score_commands[SCORING]))
 	    else:
@@ -1026,33 +1058,66 @@ def score_original(SCORING, score_commands, output_scores_file, log_file, job_fi
     return
 
 
-def analyze_xval(r_script_file, output_scores_file, node_scores_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, log_file):
-    if os.path.exists(r_script_file):
-	return False
-    list_node_scores_and_labels = []
-    for k in range(1, N_X_VAL+1):
-	node_validation_data = analyze_results.get_validation_node_scores_and_labels(file_result = output_scores_file+".%d"%k, file_seed_test_scores = node_scores_file+".%d.test"%k, file_node_scores = node_scores_file, n_random_negative_folds = N_RANDOM_NEGATIVE_FOLDS, default_score = DEFAULT_NON_SEED_SCORE, replicable = REPLICABLE)
-	list_node_scores_and_labels.append(node_validation_data)
-    analyze_results.create_ROCR_files(list_node_scores_and_labels, predictions_file, labels_file)
-    analyze_results.create_R_script(r_script_file, output_dir, title) # os.path.basename(output_dir))
-    os.system("R CMD BATCH %s" % (r_script_file))
-    #os.system("convert %sperformance.eps %sperformance.jpg" % (output_dir, output_dir))
-    #analyze_results.create_tex_script(tex_script_file, output_dir, title)
-    analyze_results.record_performance_AUC_in_log_file(output_dir, output_log_file, title)
+def analyze_xval(SCORING, r_script_file, output_scores_file, node_scores_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, log_file, candidates_file, analysis_type="auc"):
+    if analysis_type == "auc":
+	if os.path.exists(r_script_file):
+	    return False
+	list_node_scores_and_labels = []
+	for k in range(1, N_X_VAL+1):
+	    node_validation_data = analyze_results.get_validation_node_scores_and_labels(file_result = output_scores_file+".%d"%k, file_seed_test_scores = node_scores_file+".%d.test"%k, file_node_scores = node_scores_file, n_random_negative_folds = N_RANDOM_NEGATIVE_FOLDS, default_score = DEFAULT_NON_SEED_SCORE, replicable = REPLICABLE, candidates_file = candidates_file)
+	    list_node_scores_and_labels.append(node_validation_data)
+	analyze_results.create_ROCR_files(list_node_scores_and_labels, predictions_file, labels_file)
+	analyze_results.create_R_script(r_script_file, output_dir, title) # os.path.basename(output_dir))
+	os.system("R CMD BATCH %s" % (r_script_file))
+	#os.system("convert %sperformance.eps %sperformance.jpg" % (output_dir, output_dir))
+	#analyze_results.create_tex_script(tex_script_file, output_dir, title)
+	analyze_results.record_performance_AUC_in_log_file(output_dir, output_log_file, title)
 
-    return True
-    # now unnecessary since ROC curve analysis is done
-    threshold_analysis = False
-    if threshold_analysis:
+	return True
+    elif analysis_type == "user":
+	#if not os.path.exists(candidates_file):
+	#    print candidates_file
+	#return
+	# For user defined threshold performance analysis
+	r_data_file = r_script_file.rsplit(".")[0] + ".dat"
+	if os.path.exists(r_data_file):
+	    f = open(r_data_file, "a")
+	    #return False
+	else:
+	    f = open(r_data_file, "w")
+	    f.write(" ppv sens\n")
+	#thresholds = [0.025, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.975 ]
+	thresholds = THRESHOLDS[SCORING]
+	counts_at_thresholds = [ [0.0] * 4 for tScore in thresholds] #nTP_sum, nFP_sum, nFN_sum, nTN_sum = 0.0, 0.0, 0.0, 0.0
+	for k in range(1, N_X_VAL+1):
+	    dictNodeResult, setNodeTest, non_seeds = analyze_results.get_values_from_files_for_performance_metric_counts(file_result = output_scores_file+".%d" % k, file_seed_test_scores = node_scores_file+".%d.test"%k, file_node_scores = node_scores_file, default_score = DEFAULT_NON_SEED_SCORE, candidates_file = candidates_file)
+	    for i, tScore in enumerate(thresholds):
+		nTP, nFP, nFN, nTN = analyze_results.calculate_performance_metric_counts(dictNodeResult, setNodeTest, non_seeds, score_threshold = tScore, n_random_negative_folds = N_RANDOM_NEGATIVE_FOLDS, replicable = REPLICABLE)
+		for j, v in enumerate([nTP, nFP, nFN, nTN]):
+		    counts_at_thresholds[i][j] += v
+	for i, tScore in enumerate(thresholds):
+	    nTP, nFP, nFN, nTN = counts_at_thresholds[i]
+	    (acc, sens, spec, ppv) = analyze_results.calculatePerformance(nTP, nFP, nFN, nTN)
+	    f.write("%f %s %s\n" % (tScore, ppv, sens))
+	f.close()
+	return False
+    ## OLD - slightly slower
+    elif analysis_type == "user2":
+	# For user defined threshold performance analysis
+	r_data_file = r_script_file.rsplit(".")[0] + ".dat2"
+	if os.path.exists(r_data_file):
+	    return False
+	#thresholds = [ 0.02, 0.9 ] #[0.025, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.975 ]
+	thresholds = THRESHOLDS[SCORING]
+	f = open(r_data_file, "w")
+	f.write(" ppv sens\n")
 	#for tScore in [ i*0.01 for i in xrange(0, 100, 5)]:
-	f = open(log_file, "a")
-	for tScore in [ 0.5 ]:
-	    #print "---- t:", tScore
-	    f.write("---- t: %s\n" % tScore)
+	for tScore in thresholds:
+	    #f.write("---- t: %s\n" % tScore)
 	    nTP_sum, nFP_sum, nFN_sum, nTN_sum = 0.0, 0.0, 0.0, 0.0
 	    for k in range(1, N_X_VAL+1):
 		##print output_scores_file+".ns.%d"%k, node_scores_file+".%d.test"%k 
-		nTP, nFP, nFN, nTN = analyze_results.calculate_performance_metric_counts(file_result = output_scores_file+".%d" % k, file_seed_test_scores = node_scores_file+".%d.test"%k, file_node_scores = node_scores_file, score_threshold = tScore, n_random_negative_folds = N_RANDOM_NEGATIVE_FOLDS, default_score = DEFAULT_NON_SEED_SCORE, replicable = REPLICABLE)
+		nTP, nFP, nFN, nTN = analyze_results.calculate_performance_metric_counts_using_files(file_result = output_scores_file+".%d" % k, file_seed_test_scores = node_scores_file+".%d.test"%k, file_node_scores = node_scores_file, score_threshold = tScore, n_random_negative_folds = N_RANDOM_NEGATIVE_FOLDS, default_score = DEFAULT_NON_SEED_SCORE, replicable = REPLICABLE, candidates_file = candidates_file)
 		(acc, sens, spec, ppv) = analyze_results.calculatePerformance(nTP, nFP, nFN, nTN)
 		##print "A:", acc, "S:", sens, "P:", ppv
 		nTP_sum += nTP
@@ -1065,12 +1130,12 @@ def analyze_xval(r_script_file, output_scores_file, node_scores_file, prediction
 	    nFN = nFN_sum / N_X_VAL
 	    nTN = nTN_sum / N_X_VAL
 	    (acc, sens, spec, ppv) = analyze_results.calculatePerformance(nTP, nFP, nFN, nTN)
-	    #print "Avg. A:", acc, "S:", sens, "P:", ppv
-	    f.write("Avg. A: %s S: %s P: %s\n" % (acc, sens, ppv))
+	    #f.write("Avg. A: %s S: %s P: %s\n" % (acc, sens, ppv))
+	    f.write("%f %s %s\n" % (tScore, ppv, sens))
 	    # Calculate 1-Specificity (1-TN/N[FP+TN] = FP/N) (aka FPR) 
 	    fpr = 1-spec
 	f.close()
-    return True
+	return False
 
 
 def analyze_xval_percentage(log_file, output_scores_file, node_scores_file, output_log_file):
@@ -1167,6 +1232,7 @@ def create_biana_network_files(biana_node_file_prefix, biana_network_file_prefix
 
 
 def prepare_scoring_files(PPI, seed_scores_file, network_file_filtered, seed_to_score, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, edge_scores_file, interaction_relevance_file, interaction_relevance_file2, edge_scores_as_node_scores_file, sampled_file_prefix):
+    #print "s:%d x:%d" % (N_SEED, N_X_VAL)
     # Create node scores file and check how many of the seed genes we cover in the network
     # Create seed scores file from association score to seed node mapping
     if not os.path.exists(seed_scores_file): 
@@ -1227,107 +1293,6 @@ def prepare_scoring_files(PPI, seed_scores_file, network_file_filtered, seed_to_
 	prepare_data.sample_network_preserving_topology(edge_scores_file, N_SAMPLE_GRAPH, sampled_file_prefix + ".sif.")
     return
 
-
-########################### Oldies & Goldies #########################
-######################################################################
-
-# obsolete
-import score_network # obsolete
-
-def old_score_xval_random():
-    if not os.path.exists(output_scores_file+"random.1"):
-	for k in range(1, N_X_VAL+1):
-	    score_network.score_by_random_model(node_scores_file + ".%d" % k, edge_scores_file, output_scores_file + ".random.%d" % k)
-    return
-
-
-def old_prepare():
-    # Get scores of each node
-    node_to_score, seeds_all = prepare_data.map_scores_to_biana_nodes(node_file, node_file_score)
-
-    # Assign node scores either as node relevance score or as edge relevance score
-    prepare_data.assign_node_scores(g = g, node_to_score = node_to_score, out_file = node_file_netzcore, as_edge_relevance_score = False, seeds_ignored=None)
-    prepare_data.assign_node_scores(g = g, node_to_score = node_to_score, out_file = edge_file_netzcore_relevance, as_edge_relevance_score = True, seeds_ignored=None)
-    
-    return
-    
-    # Create arff file for all network
-    #network_utilities.create_arff_file_with_network_metrics(g, node_to_score, seeds, arff_file)
-
-    # Generate cross validation node files
-    prepare_data.generate_cross_validation_node_files(g = g, node_to_score = node_to_score, seeds = seeds, node_file_netzcore_prefix = node_file_netzcore_prefix, edge_file_netzcore_relevance_prefix =  edge_file_netzcore_relevance_prefix, arff_file_prefix = arff_file_prefix)
-
-    # Assign edge scores
-    prepare_data.assign_edge_reliability_scores(g = g, network_file_method_attribute = biana_network_file_method_attribute, network_file_source_attribute = biana_network_file_source_attribute, network_file_pubmed_attribute = biana_network_file_pubmed_attribute, out_file = edge_file_netzcore)
-
-    #create_arff_file(node_score_file, network_file_filtered, arff_file)
-
-    #prepare_data.generate_cross_validation_test_test_arff_files(10, arff_file, arff_file+".id_score_filtered.arff", arff_file_prefix)
-    return
-
-
-def old_analyze():
-    result_files = [ netshort_results, netrank_results, netscore_results_1, netscore_results_3,  netscore_results_no_1, netscore_results_no_3, netzcore_results_1, netzcore_results_3 ]
-    for percentage in (10, 25, 50):
-	print "---- %s:" % percentage
-	for f in result_files:
-	    print f
-	    print analyze_results.calculate_seed_coverage_at_given_percentage(f, node_file_netzcore[:-3]+"sif", percentage)
-    return
-
-
-def old_score():
-    #g = score_network.create_network_from_weight_and_score_files(edge_file_weights = edge_file_netzcore, edge_file_scores = edge_file_netzcore_relevance)
-    #node_to_score = score_network.score_by_shortest_paths(g) 
-    #scores = node_to_score.values()
-    #scores.sort()
-    #print scores[-20:]
-    score_network.run_and_assess_performance_of_folds(10, edge_file_netzcore, edge_file_netzcore_relevance_prefix, node_file_netzcore, node_file_netzcore_prefix, result_file_prefix)
-    return
-
-
-def test_timing_score_one_fold():
-    from time import clock
-    t1 = clock()
-    print score_network.test_run(edge_file_netzcore)
-    t2 = clock()
-    print "Time: ", t2-t1
-    return
-
-# Node & edge score files
-#node_scores_file = input_dir + "human_node_scores.sif"
-#edge_scores_file = input_dir + "human_edge_scores.sif"
-#goh_node_scores_file = input_dir + "goh_node_scores.sif"
-#goh_edge_scores_file = input_dir + "goh_edge_scores.sif"
-#rhodes_node_scores_file = input_dir + "rhodes_node_scores.sif"
-#rhodes_edge_scores_file = input_dir + "rhodes_edge_scores.sif"
-
-# Sampling related
-#sampled_file_prefix = sampling_dir + "sampled_graph"
-#goh_sampled_file_prefix = sampling_dir[:-1] + "_goh" + os.sep + "sampled_graph"
-#rhodes_sampled_file_prefix = sampling_dir[:-1] + "_rhodes" + os.sep + "sampled_graph"
-
-
-# Old scoring files
-node_file_netzcore = "../data/input/node_scores.txt"
-node_file_netzcore_prefix = "../data/input/node_scores"
-edge_file_netzcore = "../data/input/edge_weights.txt"
-edge_file_netzcore_combined = "../data/input/edge_weights_combined.txt"
-edge_file_netzcore_relevance = "../data/input/edge_relevance_scores.txt"
-edge_file_netzcore_relevance_prefix = "../data/input/edge_relevance_scores"
-arff_file = "../data/arff/network_metrics.arff"
-arff_file_prefix = "../data/arff/network_metrics"
-result_file_prefix = "../data/output/fold"
-
-# Resulting score files
-#netshort_results = output_dir + "netshort_onlyEdgeRelevance_noNodeInitialScoreAccumulation.txt"
-#netrank_results = output_dir + "netrank_onlyEdgeRelevance_noNodeInitialScoreAccumulation.txt"
-#netscore_results_1 = output_dir + "netscore_onlyEdgeRelevance_noNodeInitialScoreAccumulation_i1.txt"
-#netscore_results_3 = output_dir + "netscore_onlyEdgeRelevance_noNodeInitialScoreAccumulation_i3.txt"
-#netscore_results_no_1 = output_dir + "netscore_noEdgeRelevance_noNodeInitialScoreAccumulation_i1.txt"
-#netscore_results_no_3 = output_dir + "netscore_noEdgeRelevance_noNodeInitialScoreAccumulation_i3.txt"
-#netzcore_results_1 = output_dir + "netzcore_onlyEdgeRelevance_noNodeInitialScoreAccumulation_i1.txt"
-#netzcore_results_3 = output_dir + "netzcore_onlyEdgeRelevance_noNodeInitialScoreAccumulation_i3.txt"
 
 
 if __name__ == "__main__":
