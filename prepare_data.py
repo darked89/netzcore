@@ -11,11 +11,17 @@ from biana.utilities import graph_utilities as network_utilities
 def get_number_of_mapped_seeds(filename):
     f = open(filename)
     n_seed = None
+    n_linker = None
+    n_path = None
     for line in f.readlines():
 	if line.startswith("Covered gene products (seed nodes):"):
 	    n_seed = int(line.split(":")[1].split()[0])
+	elif line.startswith("Average linker degree:"):
+	    n_linker = float(line.split(":")[1].split()[0])
+	elif line.startswith("Average seed connecting shortest paths length:"):
+	    n_path = float(line.split(":")[1].split()[0])
     f.close()
-    return n_seed
+    return n_seed, n_linker, n_path
 
 
 def get_nodes_in_network(network_file):
@@ -293,9 +299,9 @@ def get_node_association_score_mapping(network_file, network_file_identifier_typ
     return node_to_score
 
 
-def analyze_network(network_file, out_file = None):
+def analyze_network(network_file, out_file = None, seeds = None):
     g = network_utilities.create_network_from_sif_file(network_file, use_edge_data = False)
-    network_utilities.analyze_network(g, out_file = out_file)
+    network_utilities.analyze_network(g, out_file = out_file, seeds = seeds)
     return
 
 

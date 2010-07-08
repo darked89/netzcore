@@ -19,13 +19,13 @@ only_print_command = False
 use_cluster = False
 leave_one_out_xval = False #True 
 
-DEFAULT_TOP_SCORING_PERCENTAGE = 10 #1 #5 #10 
-N_LINKER_THRESHOLD = 2
+DEFAULT_TOP_SCORING_PERCENTAGE = 10 #1 #5 #10 # At the time of analysis it was 10
+N_LINKER_THRESHOLD = 2 # For Netlink method
 DEFAULT_SEED_SCORE = 1.0 # Default score for seed nodes, used when no score given in assoc file
 DEFAULT_NON_SEED_SCORE = 0.01 # Default score for non-seed nodes
 ALLOWED_MAX_DEGREE = 100000 #175 #90 # Max degree allowed in the graph filtering
 N_SAMPLE_GRAPH = 100 # Number of random graphs to be generated
-N_X_VAL = 5 #182 # Number of cross validation folds, readjusted if leave_one_out_xval is True
+N_X_VAL = 5 #None #5 #182 # Number of cross validation folds, readjusted if leave_one_out_xval is True
 N_SEED = None #Will be set during run
 N_RANDOM_NEGATIVE_FOLDS = None #10 # Number of non-seed scores to be averaged for negative score calculation, 
 			    # If 0 all non seeds are included as they are, If None all non seeds are included averaged to scale with the size of test seeds
@@ -65,6 +65,19 @@ chen_phenotypes = [ "chen_" + p for p in chen_phenotypes ]
 navlakha_phenotypes = ["glycogenosis", "keratosis", "roussy-levy", "ectodermal", "hypogonadotropic", "marfan", "systemic", "hypothyroidism", "pseudohypoaldosteronism", "osteoporosis", "emphysema", "graves", "oligodontia", "campomelic", "rhabdomyosarcoma", "neurofibromatosis", "nasu-hakola", "antley-bixler", "jackson-weiss", "anemia", "intervertebral", "sleep", "obesity", "ichthyosiform", "heinz", "bleeding", "hyperekplexia", "syndactyly", "cornelia", "hyperlipoproteinemia", "cockayne", "ovarian", "hereditary", "amelogenesis", "spondyloepiphyseal", "malaria", "ichthyosis", "scapuloperoneal", "osteolysis", "abacavir", "exudative", "insulin", "pick", "atrioventricular", "microphthalmia", "cataract", "angelman", "pancreatitis", "leuko", "spinocerebellar", "bradyopsia", "von_hippel-lindau", "germ", "t-cell", "elliptocytosis", "psoriasis", "liddle", "fanconi", "thrombophilia", "mismatch", "transient", "lipoprotein", "tetralogy", "myasthenic", "stroke", "celiac", "stature", "epidermolysis", "male", "glaucoma", "osteosarcoma", "keratitis", "high", "coenzyme", "endometrial", "kaposi", "niemann", "acth", "cold-induced", "chorea", "larsen", "venous", "thyrotropin-releasing", "leukemia", "megaloblastic", "blood", "carnitine", "prostate", "short", "colorblindness", "leigh", "epilepsy", "brain", "polycystic", "gonadal", "exostoses", "gastrointestinal", "psoriatic", "hemolytic-uremic", "aplastic", "erythremia", "cholestasis", "epileptic", "cutis", "li", "thrombocythemia", "alexander", "ehlers-danlos", "dna", "atherosclerosis", "insomnia", "acampomelic", "microcephaly", "crohn", "spinal", "mody", "nonsmall", "retinitis", "metachromatic", "mitochondrial", "bardet-biedl", "lipoma", "albinism", "nicotine", "mental", "apolipoprotein", "rieger", "hirschsprung", "nephrolithiasis", "choreoathetosis", "hermansky", "aids", "huntington", "alcohol", "cerebral", "paroxysmal", "griscelli", "xeroderma", "hemorrhagic", "phenylketonuria", "bamforth-lazarus", "blepharophimosis", "cirrhosis", "sensory", "alzheimer", "pachyonychia", "lipodystrophy", "becker", "pancreatic", "simpson-golabi-behmel", "nephrotic", "senior-loken", "major", "neuropathy", "parkinson", "hypophosphat", "azoospermia", "symphalangism", "arthrogryposis", "myelogenous", "meningioma", "acromesomelic", "von_willebrand", "corpus", "blue-cone", "leiomyomatosis", "goiter", "lipoid", "pseudohypoparathyroidism", "retinal", "hypertriglyceridemia", "basal", "hemophagocytic", "kallmann", "gm2-gangliosidosis", "congenital", "histiocytoma", "mycobacterial", "chondrodysplasia", "alagille", "iron", "bare", "medullary", "intrauterine", "encephalopathy", "glioblastoma", "hemangioma", "dementia", "squamous", "neutropenia", "generalized", "cleft", "aldosterone", "butterfly", "multiple", "severe", "iridogoniodysgenesis", "paget", "hyperthyroidism", "nephronophthisis", "dent", "dystonia", "agammaglobulinemia", "foveomacular", "longevity", "lissencephaly", "fletcher", "malignant", "lethal", "hypomagnesemia", "tuberous", "adrenocortical", "giant", "epiphyseal", "fundus", "dermatitis", "hypercholesterolemia", "opitz", "factor", "branchiootorenal", "leber", "hiv", "hyperparathyroidism", "cerebellar", "breast", "tuberculosis", "orofacial", "creutzfeldt-jakob", "qt", "progressive", "cystic", "esophageal", "pituitary", "craniosynostosis", "pfeiffer", "brachydactyly", "chondrosarcoma", "schizophrenia", "angioedema", "spondyloepimetaphyseal", "thrombocytopenia", "coloboma", "spherocytosis", "platelet", "myopathy", "complement", "pheochromocytoma", "vohwinkel", "creatine", "enolase", "attention", "phosphoglycerate", "hypodontia", "macular", "myoclonic", "noonan", "macrothrombocytopenia", "ventricular", "meckel", "nevus", "inflammatory", "invasive", "peroxisomal", "zellweger", "colon", "atopy", "ataxia", "pulmonary", "smith-magenis", "abdominal", "dyslexia", "mycobacterium", "immunodeficiency", "budd-chiari", "combined", "rett", "sars", "alport", "adenomas", "osteogenesis", "rhizomelic", "polyposis", "porphyria", "c8", "emery-dreifuss", "lung", "placental", "c4", "hepatocellular", "obsessive-compulsive", "thalassemia", "premature", "adrenoleukodystrophy", "leprosy", "hdl", "arrhythmogenic", "lymphoproliferative", "cerebrooculofacioskeletal", "cone", "sarcoma", "hypoparathyroidism", "afibrinogenemia", "glycogen", "migraine", "cone-rod", "coronary", "complex", "colorectal", "hypotrichosis", "hemochromatosis", "myocardial", "optic", "pyruvate", "leopard", "osteoarthritis", "metaphyseal", "focal", "diabetes", "lupus", "oguchi", "episodic", "neural", "hyperinsulin", "craniofacial", "glanzmann", "trichothiodystrophy", "muscle", "mucoepidermoid", "fetal", "spastic", "methemoglobinemia", "glycine", "charcot-marie-tooth", "loeys-dietz", "hypercholanemia", "hemolytic", "adrenal", "thyroid", "asthma", "atrial", "ectopia", "pontocerebellar", "brugada", "pseudohermaphroditism", "ladd", "parathyroid", "dysfibrinogenemia", "atelosteogenesis", "lymphoma", "epidermolytic", "holoprosencephaly", "parietal", "caudal", "hepatic", "myeloproliferative", "c1q", "rheumatoid", "homocystinuria", "amyotrophic", "hyperoxaluria", "williams-beuren", "growth", "usher", "megakaryoblastic", "hypokalemic", "hepatitis", "refsum", "hepatoblastoma", "myotonia", "bethlem", "night", "crouzon", "cardiomyopathy", "central", "mowat-wilson", "mucopolysaccharidosis", "medulloblastoma", "myeloid", "anterior", "aortic", "inclusion", "deafness", "chronic", "h.", "waardenburg", "erythrocytosis", "gaucher", "anorexia", "glomerulosclerosis", "stickler", "long", "spondylocarpotarsal", "polycythemia", "adenocarcinoma", "rubenstein-taybi", "prader-willi", "memory", "corneal", "intracranial", "neutral", "ullrich", "pyogenic", "orthostatic", "maturity-onset", "renal", "subcortical", "uv", "joubert", "muir-torre", "boomerang", "dejerine-sottas", "ossification", "juvenile", "heterotaxy", "autoimmune", "synpolydactyly", "skin,hair,eye", "omenn", "muscular", "lumbar", "ovarioleukodystrophy", "hypertension", "lymphangioleiomyomatosis", "autism", "chromosome", "melanoma", "jervell", "c1r,c1s", "mast", "scid", "iga", "hematuria", "fibromatosis", "neuroblastoma", "bladder", "adrenomyeloneuropathy", "bernard-soulier", "fructose", "stevens-johnson", "gastric", "hemophilia", "wilms", "osteopetrosis", "bcg", "persistent", "myelodysplastic", "dyskeratosis", "bartter", "beckwith-wiedemann", "amyloidosis"]
 navlakha_phenotypes = [ "navlakha_" + p.replace(" ", "_").lower() for p in navlakha_phenotypes ]
 
+
+hsdl_phenotypes = ["lymphoblast", "prolymphocyte", "bronchi",
+			"INTERMEDIATE MESODERM", "LATERAL MESODERM", "PARAXIAL MESODERM",
+			"lymphoid progenitor", "hemoctyoblast", "T lymphocyte", "B lymphocyte",
+			"PHARYNX", "digestive tube", "small lymphocyte", 
+			"myeloid progenitor", "endothelium of blood vessels",
+			"ECTODERM", "INNER CELL MASS", "PRIMITIVE GUT", "BLASTOCYST", "ZYGOTE",
+			"MORULA", "hemangioblast tissue", "mesenchyme", "heart", 
+			"SPLANCHNIC MESODERM", "MESENDODERM", "ENDODERM", "MESODERM"]
+#  "lungs", "OUTER EPITHELIUM OF BODY", 
+hsdl_phenotypes = [ "hsdl_" + p.replace(" ", "_").lower() for p in hsdl_phenotypes ]
+
+
 scoring_methods = ["nd", "nz", "ns", "ff", "nr", "nw", "nl", "nx", "nh", "n1", "nb"]
 
 THRESHOLDS = { "nr": [ 4e-6, 2e-5, 5e-5, 1e-4, 2e-4, 3e-4, 4e-4, 5e-4, 1e-3, 0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9 ],
@@ -82,22 +95,22 @@ THRESHOLDS = { "nr": [ j*10**-i for i in xrange(2,7) for j in xrange(1,10) ] + [
 
 
 def main():
-    MODE = "analyze" # prepare, score, analyze, compare, summary
+    MODE = "summary" # prepare, score, analyze, compare, summary
     ignore_experiment_failures = False
     delay_experiment = True
     tex_format = True #False 
     functional_enrichment = False
-    user_friendly_id = "test" #"biana_no_tap-chen" #"omim_alzheimer-diabetes" #"all_vs_all" # a.k.a. emre friendly id for compare and summary
-    summary_seed_cutoff = 1 #20 # Seed cutoff considered for inclusion of an experiment in sum_up_experiments
+    user_friendly_id = "test" #"biana_no_tap-all_seed20below" #"biana-all" #"biana_no_tap-omim" #"omim_alzheimer-diabetes" #"all_vs_all" # a.k.a. emre friendly id for compare and summary
+    summary_seed_cutoff = 1 #None #2 #20 # Seed cutoff considered for inclusion of an experiment in sum_up_experiments, if None seed.dat is not created
 
     ppis = []
-    ppis += ["hprd"] #, "ophid"]
+    #ppis += ["hprd"] #, "ophid"]
     #ppis += ["goh", "entrez", "biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
-    #ppis += ["biana_no_tap_no_reliability"]
+    #ppis += ["rivasi"]
     #ppis += ["biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
     #ppis += ["goh"]
     #ppis += ["entrez"]
-    #ppis += ["biana_no_tap_no_reliability"] 
+    ppis += ["biana_no_tap_no_reliability"] 
     #ppis += ["biana_no_tap_relevance"]
     #ppis += ["biana_no_reliability"]
     #ppis += ["david"]
@@ -107,10 +120,12 @@ def main():
     #ppi += ["goh_1e5", "biana_coexpression"]
 
     phenotypes = []
-    #phenotypes += ["navlakha_keratosis"] #["navlakha_abdominal"] 
-    phenotypes += navlakha_phenotypes
-    #phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes 
+    #phenotypes += ["navlakha_abdominal"]
+    #phenotypes += navlakha_phenotypes
+    phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes 
+    #phenotypes += hsdl_phenotypes
     #phenotypes += omim_phenotypes 
+    #phenotypes += goh_phenotypes 
     #phenotypes += chen_phenotypes 
     #phenotypes += ["omim_prostate_cancer"]
     #phenotypes += ["omim_breast_cancer", "omim_lung_cancer"]
@@ -122,9 +137,10 @@ def main():
     #phenotypes += ["custom"] #["aneurysm"] #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
 
     scoring_parameters = []
-    scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
-    scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
-    scoring_parameters += [("nd", 1, 1)]
+    #scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
+    #scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
+    scoring_parameters += [("nr", 1, 1)]
+    #scoring_parameters += [("nd", 1, 1)]
     #scoring_parameters += [("ns", 3, 2)]
     #scoring_parameters += [("nw",1, 1)]
     #scoring_parameters += [("nx", 1, 1)]
@@ -257,6 +273,10 @@ def decide_association_data(ASSOCIATION):
 	association_scores_file = association_dir + "associations" + os.sep + ASSOCIATION + ".txt"
 	candidates_file = association_dir + "candidates" + os.sep + ASSOCIATION + ".txt"
 	association_scores_file_identifier_type = "genesymbol"
+    elif ASSOCIATION.startswith("hsdl_"):
+	association_dir = data_dir + "tf_lineage" + os.sep + "hsdl_classification" + os.sep 
+	association_scores_file = association_dir + ASSOCIATION + ".txt"
+	association_scores_file_identifier_type = "genesymbol"
     else:
 	raise ValueError("Unrecognized association!")
     return (association_scores_file, association_scores_file_identifier_type, association_scores_validation_file, candidates_file)
@@ -356,6 +376,12 @@ def decide_interaction_data(PPI, association_scores_file):
 	network_file = data_dir + "navlakha" + os.sep + "ophid.sif"
 	network_file_filtered = network_file[:-4] + "_degree_filtered.sif"
 	node_file = association_scores_file
+    # Rivasi ppi
+    elif PPI == "rivasi":
+	node_description_file = gene_info_file 
+	network_file_identifier_type = "geneid"
+	network_file = data_dir + "tf_lineage" + os.sep + "ppi.sif"
+	network_file_filtered = network_file[:-4] + "_degree_filtered.sif"
     # Rhodes ppi
     elif PPI == "rhodes":
 	node_description_file = gene_info_file 
@@ -637,12 +663,13 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, f
     if MODE == "prepare":
 	prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability, network_file, network_file_filtered, input_log_file, node_file, seed_scores_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, node_mapping_file, input_dir, node_scores_file, edge_scores_file, interaction_relevance_file, interaction_relevance_file2, edge_scores_as_node_scores_file, sampled_file_prefix)
     elif MODE == "score":
-	N_SEED = prepare_data.get_number_of_mapped_seeds(input_log_file)
+	N_SEED, n_linker, n_path = prepare_data.get_number_of_mapped_seeds(input_log_file)
 	if leave_one_out_xval:
 	    N_X_VAL = N_SEED
 	score(SCORING, score_commands, score_xval_commands, output_scores_file, log_file, job_file)
     elif MODE == "analyze":
-	N_SEED = prepare_data.get_number_of_mapped_seeds(input_log_file)
+	N_SEED, n_linker, n_path = prepare_data.get_number_of_mapped_seeds(input_log_file)
+	#if N_X_VAL is None:
 	if leave_one_out_xval:
 	    N_X_VAL = N_SEED
 	analyze(PPI, SCORING, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, specie, network_file_filtered, candidates_file, functional_enrichment)
@@ -696,7 +723,7 @@ def compare_experiments(experiments, tex_format=False, functional_enrichment=Fal
 	    else:
 		prev_id_type = association_scores_file_identifier_type
 	elif analysis_type == "user": # avg ppv and sens at given thresholds
-	    n_seed = prepare_data.get_number_of_mapped_seeds(input_log_file)
+	    n_seed, n_linker, n_path = prepare_data.get_number_of_mapped_seeds(input_log_file)
 	    if leave_one_out_xval and n_seed == 1: 
 		#print "Skipping", PPI, ASSOCIATION, SCORING
 		continue
@@ -767,6 +794,7 @@ def sum_up_experiments(ppis, phenotypes, analysis_type="auc", tex_format=False, 
 	analysis_type: "auc" or "cov"
     """
     phenotypes_to_skip = set()
+    phenotype_to_seed_values = {}
     if seed_cutoff is not None:
 	for ppi in ppis:
 	    for phenotype in phenotypes:
@@ -776,12 +804,14 @@ def sum_up_experiments(ppis, phenotypes, analysis_type="auc", tex_format=False, 
 		(seed_scores_file, node_scores_file, node_mapping_file, edge_scores_file, edge_scores_as_node_scores_file, output_scores_file, \
 		score_log_file, sampled_file_prefix, log_file, input_log_file, job_file, output_log_file, predictions_file, \
 		labels_file, r_script_file, tex_script_file) = decide_scoring_and_analysis_files(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association)
-		n_seed = prepare_data.get_number_of_mapped_seeds(input_log_file)
-		#if n_seed < seed_cutoff: 
-		if n_seed >= seed_cutoff: 
+		n_seed, n_linker, n_path = prepare_data.get_number_of_mapped_seeds(input_log_file)
+		if n_seed < seed_cutoff: 
+		#if n_seed >= seed_cutoff: 
 		    phenotypes_to_skip.add(phenotype)
 		    print "Skipping", phenotype, n_seed
 		    continue
+		else:
+		    phenotype_to_seed_values.setdefault(phenotype, []).append((n_seed, n_linker, n_path))
 	phenotypes = list(set(phenotypes)-phenotypes_to_skip)
 
     ppi_phenotype_auc_container = dict([ (ppi, dict([ (phenotype, {}) for phenotype in phenotypes ])) for ppi in ppis ])
@@ -919,6 +949,16 @@ def sum_up_experiments(ppis, phenotypes, analysis_type="auc", tex_format=False, 
 		out_file.write("%s:\t%f\t+/- %f\n" % (phenotype, mean, sigma))
     out_file.close()
 
+    data_file = open(summary_dir + "seeds.dat", 'w')
+    data_file.write("\tn_seed\tn_linker\tn_path\n")
+    for phenotype, values in phenotype_to_seed_values.iteritems():
+	n_seeds, n_linkers, n_paths = zip(*values)
+	mean_seeds, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(n_seeds)
+	mean_linkers, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(n_linkers)
+	mean_paths, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(n_paths)
+	data_file.write("%s\t%s\t%s\t%s\n" % (phenotype, mean_seeds, mean_linkers, mean_paths))
+    data_file.close()
+
     return
 
 
@@ -936,7 +976,7 @@ def prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix,
 	print "Filtering by degree", network_file, "->", network_file_filtered
 	prepare_data.analyze_network(network_file)
 	prepare_data.create_degree_filtered_network_file(network_file, network_file_filtered, ALLOWED_MAX_DEGREE)
-    prepare_data.analyze_network(network_file_filtered, out_file = input_log_file)
+    #prepare_data.analyze_network(network_file_filtered, out_file = input_log_file)
 
     seed_to_score = None
     # Get node to association mapping
@@ -948,18 +988,22 @@ def prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix,
 	    #os.system("awk '{print $1, 1}' %s > %s" % (node_file, seed_scores_file))
 	all_nodes = set(prepare_data.get_nodes_in_network(network_file_filtered))
 	seed_nodes = prepare_data.get_nodes_from_nodes_file(node_file)
+	seed_nodes = all_nodes & seed_nodes
 	seed_to_score = dict([(node, 1) for node in seed_nodes])
 	prepare_data.create_node_scores_file(nodes = (all_nodes & seed_nodes), node_to_score = seed_to_score, node_scores_file = seed_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
 	if input_log_file is not None:
 	    f = open(input_log_file, 'a')
 	    f.write("Covered gene products (seed nodes): %s among %s\n" % (len(all_nodes & seed_nodes), len(seed_nodes)))
 	    f.close()
+	prepare_data.analyze_network(network_file_filtered, out_file = input_log_file, seeds = seed_to_score.keys())
+
 
     if not os.path.exists(seed_scores_file): 
 	seed_to_score = prepare_data.get_node_association_score_mapping(network_file = network_file_filtered, network_file_identifier_type = network_file_identifier_type, node_description_file = node_description_file, association_scores_file = association_scores_file, association_scores_file_identifier_type = association_scores_file_identifier_type, log_file = input_log_file, default_seed_score=DEFAULT_SEED_SCORE)
+	prepare_data.analyze_network(network_file_filtered, out_file = input_log_file, seeds = seed_to_score.keys())
 
     global N_X_VAL, N_SEED
-    N_SEED = prepare_data.get_number_of_mapped_seeds(input_log_file)
+    N_SEED, n_linker, n_path = prepare_data.get_number_of_mapped_seeds(input_log_file)
     if leave_one_out_xval:
 	N_X_VAL = N_SEED
 
@@ -971,6 +1015,11 @@ def prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix,
 	os.system("R CMD BATCH %s" % (input_dir + "analyze_network_log_scaled.r"))
 	os.system("convert %sanalyze_network_log_scaled.eps %sanalyze_network_log_scaled.jpg" % (input_dir, input_dir))
 	prepare_data.create_ARFF_network_metrics_file(network_file_filtered, seed_to_score, seed_to_score.keys(), input_dir + "analyze_network.arff")
+
+    global N_X_VAL, N_SEED
+    N_SEED, n_linker, n_path = prepare_data.get_number_of_mapped_seeds(input_log_file)
+    if N_X_VAL is None:
+	N_X_VAL = N_SEED
 
     # Prepare scoring files
     prepare_scoring_files(PPI, seed_scores_file, network_file_filtered, seed_to_score, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, edge_scores_file, interaction_relevance_file, interaction_relevance_file2, edge_scores_as_node_scores_file, sampled_file_prefix)
