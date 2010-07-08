@@ -5,7 +5,9 @@ Executables are located under /sbi/users/emre/bin/
 
 scoreN -s z -n node_score.txt -e node_score_node.txt -o output.txt -i n_iteration -d path_to_random_graphs -x n_random_graph
 
-* you can generate random networks using graph_utilities.randomize_graph fucntion with randomization_type "preserve_topology_and_node_degree"
+* random graph names under the directory given by -d  are in this format sampled_graph.sif.i where i is the i^th random graph.
+
+** you can generate random networks using graph_utilities.randomize_graph fucntion with randomization_type "preserve_topology_and_node_degree"
 
     * netscore (suggested n_repetition: 3, n_iteration: 2)
 
@@ -14,6 +16,8 @@ scoreN -s s -n node_score.txt -e node_score_node.txt -o output.txt -r n_repetiti
     * netshort
 
 scoreN -s d -n node_score.txt -e edge_score_as_node_score.txt -o output.txt
+
+* Edge scores are average relevance scores of the nodes they connect
 
     * netrank
 
@@ -31,4 +35,5 @@ node_score_node.txt: node id whitespace(s) interaction score whitespace(s) node 
 edge_score_as_node_score.txt: similar to node_score_node.txt file but edge score is assigned averaging scores of the nodes of the edge in node_score.txt file
 
 I attach a script I use to create input files (e.g. creating random graphs, edge_score_as_node_score.txt file etc..)
+
 
