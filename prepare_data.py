@@ -23,6 +23,9 @@ def get_number_of_mapped_seeds(filename):
     f.close()
     return n_seed, n_linker, n_path
 
+def get_network_as_graph(network_file, use_edge_data):
+    g = network_utilities.create_network_from_sif_file(network_file_in_sif = network_file, use_edge_data = use_edge_data)
+    return g
 
 def get_nodes_in_network(network_file):
     g = network_utilities.create_network_from_sif_file(network_file)
@@ -95,6 +98,35 @@ def sample_network_preserving_topology(network_sif_file, n_sample, output_prefix
     for i in xrange(1,n_sample+1):
 	g_sampled = network_utilities.randomize_graph(graph=g, randomization_type="preserve_topology_and_node_degree")
 	network_utilities.output_network_in_sif(g_sampled, output_prefix+"%s"%i)
+    return
+
+
+def sample_permuted_network_at_percentage(g, n_sample, percentage, output_prefix):
+    #g = network_utilities.create_network_from_sif_file(network_file_in_sif = network_sif_file, use_edge_data = True)#, delim = " ")
+    for i in xrange(1,n_sample+1):
+	g_sampled = network_utilities.permute_graph_at_given_percentage(g, percentage, allow_self_edges = False)
+	network_utilities.output_network_in_sif(g_sampled, output_prefix+"%s"%i)
+    return
+
+
+def sample_pruned_network_at_percentage(g, n_sample, percentage, output_prefix, reserved_nodes):
+    #g = network_utilities.create_network_from_sif_file(network_file_in_sif = network_sif_file, use_edge_data = True)#, delim = " ")
+    for i in xrange(1,n_sample+1):
+	g_sampled = network_utilities.prune_graph_at_given_percentage(g, percentage, reserved_nodes)
+	network_utilities.output_network_in_sif(g_sampled, output_prefix+"%s"%i)
+    return
+
+
+def sample_perturbed_seeds_at_percentage(seed_to_score, nodes, n_sample, percentage, output_prefix):
+    from random import shuffle
+    reserved_nodes = seed_to_score.keys()
+    non_reserved_nodes = list(set(nodes) - set(reserved_nodes))
+    count = int(round(len(reserved_nodes) * float(percentage) / 100))
+    for i in xrange(1,n_sample+1):
+	shuffle(non_reserved_nodes)
+	shuffle(reserved_nodes)
+	node_to_score = dict([ (node, seed_to_score[seed]) for node, seed in zip(non_reserved_nodes[:count] + reserved_nodes[count:], reserved_nodes) ])
+	create_node_scores_file(nodes = node_to_score.keys(), node_to_score = node_to_score, node_scores_file = output_prefix + "%s"%i)
     return
 
 
@@ -260,7 +292,7 @@ def get_node_association_score_mapping(network_file, network_file_identifier_typ
     node_to_genes, gene_to_nodes = biana_output_converter.get_attribute_to_attribute_mapping(node_description_file, network_file_identifier_type, association_scores_file_identifier_type, keys_to_include=set(nodes))
     covered_genes = set()
     seeds = set()
-    node_to_score = {}
+    seed_to_score = {}
     if log_file is not None:
 	log_fd = open(log_file, "a")
     else:
@@ -285,7 +317,7 @@ def get_node_association_score_mapping(network_file, network_file_identifier_typ
 		#print "non-positive seed score", v, score, "genes:", node_to_genes[v]
 		if log_fd is not None:
 		    log_fd.write("non-positive seed score %s %s genes: %s\n" % (v, score, node_to_genes[v]))
-	    node_to_score[v] = score
+	    seed_to_score[v] = score
 	#else:
 	#    score = default_score
 	#node_to_score[v] = score
@@ -296,7 +328,7 @@ def get_node_association_score_mapping(network_file, network_file_identifier_typ
 	log_fd.write("Covered genes (seed genes): %s among %s\n" % (len(covered_genes), len(setNode)))
 	log_fd.write("Covered gene products (seed nodes): %s among %s\n" % (len(seeds), g.number_of_nodes()))
 	log_fd.close()
-    return node_to_score
+    return seed_to_score
 
 
 def analyze_network(network_file, out_file = None, seeds = None):
