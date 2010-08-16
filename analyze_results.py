@@ -48,7 +48,7 @@ def check_functional_enrichment_of_high_scoring_modules(network_file, module_det
     return
 
 
-def get_high_scoring_modules(g, node_to_score, ids):
+def buggy_get_high_scoring_modules(g, node_to_score, ids):
     """
 	Can use ids instead of node_to_score & min_score, helper function can be removed and made inline 
     """
@@ -77,7 +77,7 @@ def get_high_scoring_modules(g, node_to_score, ids):
 		continue
 	    neighbors = get_high_scoring_neighbors(u, g, node_to_score, min_score)
 	    ids_included_in_modules.add(u) 
-	    #! buggy below modifying set being iterated
+	    # BUGGY! below modifying set being iterated
 	    current_module |= neighbors
     return modules
 
@@ -247,9 +247,20 @@ def create_tex_script(fileName, absolute_dir, title):
     f.close()
     return
 
-def create_R_script(fileName, absolute_dir, title):
+def create_R_script(fileName, absolute_dir, title, only_auc=False):
     f = open(fileName, "w")
     f.write("library(ROCR)\n") 
+    if only_auc:
+	f.write("v<-read.table(\"%spredictions.txt\")\n" % absolute_dir) 
+	f.write("l<-read.table(\"%slabels.txt\")\n" % absolute_dir)
+	f.write("pred<-prediction(v, l)\n")
+	f.write("perfAUC<-performance(pred, \"auc\")\n")
+	f.write("e=c(); n=c(); x=0; for ( i in perfAUC@y.values ) { x<-x+1;  e[x] <- i; n[x]<-x }\n")
+	f.write("sink(\"%sauc.txt\", append=TRUE, split=TRUE)\n" % absolute_dir)
+	f.write("paste(format(mean(e), digits=3), format(sd(e), digits=3), sep=\" \")\n") 
+	f.write("sink()\n")
+	f.close()
+	return
     f.write("f<-function(perf) { d<-rep(0, times=length(perf@x.values[[1]]))\n")
     f.write("for(vals in perf@x.values) { d<-d+vals; }\n")
     f.write("for(i in 1:length(d)) { if(d[i] == Inf) { d[i]<-0; }; }\n")
@@ -331,9 +342,11 @@ def get_validation_node_scores_and_labels(file_result, file_seed_test_scores, fi
 	default_score: All nodes that have a higher score than this score in file_node_scores will be considered as seeds
     """
     dictNodeResult, setNodeTest, non_seeds = get_values_from_files_for_performance_metric_counts(file_result, file_seed_test_scores, file_node_scores, default_score, candidates_file=None)
-    setCandidates, setDummy, dictCandidates, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = candidates_file, store_edge_type = False)
     node_validation_data = [ (dictNodeResult[id], 1) for id in setNodeTest ]
-    dictNodeResult = dictNodeResult.fromkeys(setCandidates)
+
+    if candidates_file is not None:
+	setCandidates, setDummy, dictCandidates, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = candidates_file, store_edge_type = False)
+	dictNodeResult = dictNodeResult.fromkeys(setCandidates)
 
     if n_random_negative_folds == 0:
 	#node_validation_data.extend([(dictNodeResult[id], 0) for id in non_seeds ])
