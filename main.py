@@ -70,12 +70,12 @@ THRESHOLDS = { "nr": [ j*10**-i for i in xrange(2,7) for j in xrange(1,10) ] + [
 
 
 def main():
-    MODE = "prepare" # prepare, score, analyze, compare, summary
+    MODE = "analyze" # prepare, score, analyze, compare, summary
     ignore_experiment_failures = False
     delay_experiment = True
     tex_format = True #False 
     functional_enrichment = False
-    user_friendly_id = "test" #"biana_no_tap-all_seed20below" #"biana-all" #"biana_no_tap-omim" #"omim_alzheimer-diabetes" #"all_vs_all" # a.k.a. emre friendly id for compare and summary
+    user_friendly_id = "all_vs_all" #"biana_no_tap-all_seed20below" #"biana-all" #"biana_no_tap-omim" #"omim_alzheimer-diabetes" #"all_vs_all" # a.k.a. emre friendly id for compare and summary
     summary_seed_cutoff = 1 #None #2 #20 # Seed cutoff considered for inclusion of an experiment in sum_up_experiments, if None seed.dat is not created
     prepare_mutated = False #True # Creates permutad/pruned networks 
     analyze_network = False #True
@@ -91,8 +91,8 @@ def main():
     #ppis += ["biana_no_tap_no_reliability_permuted_p%s_%s" % (p, i) for p in xrange(10,110,10) for i in xrange(1,101) ] 
     #ppis += ["biana_no_tap_no_reliability_permuted_p%s_%s" % (p, i) for p in (40,80) for i in xrange(1,101) ] 
     #ppis += ["biana_no_tap_no_reliability_pruned_p%s_%s" % (p, i) for p in xrange(10,100,10) for i in xrange(1,101) ] 
-    ppis += ["biana_no_tap_no_reliability_pruned_p%s_%s" % (p, i) for p in (30,40) for i in xrange(1,101) ] 
-    #ppis += ["biana_no_tap_relevance"]
+    #ppis += ["biana_no_tap_no_reliability_pruned_p%s_%s" % (p, i) for p in (30,40) for i in xrange(1,101) ] 
+    ppis += ["biana_no_tap_relevance"]
     #ppis += ["biana_no_reliability"]
     #ppis += ["david"]
     #ppis += ["javi"] #["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
@@ -103,9 +103,9 @@ def main():
     phenotypes = []
     #phenotypes += ["navlakha_abdominal"]
     #phenotypes += navlakha_phenotypes
-    #phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes 
+    phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes 
     #phenotypes += hsdl_phenotypes
-    phenotypes += omim_phenotypes 
+    #phenotypes += omim_phenotypes 
     #phenotypes += goh_phenotypes 
     #phenotypes += chen_phenotypes 
     #phenotypes += ["omim_prostate_cancer"]
@@ -121,7 +121,7 @@ def main():
     #scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
     #scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
     scoring_parameters += [("nr", 1, 1)]
-    #scoring_parameters += [("nd", 1, 1)]
+    scoring_parameters += [("nd", 1, 1)]
     #scoring_parameters += [("ns", 3, 2)]
     #scoring_parameters += [("nw",1, 1)]
     #scoring_parameters += [("nx", 1, 1)]

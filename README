@@ -1,9 +1,13 @@
 
 TODO:
 
-- find good working examples/use cases
+- check performance of nr, nd, nz on biana_no_tap_relevance
 
-- adding edge weight in nd and nr
+- permuted, pruned networks and perturbed seeds analysis
+    - runs with ff, nr
+    - runs for 11-100 part
+
+- find good working examples/use cases
 
 - rw implementation
 
@@ -231,6 +235,12 @@ NOTES:
 awk '$3 < 0.41 && match($1, "nz") { print }' results.dat | sort -k 3
 
 - Checked avg seed connectivity & ratio of neighboring seeds vs AUC & PPV
+
+- Added using edge weight in nr 
+
+- For biana_no_tap_relevance modified edge scores as node scores in nd (1+string) * (node1+node2)/2 
+
+- For biana_no_tap_relevance recreated sampled graphs (since they have wrong scores e.g. 0.678 instead of 1.678
 
 
 aneurysim
