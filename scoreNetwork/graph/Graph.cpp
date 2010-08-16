@@ -7,7 +7,8 @@
 #include "clustering_coefficient.hpp"
 //#include <boost/graph/page_rank.hpp>
 //#include "page_rank_with_initial_ranks.hpp"
-#include "page_rank_with_priors.hpp"
+//#include "page_rank_with_priors.hpp"
+#include "page_rank_with_weighted_priors.hpp"
 
 #include <boost/graph/graph_utility.hpp>
 #include <boost/graph/betweenness_centrality.hpp>
@@ -309,7 +310,6 @@ void Graph::calculatePageRank(map<Vertex, float> & vertexToFloat, unsigned int n
     page_rank(container, mapRankInitial, mapRank, graph::n_iterations(nIteration), dFactor);
     return;
 }
-*/
 
 // PageRank with priors in addition to using initial ranks (using pre-assignment of initial ranks has very minor effect)
 void Graph::calculatePageRankWithPriors(map<Vertex, float> & vertexToFloat, unsigned int nIteration, float dFactor) 
@@ -326,6 +326,25 @@ void Graph::calculatePageRankWithPriors(map<Vertex, float> & vertexToFloat, unsi
     associative_property_map< map<Vertex, float> > mapRankInitial(vertexToNormalizedScore);
     associative_property_map< map<Vertex, float> > mapRank(vertexToFloat);
     page_rank_with_priors(container, mapRankInitial, mapRank, graph::n_iterations(nIteration), dFactor);
+    return;
+}
+*/
+
+// PageRank with priors in addition to using initial ranks (using pre-assignment of initial ranks has very minor effect)
+void Graph::calculatePageRankWithWeightedPriors(map<Vertex, float> & vertexToFloat, unsigned int nIteration, float dFactor) 
+{
+    map<Vertex, float> vertexToNormalizedScore;
+    float sum = 0.0;
+    VertexIterator it, itEnd;
+    for (tie(it, itEnd) = vertices(this->container); it != itEnd; ++it) {
+	sum += getVertexScore(*it);
+    }
+    for (tie(it, itEnd) = vertices(this->container); it != itEnd; ++it) {
+	vertexToNormalizedScore[*it] = getVertexScore(*it) / sum;
+    }
+    associative_property_map< map<Vertex, float> > mapRankInitial(vertexToNormalizedScore);
+    associative_property_map< map<Vertex, float> > mapRank(vertexToFloat);
+    page_rank_with_weighted_priors(container, mapRankInitial, get(&EdgeProperties::score, container), mapRank, graph::n_iterations(nIteration), dFactor);
     return;
 }
 

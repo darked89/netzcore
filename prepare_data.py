@@ -51,10 +51,10 @@ def get_nodes_from_nodes_file(node_scores_file):
 def get_edge_to_score_from_sif_attribute_file(interaction_relevance_file):
     return network_utilities.get_edge_values_from_sif_attribute_file(file_name = interaction_relevance_file, store_edge_type = False)
 
-def generate_cross_validation_edge_score_as_node_score_files(edges, seed_to_score, edge_scores_file, xval = 5, default_score = 0, replicable = 123):
+def generate_cross_validation_edge_score_as_node_score_files(edges, seed_to_score, edge_to_score, edge_scores_file, xval = 5, default_score = 0, replicable = 123):
     seeds = seed_to_score.keys()
     for k, training, test in k_fold_cross_validation(seeds, xval, randomize = True, replicable = replicable):
-	create_edge_scores_as_node_scores_file(edges = edges, node_to_score = seed_to_score, edge_scores_file = edge_scores_file+".%i"%k, ignored_nodes = test, default_score = default_score)
+	create_edge_scores_as_node_scores_file(edges = edges, node_to_score = seed_to_score, edge_to_score = edge_to_score, edge_scores_file = edge_scores_file+".%i"%k, ignored_nodes = test, default_score = default_score)
     return
 
 
@@ -167,7 +167,7 @@ def old_create_edge_scores_as_node_scores_file(edges, node_to_score, edge_scores
     return
 
 
-def create_edge_scores_as_node_scores_file(edges, node_to_score, edge_scores_file, ignored_nodes = None, default_score = 0):
+def create_edge_scores_as_node_scores_file(edges, node_to_score, edge_to_score, edge_scores_file, ignored_nodes = None, default_score = 0):
     """
 	Creates edge score file from node association scores, intended comparing netshort with other algorithms without using other edge reliability/relevance score
     """
@@ -187,7 +187,12 @@ def create_edge_scores_as_node_scores_file(edges, node_to_score, edge_scores_fil
 		score_v = node_to_score[v]
 	    else:
 		score_v = default_score
-	f.write("%s %f %s\n" % (u, (score_u + score_v) / 2, v))
+	weight = default_score
+	if (u,v) in edge_to_score:
+	    weight = edge_to_score[(u,v)]
+	elif (v,u) in edge_to_score:
+	    weight = edge_to_score[(v,u)]
+	f.write("%s %f %s\n" % (u, weight*(score_u + score_v) / 2, v))
     f.close()
     return
 

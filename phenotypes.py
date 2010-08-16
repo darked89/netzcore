@@ -25,4 +25,5 @@ hsdl_phenotypes = ["lymphoblast", "prolymphocyte", "bronchi",
 hsdl_phenotypes = [ "hsdl_" + p.replace(" ", "_").lower() for p in hsdl_phenotypes ]
 
 
+perturbed_omim_phenotypes = [ "perturbed_%s_p%i_%i" % (d, p, i) for d in omim_phenotypes for p in xrange(10,100,10) for i in xrange(1,11) ] #101
 

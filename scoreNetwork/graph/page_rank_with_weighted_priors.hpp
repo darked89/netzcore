@@ -8,8 +8,8 @@
 //  Authors: Douglas Gregor
 //           Andrew Lumsdaine
 
-#ifndef BOOST_GRAPH_PAGE_RANK_WITH_PRIORS_HPP
-#define BOOST_GRAPH_PAGE_RANK_WITH_PRIORS_HPP
+#ifndef BOOST_GRAPH_PAGE_RANK_WITH_WEIGHTED_PRIORS_HPP
+#define BOOST_GRAPH_PAGE_RANK_WITH_WEIGHTED_PRIORS_HPP
 
 #include <boost/property_map.hpp>
 #include <boost/graph/graph_traits.hpp>
@@ -37,8 +37,8 @@ struct n_iterations
 };
 
 namespace detail {
-  template<typename Graph, typename RankMap, typename RankMap2, typename RankMap3>
-  void page_rank_with_priors_step(const Graph& g, RankMap from_rank, RankMap2 to_rank, RankMap3 initial_rank_map,
+  template<typename Graph, typename RankMap, typename RankMap2, typename RankMap3, typename WeightMap>
+  void page_rank_with_weighted_priors_step(const Graph& g, RankMap from_rank, RankMap2 to_rank, RankMap3 initial_rank_map, WeightMap weight,
                       typename property_traits<RankMap>::value_type damping,
 		      typename graph_traits<Graph>::vertices_size_type n,
                       incidence_graph_tag)
@@ -48,16 +48,17 @@ namespace detail {
     // Set new rank maps 
     //BGL_FORALL_VERTICES_T(v, g, Graph) put(to_rank, v, rank_type((1 - damping)/n));
     BGL_FORALL_VERTICES_T(v, g, Graph) put(to_rank, v, rank_type((1 - damping) * get(initial_rank_map, v)));
-
+ 
     BGL_FORALL_VERTICES_T(u, g, Graph) {
+      //rank_type u_rank_out = damping * get(from_rank, u) / out_degree(u, g);
       rank_type u_rank_out = damping * get(from_rank, u) / out_degree(u, g);
       BGL_FORALL_ADJ_T(u, v, g, Graph)
-        put(to_rank, v, get(to_rank, v) + u_rank_out);
+        put(to_rank, v, get(to_rank, v) + get(weight, edge(u, v, g)) * u_rank_out);
     }
   }
 
-  template<typename Graph, typename RankMap, typename RankMap2, typename RankMap3>
-  void page_rank_with_priors_step(const Graph& g, RankMap from_rank, RankMap2 to_rank, RankMap3 initial_rank_map,
+  template<typename Graph, typename RankMap, typename RankMap2, typename RankMap3, typename WeightMap>
+  void page_rank_with_weighted_priors_step(const Graph& g, RankMap from_rank, RankMap2 to_rank, RankMap3 initial_rank_map, WeightMap weight,
                       typename property_traits<RankMap>::value_type damping, 
 		      typename graph_traits<Graph>::vertices_size_type n,
                       bidirectional_graph_tag)
@@ -66,8 +67,10 @@ namespace detail {
 
     BGL_FORALL_VERTICES_T(v, g, Graph) {
       typename property_traits<RankMap>::value_type rank(0);
+      //BGL_FORALL_INEDGES_T(v, e, g, Graph)
+      //  rank += get(from_rank, source(e, g)) / out_degree(source(e, g), g);
       BGL_FORALL_INEDGES_T(v, e, g, Graph)
-        rank += get(from_rank, source(e, g)) / out_degree(source(e, g), g);
+        rank += get(weight, e) * get(from_rank, source(e, g)) / out_degree(source(e, g), g);
 	//std::cout << "accumulating rank " << v << ": " << rank << std::endl;
 	//std::cout << "final value: " << (damping_type(1) - damping) / n + damping * rank << std::endl;
       //put(to_rank, v, (damping_type(1) - damping) / n + damping * rank);
@@ -76,9 +79,10 @@ namespace detail {
   }
 } // end namespace detail
 
-template<typename Graph, typename RankMap, typename Done, typename RankMap2>
+template<typename Graph, typename RankMap, typename WeightMap, typename Done, typename RankMap2>
 void
-page_rank_with_priors(const Graph& g, RankMap initial_rank_map, RankMap rank_map, Done done, 
+page_rank_with_weighted_priors(const Graph& g, RankMap initial_rank_map, WeightMap weight, RankMap rank_map, 
+          Done done, 
           typename property_traits<RankMap>::value_type damping,
           typename graph_traits<Graph>::vertices_size_type n,
           RankMap2 rank_map2)
@@ -97,9 +101,9 @@ page_rank_with_priors(const Graph& g, RankMap initial_rank_map, RankMap rank_map
     typedef typename graph_traits<Graph>::traversal_category category;
 
     if (to_map_2) {
-      detail::page_rank_with_priors_step(g, rank_map, rank_map2, initial_rank_map, damping, n, category());
+      detail::page_rank_with_weighted_priors_step(g, rank_map, rank_map2, initial_rank_map, weight, damping, n, category());
     } else {
-      detail::page_rank_with_priors_step(g, rank_map2, rank_map, initial_rank_map, damping, n, category());
+      detail::page_rank_with_weighted_priors_step(g, rank_map2, rank_map, initial_rank_map, weight, damping, n, category());
     }
     to_map_2 = !to_map_2;
   }
@@ -109,32 +113,33 @@ page_rank_with_priors(const Graph& g, RankMap initial_rank_map, RankMap rank_map
   }
 }
 
-template<typename Graph, typename RankMap, typename Done>
+template<typename Graph, typename RankMap, typename WeightMap, typename Done>
 void
-page_rank_with_priors(const Graph& g, RankMap initial_rank_map, RankMap rank_map, Done done, 
+page_rank_with_weighted_priors(const Graph& g, RankMap initial_rank_map, WeightMap weight, RankMap rank_map, 
+          Done done, 
           typename property_traits<RankMap>::value_type damping,
           typename graph_traits<Graph>::vertices_size_type n)
 {
   typedef typename property_traits<RankMap>::value_type rank_type;
 
   std::vector<rank_type> ranks2(num_vertices(g));
-  page_rank_with_priors(g, initial_rank_map, rank_map, done, damping, n,
+  page_rank_with_weighted_priors(g, initial_rank_map, weight, rank_map, done, damping, n,
             make_iterator_property_map(ranks2.begin(), get(vertex_index, g)));
 }
 
-template<typename Graph, typename RankMap, typename Done>
+template<typename Graph, typename RankMap, typename WeightMap, typename Done>
 inline void
-page_rank_with_priors(const Graph& g, RankMap initial_rank_map, RankMap rank_map, Done done, 
+page_rank_with_weighted_priors(const Graph& g, RankMap initial_rank_map, WeightMap weight, RankMap rank_map, Done done, 
           typename property_traits<RankMap>::value_type damping = 0.85)
 {
-  page_rank_with_priors(g, initial_rank_map, rank_map, done, damping, num_vertices(g));
+  page_rank_with_weighted_priors(g, initial_rank_map, weight, rank_map, done, damping, num_vertices(g));
 }
 
-template<typename Graph, typename RankMap>
+template<typename Graph, typename RankMap, typename WeightMap>
 inline void
-page_rank_with_priors(const Graph& g, RankMap initial_rank_map, RankMap rank_map)
+page_rank_with_weighted_priors(const Graph& g, RankMap initial_rank_map, WeightMap weight, RankMap rank_map)
 {
-  page_rank_with_priors(g, initial_rank_map, rank_map, n_iterations(20));
+  page_rank_with_weighted_priors(g, initial_rank_map, weight, rank_map, n_iterations(20));
 }
 
 // TBD: this could be _much_ more efficient, using a queue to store
@@ -162,4 +167,4 @@ remove_dangling_links(MutableGraph& g)
 
 } } // end namespace boost::graph
 
-#endif // BOOST_GRAPH_PAGE_RANK_WITH_PRIORS_HPP
+#endif // BOOST_GRAPH_PAGE_RANK_WITH_WEIGHTED_PRIORS_HPP

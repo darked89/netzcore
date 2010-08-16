@@ -11,7 +11,7 @@ Netshort::Netshort(std::string fileNode, std::string fileEdge, std::string fileO
 {
     flagAccumulateToInitialNodeScore = fAccumulateToInitialNodeScore;
     network.loadNodes(fileNode); 
-    network.loadEdges(fileEdge, true); 
+    network.loadEdges(fileEdge, true); // flag causes edge scores to be inverted (1/weight)
     outputFile = fileOutput;
 }
 

@@ -7,8 +7,9 @@ Netrank::Netrank()
     flagAccumulateToInitialNodeScore = false;
 }
 
-Netrank::Netrank(std::string fileNode, std::string fileEdge, std::string fileOutput, bool fAccumulateToInitialNodeScore)
+Netrank::Netrank(std::string fileNode, std::string fileEdge, std::string fileOutput, bool fUseEdgeScore, bool fAccumulateToInitialNodeScore)
 {
+    flagUseEdgeScore = fUseEdgeScore;
     flagAccumulateToInitialNodeScore = fAccumulateToInitialNodeScore;
     network.loadNodes(fileNode); 
     network.loadEdges(fileEdge); 
@@ -23,7 +24,8 @@ void Netrank::run(unsigned int nIteration, float dFactor)
     std::map<Vertex, float>::iterator vt, vtEnd;
     std::map<Vertex, float> mapRank;
     //getNetwork().calculatePageRank(mapRank, nIteration, dFactor);
-    getNetwork().calculatePageRankWithPriors(mapRank, nIteration, dFactor);
+    //getNetwork().calculatePageRankWithPriors(mapRank, nIteration, dFactor);
+    getNetwork().calculatePageRankWithWeightedPriors(mapRank, nIteration, dFactor);
     float score = 0.0;
     for(vt = mapRank.begin(), vtEnd = mapRank.end(); vt != vtEnd; ++vt) 
     {
