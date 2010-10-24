@@ -18,6 +18,7 @@ N_SEED = None #Will be set during run
 N_RANDOM_NEGATIVE_FOLDS = None #10 # Number of non-seed scores to be averaged for negative score calculation, 
 			    # If 0 all non seeds are included as they are, If None all non seeds are included averaged to scale with the size of test seeds
 REPLICABLE = 123 #63826 #9871354 #123 #None # Assign a predefined seed in randomization for initial test folds creation and N_RANDOM_NEGATIVE_FOLD generation
+ONLY_LARGEST_COMPONENT = True
 
 # FOLLOWING LOCAL ONLY TO MAIN
 ignore_experiment_failures = False
