@@ -107,7 +107,7 @@ def main(i_parameter):
     phenotypes = []
     #phenotypes += ["navlakha_abdominal"]
     #phenotypes += navlakha_phenotypes
-    #phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes 
+    phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes 
     #phenotypes += hsdl_phenotypes
     phenotypes += omim_phenotypes 
     #phenotypes += [ "perturbed_%s_p%i_%i" % (d, p, i) for d in omim_phenotypes for p in xrange(10,100,10) for i in xrange(1,101) ]
