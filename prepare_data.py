@@ -32,9 +32,9 @@ def get_nodes_in_network(network_file):
     return g.nodes()
 
 
-def get_edges_in_network(network_file):
+def get_edges_in_network(network_file, data=False):
     g = network_utilities.create_network_from_sif_file(network_file)
-    return g.edges()
+    return g.edges(data=data)
 
 #def get_degrees(network_file):
 #    g = network_utilities.create_network_from_sif_file(network_file)
@@ -355,14 +355,19 @@ def create_ARFF_network_metrics_file(network_file, node_to_score, seeds, arff_fi
     return
 
 
-def create_degree_filtered_network_file(network_file, network_file_filtered, degree):
+def create_degree_filtered_network_file(network_file, network_file_filtered, max_degree, largest_connected_component=True):
     """
 	Creates a network file removing nodes that has connections more than given degree
     """
     # Load network
     g = network_utilities.create_network_from_sif_file(network_file, use_edge_data = False) #True)
     #network_utilities.analyze_network(g)
-    g = network_utilities.filter_network(g = g, degree_threshold = degree, largest_connected_component=True) 
+    g = network_utilities.filter_network(g = g, degree_threshold = max_degree, largest_connected_component = largest_connected_component) 
+    # Remove unconnected nodes
+    degrees = g.degree(with_labels=True)
+    for id in g.nodes():
+	if degrees[id] == 0:
+	    g.delete_node(id)
     # Get degrees of highly connected nodes
     #network_utilities.analyze_network(g)
     network_utilities.output_network_in_sif(g, network_file_filtered)

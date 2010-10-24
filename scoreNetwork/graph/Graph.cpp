@@ -342,6 +342,15 @@ void Graph::calculatePageRankWithWeightedPriors(map<Vertex, float> & vertexToFlo
     for (tie(it, itEnd) = vertices(this->container); it != itEnd; ++it) {
 	vertexToNormalizedScore[*it] = getVertexScore(*it) / sum;
     }
+    EdgeIterator et, etEnd;
+    float max_weight = 0;
+    for (tie(et, etEnd) = edges(this->container); et != etEnd; ++et) {
+	if(getEdgeScore(*et) > max_weight)
+	    max_weight = getEdgeScore(*et);
+    }
+    for (tie(et, etEnd) = edges(this->container); et != etEnd; ++et) {
+	setEdgeScore(*et, getEdgeScore(*et) / max_weight);
+    }
     associative_property_map< map<Vertex, float> > mapRankInitial(vertexToNormalizedScore);
     associative_property_map< map<Vertex, float> > mapRank(vertexToFloat);
     page_rank_with_weighted_priors(container, mapRankInitial, get(&EdgeProperties::score, container), mapRank, graph::n_iterations(nIteration), dFactor);

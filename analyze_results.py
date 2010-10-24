@@ -270,7 +270,7 @@ def create_R_script(fileName, absolute_dir, title, only_auc=False):
     f.write("l<-read.table(\"%slabels.txt\")\n" % absolute_dir)
     f.write("pred<-prediction(v, l)\n")
     #if image_type = "eps":
-    f.write("postscript(\"%sperformance.eps\", width = 6, height = 6, horizontal = FALSE, onefile = FALSE, paper = \"special\", title = \"%s\")\n" % (absolute_dir, title))
+    f.write("#postscript(\"%sperformance.eps\", width = 6, height = 6, horizontal = FALSE, onefile = FALSE, paper = \"special\", title = \"%s\")\n" % (absolute_dir, title))
     #else:
     #	f.write("bitmap(\"%sperformance.jpg\", res = 1200, height = 6, width = 6, type = \"jpeg\", horizontal = FALSE, onefile = FALSE, paper = \"special\", title = \"%s\")" % (absolute_dir, title)) 
     f.write("par(mfrow=c(2,2))\n")

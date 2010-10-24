@@ -1,7 +1,7 @@
 
 CC=g++
-CFLAGS=-I $(HOME)/lib/boost_1_38_0/ -O3 -Wall #-g
-#CFLAGS=-I /usr/local/include/boost-1_38/ -O3 -Wall #-g
+#CFLAGS=-I $(HOME)/lib/boost_1_38_0/ -O3 -Wall #-g
+CFLAGS=-I /usr/local/include/boost-1_38/ -O3 -Wall #-g
 LDFLAGS=-c
 
 SRCGRAPH=graph/Graph.cpp 
