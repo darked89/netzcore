@@ -109,13 +109,13 @@ def sample_permuted_network_at_percentage(g, n_sample, percentage, output_prefix
     return
 
 
-def sample_pruned_network_at_percentage(g, n_sample, percentage, output_prefix, reserved_nodes, only_non_seed_connecting=True):
+def sample_pruned_network_at_percentage(g, n_sample, percentage, output_prefix, reserved_nodes=None):
     """
-	only_non_seed_connecting prunes only interactions between nodes that are not in reserved_nodes, whereas if False, all interactions pruned unless the interaction makes a node in reserved_nodes unconnected
+	if reserved_nodes is not None only interactions between nodes that are not in reserved_nodes are pruned
     """
     #g = network_utilities.create_network_from_sif_file(network_file_in_sif = network_sif_file, use_edge_data = True)#, delim = " ")
     for i in xrange(1,n_sample+1):
-	if only_non_seed_connecting:
+	if reserved_nodes is not None: 
 	    g_sampled = network_utilities.prune_non_seed_interactions_at_given_percentage(g, percentage, reserved_nodes)
 	else:
 	    g_sampled = network_utilities.prune_graph_at_given_percentage(g, percentage)

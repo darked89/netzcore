@@ -204,6 +204,14 @@ def decide_interaction_data(PPI, ASSOCIATION, association_scores_file):
 		p = p.lstrip("p")
 		network_dir = data_dir + "human_interactome_biana" + os.sep + "permuted" + os.sep + str(p) + os.sep
 		network_file = network_dir + "sampled_graph.sif." + str(i) 
+	    elif PPI.startswith("biana_no_tap_no_reliability_pruned_non_seed_interactions_"):
+		node_description_file = None 
+		node_file = data_dir + "input" + os.sep + "biana_no_tap_no_reliability" + os.sep + ASSOCIATION + os.sep + "seed_scores.sif"
+		params = PPI[len("biana_no_tap_no_reliability_pruned_non_seed_interactions_"):]
+		p, i = params.split("_")
+		p = p.lstrip("p")
+		network_dir = data_dir + "human_interactome_biana" + os.sep + "pruned_non_seed_interactions" + os.sep + ASSOCIATION + os.sep + str(p) + os.sep
+		network_file = network_dir + "sampled_graph.sif." + str(i) 
 	    elif PPI.startswith("biana_no_tap_no_reliability_pruned_"):
 		node_description_file = None 
 		node_file = data_dir + "input" + os.sep + "biana_no_tap_no_reliability" + os.sep + ASSOCIATION + os.sep + "seed_scores.sif"
@@ -221,7 +229,7 @@ def decide_interaction_data(PPI, ASSOCIATION, association_scores_file):
 	    node_file = association_scores_file
 	    network_dir = data_dir + "input" + os.sep + "biana_no_tap_no_reliability" + os.sep
 	    network_file = network_dir + "edge_scores.sif"
-	if PPI.startswith("biana_no_tap_no_reliability_permuted_") or PPI.startswith("biana_no_tap_no_reliability_pruned_"):
+	if PPI.startswith("biana_no_tap_no_reliability_permuted_") or PPI.startswith("biana_no_tap_no_reliability_pruned_non_seed_interactions_") or PPI.startswith("biana_no_tap_no_reliability_pruned_"):
 	    network_file_filtered = network_file
 	else:
 	    network_file_filtered = network_file[:-4] + "_degree_filtered.sif" # Using only the largest strongly connected component
@@ -907,52 +915,71 @@ def prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix,
     prepare_scoring_files(PPI, seed_scores_file, network_file_filtered, seed_to_score, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, edge_scores_file, interaction_relevance_file, interaction_relevance_file2, edge_scores_as_node_scores_file, sampled_file_prefix)
 
     # Creating mutated (permuted/pruned) networks for further significance assessment runs
-    if prepare_mutated:
+    if prepare_mutated is not None:
 	g = prepare_data.get_network_as_graph(edge_scores_file, use_edge_data = True)
 	if seed_to_score is None:
 	    seed_to_score = prepare_data.get_node_to_score_from_node_scores_file(seed_scores_file)
-	print "Creating perturbed seeds for network"
-	output_dir = network_dir + "perturbed" + os.sep 
-	if not os.path.exists(output_dir):
-	    os.mkdir(output_dir)
-	output_dir += ASSOCIATION + os.sep
-	if not os.path.exists(output_dir):
-	    os.mkdir(output_dir)
-	for percentage in xrange(10,100,10):
-	    output_dir_inter = output_dir + str(percentage) + os.sep 
-	    if not os.path.exists(output_dir_inter):
-		os.mkdir(output_dir_inter)
-	    output_prefix = output_dir_inter + "sampled.txt."
-	    if os.path.exists(output_prefix + "1"):
-		break
-	    prepare_data.sample_perturbed_seeds_at_percentage(seed_to_score, g.nodes(), N_SAMPLE_GRAPH, percentage, output_prefix)
-	print "Creating permuted networks"
-	output_dir = network_dir + "permuted" + os.sep
-	if not os.path.exists(output_dir):
-	    os.mkdir(output_dir)
-	for percentage in xrange(10,110,10):
-	    output_dir_inter = output_dir + str(percentage) + os.sep
-	    if not os.path.exists(output_dir_inter):
-		os.mkdir(output_dir_inter)
-	    output_prefix = output_dir_inter + "sampled_graph.sif."
-	    if os.path.exists(output_prefix + "1"):
-		break
-	    prepare_data.sample_permuted_network_at_percentage(g, N_SAMPLE_GRAPH, percentage, output_prefix)
-	print "Creating pruned networks"
-	output_dir = network_dir + "pruned" + os.sep
-	if not os.path.exists(output_dir):
-	    os.mkdir(output_dir)
-	output_dir += ASSOCIATION + os.sep
-	if not os.path.exists(output_dir):
-	    os.mkdir(output_dir)
-	for percentage in xrange(10,100,10):
-	    output_dir_inter = output_dir + str(percentage) + os.sep 
-	    if not os.path.exists(output_dir_inter):
-		os.mkdir(output_dir_inter)
-	    output_prefix = output_dir_inter + "sampled_graph.sif."
-	    if os.path.exists(output_prefix + "1"):
-		break
-	    prepare_data.sample_pruned_network_at_percentage(g, N_SAMPLE_GRAPH, percentage, output_prefix, reserved_nodes=set(seed_to_score.keys()))
+	if prepare_mutated == "perturbed":
+	    print "Creating perturbed seeds for network"
+	    output_dir = network_dir + "perturbed" + os.sep 
+	    if not os.path.exists(output_dir):
+		os.mkdir(output_dir)
+	    output_dir += ASSOCIATION + os.sep
+	    if not os.path.exists(output_dir):
+		os.mkdir(output_dir)
+	    for percentage in xrange(10,100,10):
+		output_dir_inter = output_dir + str(percentage) + os.sep 
+		if not os.path.exists(output_dir_inter):
+		    os.mkdir(output_dir_inter)
+		output_prefix = output_dir_inter + "sampled.txt."
+		if os.path.exists(output_prefix + "1"):
+		    break
+		prepare_data.sample_perturbed_seeds_at_percentage(seed_to_score, g.nodes(), N_SAMPLE_GRAPH, percentage, output_prefix)
+	elif prepare_mutated == "permuted":
+	    print "Creating permuted networks"
+	    output_dir = network_dir + "permuted" + os.sep
+	    if not os.path.exists(output_dir):
+		os.mkdir(output_dir)
+	    for percentage in xrange(10,110,10):
+		output_dir_inter = output_dir + str(percentage) + os.sep
+		if not os.path.exists(output_dir_inter):
+		    os.mkdir(output_dir_inter)
+		output_prefix = output_dir_inter + "sampled_graph.sif."
+		if os.path.exists(output_prefix + "1"):
+		    break
+		prepare_data.sample_permuted_network_at_percentage(g, N_SAMPLE_GRAPH, percentage, output_prefix)
+	elif prepare_mutated == "pruned_non_seed_interactions":
+	    print "Creating pruned_non_seed_interactions networks"
+	    output_dir = network_dir + "pruned_non_seed_interactions" + os.sep
+	    if not os.path.exists(output_dir):
+		os.mkdir(output_dir)
+	    output_dir += ASSOCIATION + os.sep
+	    if not os.path.exists(output_dir):
+		os.mkdir(output_dir)
+	    for percentage in xrange(10,100,10):
+		output_dir_inter = output_dir + str(percentage) + os.sep 
+		if not os.path.exists(output_dir_inter):
+		    os.mkdir(output_dir_inter)
+		output_prefix = output_dir_inter + "sampled_graph.sif."
+		if os.path.exists(output_prefix + "1"):
+		    break
+		prepare_data.sample_pruned_network_at_percentage(g, N_SAMPLE_GRAPH, percentage, output_prefix, reserved_nodes=set(seed_to_score.keys()))
+	elif prepare_mutated == "pruned":
+	    print "Creating pruned networks"
+	    output_dir = network_dir + "pruned" + os.sep
+	    if not os.path.exists(output_dir):
+		os.mkdir(output_dir)
+	    output_dir += ASSOCIATION + os.sep
+	    if not os.path.exists(output_dir):
+		os.mkdir(output_dir)
+	    for percentage in xrange(10,100,10):
+		output_dir_inter = output_dir + str(percentage) + os.sep 
+		if not os.path.exists(output_dir_inter):
+		    os.mkdir(output_dir_inter)
+		output_prefix = output_dir_inter + "sampled_graph.sif."
+		if os.path.exists(output_prefix + "1"):
+		    break
+		prepare_data.sample_pruned_network_at_percentage(g, N_SAMPLE_GRAPH, percentage, output_prefix, reserved_nodes=None)
     return
 
 
