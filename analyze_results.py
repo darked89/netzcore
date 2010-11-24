@@ -9,14 +9,14 @@ from funcassociate import client
 from biana.utilities import TsvReader
 
 
-def check_functional_enrichment_of_high_scoring_modules(network_file, module_detection_type, output_scores_file, node_scores_file, node_mapping_file, percentage, id_type, output_method, default_non_seed_score = 0, exclude_seeds = False, specie = "Homo sapiens", mode = "unordered"):
+def check_functional_enrichment_of_high_scoring_modules(network_file, module_detection_type, output_scores_file, node_scores_file, node_mapping_file, cutoff, id_type, output_method, default_non_seed_score = 0, exclude_seeds = False, specie = "Homo sapiens", mode = "unordered"):
     """
-	Check functional enrichment of highest scoring modules at given percentage
+	Check functional enrichment of highest scoring modules at given cutoff
     """
     g = network_utilities.create_network_from_sif_file(network_file)
 
     dummy, dummy, node_to_score, dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = output_scores_file, store_edge_type = False)
-    ids, n, i = get_top_scoring_nodes_at_given_percentage(node_to_score, percentage)
+    ids, n, i = get_top_scoring_nodes_at_given_cutoff(node_to_score, cutoff)
 
     if module_detection_type != "greedy":
 	raise ValueError("Only greedy all highest neighbor node inclusion is supported!")
@@ -94,19 +94,19 @@ def get_id_to_mapped_id_mapping(node_mapping_file):
     return id_to_mapped_ids_formatted
 
 
-def get_top_scoring_node_ids_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file, percentage, id_type, default_non_seed_score=0, exclude_seeds=False):
+def get_top_scoring_node_ids_at_given_cutoff(output_scores_file, node_scores_file, node_mapping_file, cutoff, id_type, default_non_seed_score=0, exclude_seeds=False, one_gene_per_node=True):
     """
-	Get ids of highest scoring nodes at given percentage
+	Get ids of highest scoring nodes at given cutoff (if ends with % taken as percentage, otherwise taken as score cutoff)
     """
     dummy, dummy, node_to_score, dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = output_scores_file, store_edge_type = False)
-    ids, n, i = get_top_scoring_nodes_at_given_percentage(node_to_score, percentage)
 
-    #reader = TsvReader.TsvReader(node_mapping_file, inner_delim = ",")
-    #columns, id_to_mapped_ids = reader.read(fields_to_include = None, merge_inner_values = True)
+    ids, n, i = get_top_scoring_nodes_at_given_cutoff(node_to_score, cutoff)
+
     id_to_mapped_ids = get_id_to_mapped_id_mapping(node_mapping_file)
    
     selected_ids = []
     all_ids = []
+    seed_ids = []
 
     if exclude_seeds:
 	dummy, dummy, node_to_score, dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = node_scores_file, store_edge_type = False)
@@ -114,23 +114,36 @@ def get_top_scoring_node_ids_at_given_percentage(output_scores_file, node_scores
     for id in ids:
 	if exclude_seeds:
 	    if node_to_score[id] > default_non_seed_score:
+		#print id_to_mapped_ids[id][0]
 		continue
-	#vals = reduce(lambda x,y: x+y, id_to_mapped_ids[id])
-	vals = id_to_mapped_ids[id]
+	if one_gene_per_node:
+	    vals = [ id_to_mapped_ids[id][0] ]
+	else:
+	    vals = id_to_mapped_ids[id]
 	selected_ids.extend(vals)
 
     for val_list in id_to_mapped_ids.values():
-    #	all_ids.extend(reduce(lambda x,y: x+y, val_list))
-    	all_ids.extend(val_list)
+	if one_gene_per_node:
+	    all_ids.extend([val_list[0]])
+	else:
+	    all_ids.extend(val_list)
 
-    return selected_ids, all_ids
+    for id, score in node_to_score.iteritems():
+	if score > default_non_seed_score:
+	    if one_gene_per_node:
+		vals = [ id_to_mapped_ids[id][0] ]
+	    else:
+		vals = id_to_mapped_ids[id]
+	    seed_ids.extend(vals)
+
+    return selected_ids, all_ids, seed_ids
 
 
-def check_functional_enrichment_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file, percentage, id_type, output_method, default_non_seed_score=0, exclude_seeds=False, specie = "Home sapiens", mode="unordered"):
+def check_functional_enrichment_at_given_cutoff(output_scores_file, node_scores_file, node_mapping_file, cutoff, id_type, output_method, default_non_seed_score=0, exclude_seeds=False, specie = "Home sapiens", mode="unordered"):
     """
-	Check functional enrichment of highest scoring nodes at given percentage
+	Check functional enrichment of highest scoring nodes at given cutoff
     """
-    selected_ids, all_ids = get_top_scoring_node_ids_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file, percentage, id_type, default_non_seed_score, exclude_seeds)
+    selected_ids, all_ids, seed_ids = get_top_scoring_node_ids_at_given_cutoff(output_scores_file, node_scores_file, node_mapping_file, cutoff, id_type, default_non_seed_score, exclude_seeds)
     #print len(selected_ids), len(all_ids)
 
     output_method("%d gene names/ids among %d\n" % (len(selected_ids), len(all_ids)))
@@ -157,6 +170,8 @@ def check_functional_enrichment(subset_gene_ids, gene_ids, id_type, output_metho
 	id_type = "uniprot_accession"
     elif id_type == "uniprotentry":
 	id_type = "uniprot_id"
+    elif id_type == "sgd":
+	id_type = "sgd_systematic"
     else:
 	raise ValueError("Unrecognized id_type: %s" % id_type)
 
@@ -300,6 +315,13 @@ def create_R_script(fileName, absolute_dir, title, only_auc=False):
     f.write("legend(\"topright\", c(paste(\"(Avg: \", format(mean(e), digits=3), \")\", sep=\"\")), lty=c(), col=c())\n") 
     f.write("mtext(\'%s\', outer=TRUE, line=-1)\n" % title) 
     f.write("dev.off()\n")
+    f.write("perfFPR<-performance(pred, \"fpr\")\n")
+    f.write("plot(perfFPR, lwd=2, col=3, plotCI.col=3, avg=\"vertical\")\n")
+    f.write("level<-0.05\nepsilon<-0.0001\n")
+    f.write("m<-c(); for(i in 1:5) { m[i]<-mean(perfFPR@x.values[[i]][perfFPR@y.values[[i]]<level+epsilon & perfFPR@y.values[[i]]>level-epsilon])}\n")
+    f.write("sink(\"%scutoff.txt\", append=TRUE, split=TRUE)\n" % absolute_dir)
+    f.write("paste(format(mean(m), digits=3), format(sd(m), digits=3), sep=\" \")\n") 
+    f.write("sink()\n")
     f.close()
     #os.system("R CMD BATCH %s" % "*.R") 
     return
@@ -482,34 +504,43 @@ def calculatePerformance(nTP, nFP, nFN, nTN):
     return (acc, sens, spec, ppv)
 
 
-def get_top_scoring_nodes_at_given_percentage(node_to_score, percentage):
+def get_top_scoring_nodes_at_given_cutoff(node_to_score, cutoff):
     """
-	Returns highest scoring nodes at given percentage
+	Returns highest scoring nodes at given cutoff (if ends with % taken as percentage, otherwise taken as score cutoff)
     """
 
     result_scores = node_to_score.items()
     result_scores.sort(lambda x,y: cmp(y[1], x[1]))
 
-    i = 0
-    n = len(result_scores)*percentage/100
     ids = [] # the order is important
-    
-    last_score = result_scores[0][1]
-    for id, score in result_scores:
-	i+=1
-	if i>n:
-	    if last_score != score:
-		break
-	ids.append(id)
-	last_score = score
+
+    if str(cutoff).endswith("%"):
+	percentage = float(cutoff.rstrip("%"))
+	i = 0
+	n = len(result_scores)*percentage/100
+	last_score = result_scores[0][1]
+	for id, score in result_scores:
+	    i+=1
+	    if i>n:
+		if last_score != score:
+		    break
+	    ids.append(id)
+	    last_score = score
+    else:
+	i = 0
+	for id, score in result_scores:
+	    i += 1
+	    if score >= cutoff:
+		ids.append(id)
+	n = i
 
     return ids, n, i
 
 
-def calculate_seed_coverage_at_given_percentage(file_result, file_seed_scores, percentage, default_score=0):
+def calculate_seed_coverage_at_given_cutoff(file_result, file_seed_scores, cutoff, default_score=0):
     """
-	Calculates number of seed nodes included in the given percentage of high ranking nodes in result file 
-	Returns a tuple containing number of seed nodes and all nodes at that percentage
+	Calculates number of seed nodes included in the given cutoff of high ranking nodes in result file 
+	Returns a tuple containing number of seed nodes and all nodes at that cutoff (if ends with % taken as percentage, otherwise taken as score cutoff)
     """
 
     n_seed = 0
@@ -519,7 +550,7 @@ def calculate_seed_coverage_at_given_percentage(file_result, file_seed_scores, p
     seeds = set([ id for id, score in node_to_score_initial.iteritems() if score > default_score ])
 
     dummy, dummy, node_to_score, dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_result, store_edge_type = False)
-    ids, n, i = get_top_scoring_nodes_at_given_percentage(node_to_score, percentage)
+    ids, n, i = get_top_scoring_nodes_at_given_cutoff(node_to_score, cutoff)
     for id in ids:
 	if id in seeds:
     	    n_seed += 1

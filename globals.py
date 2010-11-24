@@ -6,9 +6,9 @@ use_cluster = True
 #use_cluster = False
 leave_one_out_xval = False #True 
 score_with_all_seeds = False
-only_auc = True # In the analysis_xval if True auc.txt created only, other graphs are not drawn
+only_auc = False # In the analysis_xval if True auc.txt created only, other graphs are not drawn
 
-DEFAULT_TOP_SCORING_PERCENTAGE = 10 #1 #5 #10 # At the time of analysis it was 10
+DEFAULT_TOP_SCORING_CUTOFF = 0.123 #"10%" #"1%" #"5%" # If ends with "%" taken as percentage otherwise as score - At the time of analysis it was "10%"
 N_LINKER_THRESHOLD = 2 # For Netlink method
 DEFAULT_SEED_SCORE = 1.0 # Default score for seed nodes, used when no score given in assoc file
 DEFAULT_NON_SEED_SCORE = 0.01 # Default score for non-seed nodes
@@ -27,8 +27,8 @@ delay_experiment = True
 tex_format = True #False 
 functional_enrichment = False
 
-MODE = "prepare" # prepare, score, analyze, compare, summary
-user_friendly_id = "biana_no_tap_permuted_p10-omim" #"biana_no_tap-omim_perturbed_%d_10" % i_parameter #"biana_no_tap-all_seed20below" #"biana-all" #"biana_no_tap-omim" #"omim_alzheimer-diabetes" #"all_vs_all" # a.k.a. emre friendly id for compare and summary
+MODE = "compare" # prepare, score, analyze, compare, summary
+user_friendly_id = "test" # "biana_no_tap-omim" #"biana_no_tap-omim_perturbed_%d_10" % i_parameter #"biana_no_tap-all_seed20below" #"biana-all" #"biana_no_tap-omim" #"omim_alzheimer-diabetes" #"all_vs_all" # a.k.a. emre friendly id for compare and summary
 summary_seed_cutoff = 1 #None #2 #20 # Seed cutoff considered for inclusion of an experiment in sum_up_experiments, if None seed.dat is not created
 prepare_mutated = None # Creates permutad/pruned networks 
 analyze_network = False #True
@@ -55,8 +55,8 @@ ppis = []
 #ppis += ["biana_no_tap_no_reliability_permuted_p%s_%s" % (p, i) for p in xrange(10,110,10) for i in xrange(1,11) ] 
 #ppis += ["biana_no_tap_no_reliability_pruned_p%s_%s" % (p, i) for p in xrange(i_parameter,i_parameter+10,10) for i in xrange(1,11) ] 
 #ppis += ["biana_no_tap_no_reliability_pruned_non_seed_interactions_p%s_%s" % (p, i) for p in xrange(10,100,10) for i in xrange(1,101) ] 
-ppis += ["biana_no_tap_no_reliability_pruned_p%s_%s" % (p, i) for p in xrange(10,100,10) for i in xrange(1,11) ] 
-#ppis += ["biana_no_tap_relevance"]
+#ppis += ["biana_no_tap_no_reliability_pruned_p%s_%s" % (p, i) for p in xrange(10,100,10) for i in xrange(1,11) ] 
+ppis += ["biana_no_tap_relevance"]
 #ppis += ["biana_no_reliability"]
 #ppis += ["david"]
 #ppis += ["javi"] #["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
@@ -69,7 +69,7 @@ phenotypes = []
 #phenotypes += navlakha_phenotypes
 #phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes 
 #phenotypes += hsdl_phenotypes
-phenotypes += omim_phenotypes 
+#phenotypes += omim_phenotypes 
 #phenotypes += [ "perturbed_%s_p%i_%i" % (d, p, i) for d in omim_phenotypes for p in xrange(10,100,10) for i in xrange(1,101) ]
 #phenotypes += [ "perturbed_%s_p%i_%i" % (d, p, i) for d in omim_phenotypes for p in xrange(i_parameter,i_parameter+10,10) for i in xrange(1,11) ]  
 #phenotypes += goh_phenotypes 
@@ -77,7 +77,7 @@ phenotypes += omim_phenotypes
 #phenotypes += ["omim_prostate_cancer"]
 #phenotypes += ["omim_breast_cancer", "omim_lung_cancer"]
 #phenotypes += ["omim_leukemia"]
-#phenotypes += ["omim_alzheimer"] 
+phenotypes += ["omim_alzheimer"] 
 #phenotypes += ["omim_insulin"] 
 #phenotypes += ["omim_diabetes"]
 #phenotypes += ["omim_parkinson_disease"]
@@ -87,10 +87,10 @@ phenotypes += omim_phenotypes
 scoring_parameters = []
 #scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
 #scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
-scoring_parameters += [("nr", 1, 1)]
+#scoring_parameters += [("nr", 1, 1)]
 #scoring_parameters += [("nd", 1, 1)]
 #scoring_parameters += [("nz", 1, 5)]
-#scoring_parameters += [("ns", 3, 2)]
+scoring_parameters += [("ns", 3, 2)]
 #scoring_parameters += [("ns", 2, 3), ("ns", 2, 2)]
 #scoring_parameters += [("nw",1, 1)]
 #scoring_parameters += [("nx", 1, 1)]
@@ -124,6 +124,9 @@ rhodes_interaction_relevance_file = rhodes_network_file[:-4] + ".eda"
 
 # Gene info file 
 gene_info_file = data_dir + "gene_info" + os.sep + "genes.tsv"
+
+COMPARISON_GOLD_STANDARD_FILE = data_dir + "alzheimer_gold" + os.sep + "gene_list.txt" 
+#COMPARISON_GOLD_STANDARD_FILE = "/home/emre/arastirma/data/disease/NetAge/AD_genes.txt"
 
 scoring_methods = ["nd", "nz", "ns", "ff", "nr", "nw", "nl", "nx", "nh", "n1", "nb"]
 

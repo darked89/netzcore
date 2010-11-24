@@ -27,7 +27,7 @@ def main(ppis, phenotypes, scoring_parameters, i_parameter):
 		experiments.append((ppi, phenotype, parameters[0], parameters[1], parameters[2]))
 
     if MODE == "compare":
-	compare_experiments(experiments, tex_format, functional_enrichment, user_friendly_id, summary_seed_cutoff, analysis_type = "common") # "user")
+	compare_experiments(experiments, COMPARISON_GOLD_STANDARD_FILE, tex_format, functional_enrichment, user_friendly_id, summary_seed_cutoff, analysis_type = "common") # "user")
     elif MODE == "summary":
 	sum_up_experiments(ppis, phenotypes, "auc", tex_format, user_friendly_id, summary_seed_cutoff)
 	sum_up_experiments(ppis, phenotypes, "cov", tex_format, user_friendly_id, summary_seed_cutoff)
@@ -393,13 +393,13 @@ def decide_directory_hierarchy(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERAT
 	Decide directory structure and create necessary folders
     """
     # Project directory structure
-    #input_base_dir = data_dir + "input_david" + os.sep  #!
+    #input_base_dir = data_dir + "input_david" + os.sep  
     input_base_dir = data_dir + "input" + os.sep
     input_base_dir_network = input_base_dir + PPI + os.sep
     input_base_dir_association = input_base_dir_network + ASSOCIATION + os.sep
     input_dir = input_base_dir_association
     sampling_dir = input_base_dir_network + "sampled_graphs" + os.sep
-    #output_base_dir = data_dir + "output_david" + os.sep #!
+    #output_base_dir = data_dir + "output_david" + os.sep 
     output_base_dir = data_dir + "output" + os.sep
     output_base_dir_network = output_base_dir + PPI + os.sep
     output_base_dir_association = output_base_dir_network + ASSOCIATION + os.sep
@@ -561,12 +561,14 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, f
     return
 
 
-def compare_experiments(experiments, tex_format=False, functional_enrichment=False, user_friendly_id="test", seed_cutoff=None, analysis_type = "common"):
+def compare_experiments(experiments, gold_standard_file=None, tex_format=False, functional_enrichment=False, user_friendly_id="test", seed_cutoff=None, analysis_type = "common"):
     """
 	Selects and checks functional annotation of common highest scoring nodes (mapping their genesymols) in different experiments
     """
     top_scoring_ids = None
     all_scoring_ids = set()
+    all_scoring_ids2 = set()
+    seed_scoring_ids = set()
     species = set()
     prev_id_type = None
     scoring_to_values = {}
@@ -586,13 +588,16 @@ def compare_experiments(experiments, tex_format=False, functional_enrichment=Fal
 	labels_file, r_script_file, tex_script_file) = decide_scoring_and_analysis_files(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association)
 	if analysis_type == "common":
 	    # Get high scoring node ids
-	    selected_ids, all_ids = analyze_results.get_top_scoring_node_ids_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_PERCENTAGE, association_scores_file_identifier_type, default_non_seed_score = DEFAULT_NON_SEED_SCORE, exclude_seeds = True)
+	    selected_ids, all_ids, seed_ids = analyze_results.get_top_scoring_node_ids_at_given_cutoff(output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_CUTOFF, association_scores_file_identifier_type, default_non_seed_score = DEFAULT_NON_SEED_SCORE, exclude_seeds = True, one_gene_per_node=True) 
+	    selected_ids2, all_ids2, seed_ids2 = analyze_results.get_top_scoring_node_ids_at_given_cutoff(output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_CUTOFF, association_scores_file_identifier_type, default_non_seed_score = DEFAULT_NON_SEED_SCORE, exclude_seeds = True, one_gene_per_node=False)
 	    #print len(selected_ids), len(all_ids)
 	    if top_scoring_ids is None:
 		top_scoring_ids = set(selected_ids)
 	    else:
 		top_scoring_ids &= set(selected_ids)
 	    all_scoring_ids |= set(all_ids)
+	    all_scoring_ids2 |= set(all_ids2)
+	    seed_scoring_ids |= set(seed_ids)
 	    species.add(specie)
 	    if len(species) > 1:
 		raise ValueError("Comparison can be made only on the data from same specie")
@@ -621,7 +626,7 @@ def compare_experiments(experiments, tex_format=False, functional_enrichment=Fal
 		threshold_to_values.setdefault(tScore, []).append((ppv, sens))
 	    f.close()
 	else:
-	    raise ValueErro("Unrecognized analysis_type")
+	    raise ValueError("Unrecognized analysis_type")
 
     compare_dir += user_friendly_id + os.sep
     if not os.path.exists(compare_dir): 
@@ -644,16 +649,40 @@ def compare_experiments(experiments, tex_format=False, functional_enrichment=Fal
     f.write("%s\n" % (experiments))
     f.close()
     #out_file = sys_stdout
-    out_file = open(compare_dir + "comparison.txt", "w")
-    out_file_tex = open(compare_dir + "comparison.tex", "w")
     if "-" in top_scoring_ids:
 	top_scoring_ids.remove("-")
     if "-" in all_scoring_ids:
 	all_scoring_ids.remove("-")
+    if "-" in seed_scoring_ids:
+	seed_scoring_ids.remove("-")
+    out_file = open(compare_dir + "comparison.txt", "w")
+    out_file_tex = open(compare_dir + "comparison.tex", "w")
     for id in top_scoring_ids: 
 	out_file_tex.write("%s\\\\\n" % id)
 	out_file.write("%s\n" % id)
+    out_file_all = open(compare_dir + "all.txt", "w")
+    for id in all_scoring_ids: 
+	out_file_all.write("%s\n" % id)
+    out_file_all.close()
+    out_file_seed = open(compare_dir + "seeds.txt", "w")
+    for id in seed_scoring_ids: 
+	out_file_seed.write("%s\n" % id)
+    out_file_seed.close()
     out_file_tex.write("\n")
+
+    gold_ids = set([ line.strip() for line in open(gold_standard_file) ])
+    print zip(["gold & seed", "gold & top", "gold & all"], map(lambda x: len(gold_ids & x), [ seed_scoring_ids, top_scoring_ids, all_scoring_ids ]))
+    print "seed-free:", zip(["gold", "top", "all"], map(len, [ gold_ids, top_scoring_ids, all_scoring_ids-seed_scoring_ids ]))
+    print "matched ids:", gold_ids & top_scoring_ids
+    print "ids to be modified in mapping files:", (gold_ids & all_scoring_ids2) - (gold_ids & all_scoring_ids)
+
+    non_seed_all_ids = all_scoring_ids - seed_scoring_ids
+    x = len(gold_ids & top_scoring_ids)
+    m = len(gold_ids & non_seed_all_ids)
+    n = len(non_seed_all_ids)
+    k = len(top_scoring_ids)
+    print "sum(dhyper(%d:%d, %d, %d, %d))" % (x, min(m, len(top_scoring_ids)), m, n, k)
+
     if functional_enrichment:
 	if tex_format:
 	    file = out_file_tex
@@ -767,7 +796,6 @@ def sum_up_experiments(ppis, phenotypes, analysis_type="auc", tex_format=False, 
     if analysis_type == "auc":
 	out_file.write("\nAVERAGE AUC OVER DIFFERENT PHENOTYPES\n")
     else:
-	#out_file.write("\nAVERAGE SEED COVERAGE AT %d%% OVER DIFFERENT PHENOTYPES\n" % DEFAULT_TOP_SCORING_PERCENTAGE)
 	out_file.write("\nAVERAGE SEED COVERAGE OVER DIFFERENT PHENOTYPES\n")
 
     if tex_format:
@@ -801,7 +829,6 @@ def sum_up_experiments(ppis, phenotypes, analysis_type="auc", tex_format=False, 
     if analysis_type == "auc":
 	out_file.write("\nAVERAGE AUC OVER DIFFERENT PPIS\n")
     else:
-	#out_file.write("\nAVERAGE SEED COVERAGE AT %d%% OVER DIFFERENT PPIS\n" % DEFAULT_TOP_SCORING_PERCENTAGE)
 	out_file.write("\nAVERAGE SEED COVERAGE OVER DIFFERENT PPIS\n") 
     if tex_format:
 	out_file.write("\n%s\n" % " & ".join(common_methods))
@@ -1156,17 +1183,14 @@ def analyze_xval_percentage(log_file, output_scores_file, node_scores_file, outp
     coverages = []
     f.write("\nXVAL SEED COVERAGE ANALYSIS\n")
     for percentage in (10, 25, 50):
-	#print "---- %s%%:" % percentage
-	f.write("---- %s%%:\n" % percentage)
+	percentage = "%f%%" % percentage
+	f.write("---- %s:\n" % percentage)
 	n_seed_sum = 0.0
 	n_seed_all_sum = 0.0
 	values = []
 	for k in range(1, N_X_VAL+1):
-	    ##print output_scores_file+".%s.%d" % (SCORING, k), node_scores_file+".%d.test"%k 
-	    n_seed, n_seed_all, n, i = analyze_results.calculate_seed_coverage_at_given_percentage(output_scores_file + ".%d" % k, node_scores_file+".%d.test" % k, percentage, DEFAULT_NON_SEED_SCORE)
-	    ##print n_seed, n, i
+	    n_seed, n_seed_all, n, i = analyze_results.calculate_seed_coverage_at_given_cutoff(output_scores_file + ".%d" % k, node_scores_file+".%d.test" % k, percentage, DEFAULT_NON_SEED_SCORE)
 	    if i > n+1:
-		#print "Warning: Real coverage percentage is disputed due to equal scores!", i, n
 		f.write("Warning: Real coverage percentage is disputed due to equal scores! %i %i\n" % (i, n))
 	    n_seed_sum += n_seed
 	    n_seed_all_sum += n_seed_all
@@ -1174,9 +1198,7 @@ def analyze_xval_percentage(log_file, output_scores_file, node_scores_file, outp
 	coverages.append("%f\t+/- %f" % calculate_mean_and_sigma.calc_mean_and_sigma(values))
 	n_seed = n_seed_sum / N_X_VAL
 	n_seed_all = n_seed_all_sum / N_X_VAL
-	#print "Avg:", n_seed, "over", n
 	f.write("Avg: %i over %i\n" % (n_seed, n))
-	#coverages.append(float(n_seed)/n_seed_all)
     analyze_results.record_performance_coverage_in_log_file(output_log_file, coverages)
     f.close()
     return
@@ -1199,29 +1221,30 @@ def analyze_original(PPI, output_scores_file, log_file, node_scores_file, associ
 
     f.write("\nSEED COVERAGE ANALYSIS\n")
     for percentage in (10, 25, 50):
+	percentage = "%f%%" % percentage
 	f.write("---- %s:\n" % percentage)
 	#f.write("%s\n" % output_scores_file)
-	coverage = analyze_results.calculate_seed_coverage_at_given_percentage(output_scores_file, node_scores_file, percentage, DEFAULT_NON_SEED_SCORE)
+	coverage = analyze_results.calculate_seed_coverage_at_given_cutoff(output_scores_file, node_scores_file, percentage, DEFAULT_NON_SEED_SCORE)
 	f.write("%s\n" % str(coverage))
 	#if association_scores_validation_file is not None:
 	#    f.write("\nValidation seed coverage:\n")
 	#    if PPI.startswith("ori") or PPI.startswith("david") or PPI.startswith("piana_joan"):
 	#   pass
 	#    else:
-	#	f.write("%s\n" % str(analyze_results.calculate_seed_coverage_at_given_percentage(output_scores_file+"."+association_scores_file_identifier_type, association_scores_validation_file, percentage, DEFAULT_NON_SEED_SCORE)))
+	#	f.write("%s\n" % str(analyze_results.calculate_seed_coverage_at_given_cutoff(output_scores_file+"."+association_scores_file_identifier_type, association_scores_validation_file, percentage, DEFAULT_NON_SEED_SCORE)))
 
     if functional_enrichment and association_scores_file_identifier_type is not None and os.path.exists(node_mapping_file+"."+association_scores_file_identifier_type):
-    	f.write("\nFUNCTIONAL ENRICHMENT ANALYSIS (OVER TOP %d%% SCORING NODES)\n" % DEFAULT_TOP_SCORING_PERCENTAGE)
-    	analyze_results.check_functional_enrichment_at_given_percentage(output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_PERCENTAGE, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, exclude_seeds = True, specie = specie, mode = "ordered")
+    	f.write("\nFUNCTIONAL ENRICHMENT ANALYSIS (OVER TOP %s SCORING NODES)\n" % DEFAULT_TOP_SCORING_CUTOFF)
+    	analyze_results.check_functional_enrichment_at_given_cutoff(output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_CUTOFF, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, exclude_seeds = True, specie = specie, mode = "ordered")
 
 	#for percentage in (10, 25, 50):
 	#    f.write("---- %s:\n" % percentage)
 	#    f.close()
-	#    analyze_results.check_functional_enrichment_at_given_percentage(output_scores_file, node_scores_file, output_scores_file+"."+association_scores_file_identifier_type, percentage, association_scores_file_identifier_type, log_file, DEFAULT_NON_SEED_SCORE, exclude_seeds)
+	#    analyze_results.check_functional_enrichment_at_given_cutoff(output_scores_file, node_scores_file, output_scores_file+"."+association_scores_file_identifier_type, "%f%%" % percentage, association_scores_file_identifier_type, log_file, DEFAULT_NON_SEED_SCORE, exclude_seeds)
 	#    f = open(log_file, "a")
 
-    	f.write("\nFUNCTIONAL ENRICHMENT ANALYSIS OF MODULES (OVER TOP %d%% SCORING NODES)\n" % DEFAULT_TOP_SCORING_PERCENTAGE)
-	analyze_results.check_functional_enrichment_of_high_scoring_modules(network_file, "greedy", output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_PERCENTAGE, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, exclude_seeds = False, specie = specie, mode = "unordered")
+    	f.write("\nFUNCTIONAL ENRICHMENT ANALYSIS OF MODULES (OVER TOP %s SCORING NODES)\n" % DEFAULT_TOP_SCORING_CUTOFF)
+	analyze_results.check_functional_enrichment_of_high_scoring_modules(network_file, "greedy", output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_CUTOFF, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, exclude_seeds = False, specie = specie, mode = "unordered")
 
     f.close()
 

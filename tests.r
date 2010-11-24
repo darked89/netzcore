@@ -5,8 +5,8 @@ dirname<-"../data/summary/"
 sum(dhyper(6:61,55,7224,61))
 
 
-d<-read.table(paste(dirname, "seed_biana_no_tap-omim/auc_ppis.dat", sep=""))
-e<-read.table(paste(dirname, "seed_biana_no_tap-omim/seeds.dat", sep=""))
+d<-read.table(paste(dirname, "biana_no_tap-omim/auc_ppis.dat", sep=""))
+e<-read.table(paste(dirname, "biana_no_tap-omim/seeds.dat", sep=""))
 print(cor(d,e))
 
 #d<-read.table(paste(dirname, "biana-all/auc_ppis.dat", sep=""))
