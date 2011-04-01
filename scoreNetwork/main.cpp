@@ -1,3 +1,23 @@
+/*
+    GUILD (Genes Underlying Inheritance Linked Disorders) implements several 
+    graph based algorithms for scoring relevance of a node in the network in 
+    terms of a phenotype using known associations in the node's neighborhood 
+    for that phenotype. GUILD has been applied to the prioritization of genes 
+    for several human disorders. 2011 - Emre Guney (Unviersitat Pompeu Fabra)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 //#include "ScoreNetwork.hpp"
 #include "Netshort.hpp"
@@ -9,8 +29,12 @@
 #include "Netween.hpp"
 #include "Netlink.hpp"
 
+#include "functionalFlow/FunctionalFlow.h"
+
 #include <iostream>
+#include <sstream>
 #include <ctime>
+#include <unistd.h>
 
 using namespace std;
 
@@ -24,18 +48,21 @@ void runNetzscore(string fileNode, string fileEdge, string fileOutput, string pr
 void runNetz1score(string fileNode, string fileEdge, string fileOutput, string prefixSampledGraphs, unsigned int nSampled, unsigned int nRepetition, unsigned int nIteration); 
 void runNetween(string fileNode, string fileEdge, string fileOutput, float threshold);
 void runNetlink(string fileNode, string fileEdge, string fileOutput, float threshold);
+void functionalFlow(string fileProtein, string fileInteraction, string fileOutput, int nIteration, float seedScoreThreshold);
 
-void printHelp() {
-    cout << "scoreN\n" 
-	 << "-s <scoring_method>{NETSHORT:d|NETSCORE:s|NETRANK:r|NETZCORE:z|NETRANDOM:x|NETZSCORE:h|NETZ1SCORE:1|NETWEEN:w|NETLINK:l}\n"
+void printHelp(char *name) {
+    cout << name << endl //"scoreN\n" 
+	 //<< "-s <prioritization_method>{NetScore:s|NetZcore:z|NetShort:d|fFlow:f|NetRank:r|NetRandom:x|NetZScore:h|NetZ1Score:1|NetWeen:w|NetLink:l}\n"
+	 << "-s <prioritization_method>{NetScore:s|NetZcore:z|NetShort:d|fFlow:f|NetRank:r}\n"
 	 << "-n <node_file>\n" 
 	 << "-e <edge_file>\n" 
 	 << "-o <output_file>\n"
-	 << "-r <number_of_repetition>\n"
-	 << "-i <number_of_iteration>\n"
+	 << "-i <number_of_iterations>\n"
+	 << "-r <number_of_repetitions>\n"
 	 << "-t <seed_score_threshold>\n"
 	 << "-x <number_of_sampled_graphs>\n" 
-	 << "-d <sampling_graph_directory>\n"
+	 << "-d <sampled_graph_prefix>\n"
+	 << "-h\n"
 	 << endl;
 }
 
@@ -43,14 +70,15 @@ int main(int argc, char **argv)
 {
     static const char *optString = "n:e:i:s:o:r:x:d:t:h?";
     int opt = 0;
-    string fileNode, fileEdge, fileOutput, dirSampling;
-    enum ScoringMethod { NETSHORT = 'd', NETSCORE = 's', NETRANK = 'r', NETZCORE = 'z', NETRANDOM = 'x', NETZSCORE = 'h', NETZ1SCORE = '1', NETWEEN = 'w', NETLINK = 'l' };
+    string fileNode, fileEdge, fileOutput, prefixSampling;
+    enum ScoringMethod { NETSCORE = 's', NETSHORT = 'd', NETZCORE = 'z', FFLOW = 'f', NETRANK = 'r', NETRANDOM = 'x', NETZSCORE = 'h', NETZ1SCORE = '1', NETWEEN = 'w', NETLINK = 'l' };
     unsigned int nIteration = 1, nRepetition = 1, nSampled = 0;  
     char scoring = 's';
     float threshold = 0.01;
 
-    if(argc < 3) {
-	printHelp();
+    if(argc < 9) {
+	printHelp(argv[0]);
+	return 1;
     }
 
     opt = getopt( argc, argv, optString );
@@ -83,7 +111,7 @@ int main(int argc, char **argv)
             	iss >> nSampled;
                 break;
             case 'd':
-            	dirSampling = string(optarg); 
+            	prefixSampling = string(optarg); 
                 break;
             case 't':
                 iss.str(optarg);
@@ -91,7 +119,7 @@ int main(int argc, char **argv)
                 break;
 	    case 'h':
 	    case '?':
-		printHelp();
+		printHelp(argv[0]);
                 return 0;
             default:
                 break;
@@ -108,17 +136,19 @@ int main(int argc, char **argv)
     else if (scoring == NETRANK)
 	runNetrank(fileNode, fileEdge, fileOutput, nIteration);
     else if (scoring == NETZCORE)
-	runNetzcore(fileNode, fileEdge, fileOutput, dirSampling + string("sampled_graph.sif."), nSampled, nRepetition, nIteration); 
+	runNetzcore(fileNode, fileEdge, fileOutput, prefixSampling, nSampled, nRepetition, nIteration); 
     else if (scoring == NETRANDOM)
 	runNetrandom(fileNode, fileEdge, fileOutput); 
     else if (scoring == NETZSCORE)
-	runNetzscore(fileNode, fileEdge, fileOutput, dirSampling + string("sampled_graph.sif."), nSampled, nRepetition, nIteration); 
+	runNetzscore(fileNode, fileEdge, fileOutput, prefixSampling, nSampled, nRepetition, nIteration); 
     else if (scoring == NETZ1SCORE)
-	runNetz1score(fileNode, fileEdge, fileOutput, dirSampling + string("sampled_graph.sif."), nSampled, nRepetition, nIteration); 
+	runNetz1score(fileNode, fileEdge, fileOutput, prefixSampling, nSampled, nRepetition, nIteration); 
     else if (scoring == NETWEEN)
 	runNetween(fileNode, fileEdge, fileOutput, threshold); 
     else if (scoring == NETLINK)
 	runNetlink(fileNode, fileEdge, fileOutput, threshold); 
+    else if (scoring == FFLOW)
+	functionalFlow(fileNode, fileEdge, fileOutput, nIteration, threshold);
     else
 	//runScoreNetwork();
 	cerr << "Unrecognized scoring type!" << endl;
@@ -208,6 +238,13 @@ void runNetrandom(string fileNode, string fileEdge, string fileOutput)
 {
     Netrandom sN(fileNode, fileEdge, fileOutput, true);
     sN.run();
+}
+
+void functionalFlow(string fileProtein, string fileInteraction, string fileOutput, int nIteration, float seedScoreThreshold) {
+	// flagRemoveSeedEffect, flagDebug
+	FunctionalFlow fFlow = FunctionalFlow(fileProtein, fileInteraction, fileOutput, seedScoreThreshold, false, false);
+	fFlow.run(nIteration);
+	fFlow.outputScores();
 }
 
 /*

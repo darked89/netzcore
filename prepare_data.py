@@ -193,7 +193,7 @@ def create_edge_scores_as_node_scores_file(edges, node_to_score, edge_to_score, 
 		score_v = node_to_score[v]
 	    else:
 		score_v = default_score
-	weight = default_score
+	weight = 1 # before it was default_score but makes no change since all included in edge_to_score has 1 as minimum anyways 
 	if (u,v) in edge_to_score:
 	    weight = edge_to_score[(u,v)]
 	elif (v,u) in edge_to_score:
