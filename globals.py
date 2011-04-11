@@ -19,6 +19,7 @@ N_RANDOM_NEGATIVE_FOLDS = None #10 # Number of non-seed scores to be averaged fo
 			    # If 0 all non seeds are included as they are, If None all non seeds are included averaged to scale with the size of test seeds
 REPLICABLE = 123 #63826 #9871354 #123 #None # Assign a predefined seed in randomization for initial test folds creation and N_RANDOM_NEGATIVE_FOLD generation
 ONLY_LARGEST_COMPONENT = True 
+GO_ENRICHMENT_P_VALUE_CUTOFF = 0.05
 
 # FOLLOWING LOCAL ONLY TO MAIN
 ignore_experiment_failures = False
@@ -30,7 +31,7 @@ MODE = "module" # prepare, score, analyze, compare, summary, module
 user_friendly_id = "biana_no_tap_relevance-omim_alzheimer-ns_nz_nd_union-top5" # "biana_no_tap-omim" #biana_no_tap_no_reliability-omim_alzheimer-nd-top5 #"biana_no_tap-omim_perturbed_%d_10" % i_parameter #"biana_no_tap-all_seed20below" #"biana-all" #"biana_no_tap-omim" #"omim_alzheimer-diabetes" #"all_vs_all" # a.k.a. emre friendly id for compare and summary
 summary_seed_cutoff = 1 #None #2 #20 # Seed cutoff considered for inclusion of an experiment in sum_up_experiments, if None seed.dat is not created. Also used in compare_experiments if analysis_type is user
 prepare_mutated = None # Creates permutad/pruned networks 
-analyze_network = False #True
+analyze_network = False 
 exclude_seeds_in_comparison = True
 
 

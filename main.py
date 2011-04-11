@@ -575,12 +575,15 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, f
 	raise ValueError("Unrecognized mode!")
     return
 
-def analyze_modules(experiments, module_detection_type="connected"):
+def analyze_modules(experiments, module_detection_type="connected", enrichment_type="go"):
     prev_assoc = None 
     method_and_val = None
     #assoc_to_pvals = {}
-    f2 = open("module_summary.dat", 'w')
-    f2.write("ppi phenotype scoring n_seed n_module n_seed_in_modules n_all_in_modules\n")
+    f2 = open("module_summary_top5_mcl_go_unique_n3union.dat", 'w')
+    if enrichment_type == "go":
+	f2.write("ppi phenotype scoring n_seed_go n_module n_seed_go_in_modules n_go_in_modules ratio\n")
+    else:
+	f2.write("ppi phenotype scoring n_seed n_module n_seed_in_modules n_all_in_modules ratio\n")
     for experiment in experiments:
 	PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION = experiment
 	# Disease association files (Association data to be used)
@@ -597,31 +600,45 @@ def analyze_modules(experiments, module_detection_type="connected"):
 	labels_file, r_script_file, tex_script_file) = decide_scoring_and_analysis_files(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association)
 	f = open("modules.txt", 'a')
 	if prev_assoc != ASSOCIATION:
-	    #print ASSOCIATION
+	    #nodes = compare_experiments([ (PPI, ASSOCIATION) + parameters for parameters in scoring_parameters], None, False, False, "test", False, 1, "common_intersection_return")
+	    #print ASSOCIATION, len(nodes)
+	    #val = analyze_results.check_connected_seed_enrichment_of_modules_of_given_nodes(nodes, edge_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, module_detection_type)
+	    #print ">>> %s %s %s %.2f %d %d %d %d" % (PPI, ASSOCIATION, "nu", val[0], val[4], val[3], val[1], val[2])
+	    #prev_assoc = ASSOCIATION
+	    #break
+	    print ASSOCIATION
+	    if enrichment_type == "go":
+		seeds, seed_ids, all_ids = analyze_results.get_seed_and_all_nodes_and_ids(node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_NON_SEED_SCORE)
+		response = analyze_results.check_functional_enrichment(list(seed_ids), list(all_ids), association_scores_file_identifier_type, None, specie = specie, mode = "unordered")
+		go_ids = set([ row[6] for row in response if float(row[5]) <= GO_ENRICHMENT_P_VALUE_CUTOFF ])
+		#print len(go_ids), len(response)
+	    else:
+		go_ids = None
 	    if method_and_val is not None:
 		method_and_val.sort(lambda x, y: cmp(y[1], x[1]))
 		print "%s\t%s" % (prev_assoc, "\t".join(map(lambda x: "%s %.2f %d %d %d %d" % (x[0], x[1][0], x[1][1], x[1][2], x[1][3], x[1][4]), method_and_val)))
 		#assoc_to_pvals[prev_assoc] = method_and_val
 	    method_and_val = []
-	    f.write("%s %s no\n" % (PPI, ASSOCIATION))
-	    val = analyze_results.check_connected_seed_enrichment_in_network(edge_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, module_detection_type)
-	    f2.write("%s %s %s %d %d %d %d\n" % (PPI, ASSOCIATION, "no", val[4], val[3], val[1], val[2]))
+	    #f.write("%s %s no\n" % (PPI, ASSOCIATION))
+	    val = analyze_results.check_connected_seed_enrichment_in_network(edge_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, module_detection_type, go_ids, specie = specie, p_value_cutoff = GO_ENRICHMENT_P_VALUE_CUTOFF)
+	    f2.write("%s %s %s %d %d %d %d %f\n" % (PPI, ASSOCIATION, "no", val[4], val[3], val[1], val[2], val[0]))
 	    method_and_val.append(("no", val))
-	    f.write("%s %s nn\n" % (PPI, ASSOCIATION))
-	    val = analyze_results.check_connected_seed_enrichment_of_neighbors_in_network(edge_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, module_detection_type)
-	    f2.write("%s %s %s %d %d %d %d\n" % (PPI, ASSOCIATION, "nn", val[4], val[3], val[1], val[2]))
+	    #f.write("%s %s nn\n" % (PPI, ASSOCIATION))
+	    val = analyze_results.check_connected_seed_enrichment_of_neighbors_in_network(edge_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, module_detection_type, go_ids, specie = specie, p_value_cutoff = GO_ENRICHMENT_P_VALUE_CUTOFF)
+	    f2.write("%s %s %s %d %d %d %d %f\n" % (PPI, ASSOCIATION, "nn", val[4], val[3], val[1], val[2], val[0]))
 	    method_and_val.append(("nn", val))
-	    #nodes = compare_experiments([ (PPI, ASSOCIATION) + parameters for parameters in scoring_parameters], None, False, False, "test", False, 1, "common_union_return")
-	    #f.write("%s %s n5\n" % (PPI, ASSOCIATION))
-	    #val = analyze_results.check_connected_seed_enrichment_of_modules_of_given_nodes(nodes, edge_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, module_detection_type)
-	    #f2.write("%s %s %s %d %d %d %d\n" % (PPI, ASSOCIATION, "n5", val[4], val[3], val[1], val[2]))
-	    #method_and_val.append(("n5", val))
+	    scoring_parameters = [("nz", 1, 5), ("ns", 3, 2), ("nd", 1, 1)] #! 
+	    nodes = compare_experiments([ (PPI, ASSOCIATION) + parameters for parameters in scoring_parameters], None, False, False, "test", False, 1, "common_union_return")
+	    #f.write("%s %s nu\n" % (PPI, ASSOCIATION))
+	    val = analyze_results.check_connected_seed_enrichment_of_modules_of_given_nodes(nodes, edge_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, module_detection_type, go_ids, specie = specie, p_value_cutoff = GO_ENRICHMENT_P_VALUE_CUTOFF)
+	    f2.write("%s %s %s %d %d %d %d %f\n" % (PPI, ASSOCIATION, "nu", val[4], val[3], val[1], val[2], val[0]))
+	    method_and_val.append(("nu", val))
 	prev_assoc = ASSOCIATION
-	f.write("%s %s %s\n" % (PPI, ASSOCIATION, SCORING))
-	val = analyze_results.check_connected_seed_enrichment_of_high_scoring_modules(edge_scores_file, output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_CUTOFF, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, module_detection_type)
-	f2.write("%s %s %s %d %d %d %d\n" % (PPI, ASSOCIATION, SCORING, val[4], val[3], val[1], val[2]))
+	#f.write("%s %s %s\n" % (PPI, ASSOCIATION, SCORING))
+	val = analyze_results.check_connected_seed_enrichment_of_high_scoring_modules(edge_scores_file, output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_CUTOFF, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, module_detection_type, go_ids, specie = specie, p_value_cutoff = GO_ENRICHMENT_P_VALUE_CUTOFF)
+	f2.write("%s %s %s %d %d %d %d %f\n" % (PPI, ASSOCIATION, SCORING, val[4], val[3], val[1], val[2], val[0]))
 	method_and_val.append((SCORING, val))
-	f.close()
+	#f.close()
     method_and_val.sort(lambda x, y: cmp(y[1], x[1]))
     print "%s\t%s" % (prev_assoc, "\t".join(map(lambda x: "%s %.2f %d %d %d %d" % (x[0], x[1][0], x[1][1], x[1][2], x[1][3], x[1][4]), method_and_val)))
     f2.close()
@@ -1016,7 +1033,7 @@ def prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix,
 	    prepare_data.analyze_network(network_file_filtered, out_file = input_log_file, seeds = seed_to_score.keys())
 
 
-    if node_description_file is not None and not os.path.exists(seed_scores_file): 
+    if node_description_file is not None and not os.path.exists(seed_scores_file):  
 	seed_to_score = prepare_data.get_node_association_score_mapping(network_file = network_file_filtered, network_file_identifier_type = network_file_identifier_type, node_description_file = node_description_file, association_scores_file = association_scores_file, association_scores_file_identifier_type = association_scores_file_identifier_type, log_file = input_log_file, default_seed_score=DEFAULT_SEED_SCORE)
 	if analyze_network:
 	    prepare_data.analyze_network(network_file_filtered, out_file = input_log_file, seeds = seed_to_score.keys())

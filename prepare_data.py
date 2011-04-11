@@ -9,6 +9,11 @@ from biana.utilities import TsvReader
 from biana.utilities import graph_utilities as network_utilities
 
 def get_number_of_mapped_seeds(filename):
+    """
+    Get number of seeds, average number of neighboring seeds and average 
+    shortest path length between seeds from the log file (the most recent
+    lines would be considered if multiple lines with seed info exist)
+    """
     f = open(filename)
     n_seed = None
     n_linker = None

@@ -357,11 +357,79 @@ manuscript_figures <- function() {
     #legend(3, 100, methods, fill=color5, bty="n", ncol=3)
     dev.off()
 
-    postscript(paste(dir.name, "S5_a.eps", sep=""), horizontal=F) #width = 480, height = 480, quality = 100)
-    d<-read.table("module_summary_top1_mcl_n5.dat", header=T)
-    #a<-read.table("module_summary_top1_mcl.dat", header=T)
-    #d<-rbind(d,a[a$scoring=="nr",])
-    methods<-c("no", "nn", "n5") 
+    d<-read.table("module_summary_top5_mcl_go_n5union.dat", header=T)
+    #d<-read.table("module_summary_top5_mcl_n5union.dat", header=T)
+    methods<-c("no", "nn", "ff", "ns") 
+    method.names<-c("PWAS-Neighborhood", "PWAS-Func.Flow", "PWAS-NetScore")
+    #methods<-c("no", "nn", "nr", "ff", "nd", "nz", "ns") 
+    #method.names<-c("GWAS", "PWAS-1", "PWAS-2")
+    #method.names<-c("PWAS-Neighborhood", "PWAS-Func.Flow", "PWAS-NetScore")
+    n<-length(methods)
+    e<-c()
+    f<-c()
+    g<-c()
+    for(i in 1:n) {
+	print(methods[i])
+	#f<-rbind(f, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_seed) 
+	if(i != 1) {
+	    f<-rbind(f, d[d$scoring==methods[i],]$ratio) 
+	    e<-rbind(e, d[d$scoring==methods[i],]$n_module)
+	    g<-rbind(g, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_all_in_modules)
+	}
+    }
+    lambda<-function(x) { substring(x, 6) }
+    postscript(paste(dir.name, "S5a.eps", sep=""), horizontal=F)
+    barplot(e, beside=TRUE, horiz=F, col=(2:n)+1, ylab="Number of modules", xlab="Phenotypes", legend.text=c("PWAS-Neighborhood", "PWAS-ToppGene", "PWAS-Func.Flow", "PWAS-NetShort", "PWAS-NetZcore", "PWAS-NetScore")) #, width=0.1, space=c(0,1.3), ylim=c(0,30), axes=F)
+    x1<-par("usr")[1]
+    x2<-par("usr")[2]
+    text(seq(x1+4.2, x2, by=(x2-x1-4)/(length(levels(d$phenotype)))), par("usr")[3]-0.02, srt=30, adj=1, labels=sapply(levels(d$phenotype), lambda), xpd=T, cex=0.7)
+    dev.off()
+    postscript(paste(dir.name, "S5b.eps", sep=""), horizontal=F) 
+    #barplot(f, beside=TRUE, horiz=F, col=(1:n)+1, ylab="Ratio of covered seeds within modules (%)", xlab="Phenotypes", legend.text=c("GWAS", "PWAS-1", "PWAS-2")) 
+    
+    barplot(f, beside=TRUE, horiz=F, col=(2:n)+1, ylab="Average seed GO term enrichment of modules (%)", xlab="Phenotypes", legend.text=method.names)
+    x1<-par("usr")[1]
+    x2<-par("usr")[2]
+    text(seq(x1+4.2, x2, by=(x2-x1-4)/(length(levels(d$phenotype)))), par("usr")[3]-0.02, srt=30, adj=1, labels=sapply(levels(d$phenotype), lambda), xpd=T, cex=0.7)
+    dev.off()
+
+    postscript(paste(dir.name, "S5c.eps", sep=""), horizontal=F)
+    barplot(g, beside=TRUE, horiz=F, col=(2:n)+1, ylab="Coverage of seed go terms within modules (%)", xlab="Phenotypes", legend.text=method.names) 
+    x1<-par("usr")[1]
+    x2<-par("usr")[2]
+    text(seq(x1+4.2, x2, by=(x2-x1-4)/(length(levels(d$phenotype)))), par("usr")[3], srt=30, adj=1, labels=sapply(levels(d$phenotype), lambda), xpd=T, cex=0.7)
+    dev.off()
+
+    postscript(paste(dir.name, "S5d.eps", sep=""), horizontal=F) #width = 480, height = 480, quality = 100)
+    d<-read.table("module_summary_top5_mcl_n5union.dat", header=T)
+    methods<-c("no", "nn", "nd") 
+    n<-length(methods)
+    x<-1:length(levels(d$phenotype))
+    par(mar=c(5,4,4,5))
+    e<-c()
+    for(i in 1:n) {
+	print(methods[i])
+	if(i != 1) {
+	    e<-rbind(e, d[d$scoring==methods[i],]$ratio)
+	}
+    }
+    a<-barplot(e, beside=TRUE, horiz=F, col=(2:n)+1, ylim=c(0,1), legend.text=c("PWAS-1", "PWAS-2"), xlab="Phenotypes", ylab="Ratio of non-seed connections within modules (%)") #width=0.1, space=c(0,1.3), 
+    #legend("topright", c("PWAS-1", "PWAS-2"), lty=rep(1, n), col=(2:n)+1)
+    lambda<-function(x) { substring(x, 6) }
+    text(1:length(levels(d$phenotype)), par("usr")[3]-0.02, srt=30, adj=1, labels=sapply(levels(d$phenotype), lambda), xpd=T, cex=0.7)
+    for(i in 1:n) {
+	print(methods[i])
+	if(i != 1) {
+	    lines(colMeans(a), d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_all_in_modules, lty=4, col=i+1)
+	}
+    }
+    #axis(4, 1:15, labels=1:15)
+    #text(par("usr")[2]+1, 10, srt=90, adj=1, labels="Number of modules using MCL", xpd=T, cex=1)
+    dev.off()
+
+    postscript(paste(dir.name, "S5e.eps", sep=""), horizontal=F) #width = 480, height = 480, quality = 100)
+    d<-read.table("module_summary_top5_mcl_n5union.dat", header=T)
+    methods<-c("no", "nn", "nd") 
     n<-length(methods)
     x<-1:length(levels(d$phenotype))
     par(mar=c(5,4,4,5))
@@ -369,10 +437,14 @@ manuscript_figures <- function() {
     for(i in 1:n) {
 	print(methods[i])
 	if(i == 1) {
-	    plot(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_seed, type="l", col=i+1, ylim=c(0,1), xlab="Phenotypes", ylab="Ratio of covered seeds within modules", xaxt="n")
+	    plot(x, d[d$scoring==methods[i],]$ratio, type="l", col=i+1, ylim=c(0,1), xlab="Phenotypes", ylab="Ratio of seeds within modules (%)", xaxt="n")
+	    #plot(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_seed, type="l", col=i+1, ylim=c(0,1), xlab="Phenotypes", ylab="Ratio of seeds within modules (%)", xaxt="n")
 	} 
 	else {
-	    lines(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_seed, lty=1, col=i+1)
+	    lines(x, d[d$scoring==methods[i],]$ratio, lty=1, col=i+1)
+	    #lines(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_seed, lty=1, col=i+1)
+	    #lines(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_all_in_modules, lty=4, col=i+1)
+	    lines(x, d[d$scoring==methods[i],]$n_seed/d[d$scoring==methods[i],]$n_all_in_modules, lty=4, col=i+1)
 	}
 	if(i != 1) {
 	    e<-rbind(e, d[d$scoring==methods[i],]$n_module)
@@ -389,208 +461,6 @@ manuscript_figures <- function() {
     text(par("usr")[2]+1, 10, srt=90, adj=1, labels="Number of modules using MCL", xpd=T, cex=1)
     dev.off()
 
-    postscript(paste(dir.name, "S5_b.eps", sep=""), horizontal=F) #width = 480, height = 480, quality = 100)
-    d<-read.table("module_summary_top1_mcl_n5.dat", header=T)
-    methods<-c("no", "nn", "n5") 
-    n<-length(methods)
-    x<-1:length(levels(d$phenotype))
-    par(mar=c(5,4,4,5))
-    e<-c()
-    for(i in 1:n) {
-	print(methods[i])
-	if(i == 1) {
-	    plot(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_all_in_modules, type="n", col=i+1, ylim=c(0,1), xlab="Phenotypes", ylab="Ratio of seeds within modules", xaxt="n")
-	} 
-	else {
-	    lines(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_all_in_modules, lty=1, col=i+1)
-	}
-	if(i != 1) {
-	    e<-rbind(e, d[d$scoring==methods[i],]$n_module)
-	}
-    }
-    legend("topright", c("GWAS", "PWAS-1", "PWAS-2"), lty=rep(1, n), col=(1:n)+1)
-    lambda<-function(x) { substring(x, 6) }
-    text(1:length(levels(d$phenotype)), par("usr")[3]-0.02, srt=30, adj=1, labels=sapply(levels(d$phenotype), lambda), xpd=T, cex=0.7)
-    par(new=TRUE)
-    e<-as.matrix(e)
-    print(dim(e))
-    barplot(e, beside=TRUE, horiz=F, col=(2:n)+1, width=0.1, space=c(0,1.3), ylim=c(0,30), axes=F)
-    axis(4, 1:15, labels=1:15)
-    text(par("usr")[2]+1, 10, srt=90, adj=1, labels="Number of modules using MCL", xpd=T, cex=1)
-    dev.off()
-
-    postscript(paste(dir.name, "S5_1.eps", sep=""), horizontal=F)#width = 480, height = 480, quality = 100)
-    d<-read.table("module_summary_top1_connected.dat", header=T)
-    methods<-c("no", "nn", "nr") 
-    #methods<-c("no", "nn", "nr", "ff", "nz", "nd", "ns") #levels(d$scoring)
-    n<-length(methods)
-    x<-1:length(levels(d$phenotype))
-    par(mar=c(5,4,4,5))
-    e<-c()
-    for(i in 1:n) {
-	print(methods[i])
-	if(i == 1) {
-	    plot(x, d[d$scoring==methods[i],]$n_seed, type="l", col=1, ylim=c(0,100), xlab="Phenotypes", ylab="Number of seeds", xaxt="n")
-	} 
-	e<-rbind(e, d[d$scoring==methods[i],]$n_seed_in_modules)
-    }
-    legend("topright", c("# of seeds", "GWAS coverage", "PWAS-1 coverage", "PWAS-2 coverage"), lty=rep(1, n+1), col=(0:n)+1)
-    lambda<-function(x) { substring(x, 6) }
-    text(1:length(levels(d$phenotype)), par("usr")[3]-0.02, srt=30, adj=1, labels=sapply(levels(d$phenotype), lambda), xpd=T, cex=0.7)
-    par(new=TRUE)
-    e<-as.matrix(e)
-    print(dim(e))
-    barplot(e, beside=TRUE, horiz=F, col=(1:n)+1, width=0.1, space=c(0,1.3), ylim=c(0,100), axes=F)
-    axis(4, 1:10, labels=1:10)
-    text(par("usr")[2]+1, 70, srt=90, adj=1, labels="Number of covered seeds within modules using CC", xpd=T, cex=1)
-    dev.off()
-
-    postscript(paste(dir.name, "S5_2.eps", sep=""), horizontal=F) #width = 480, height = 480, quality = 100)
-    d<-read.table("module_summary_top1_mcl.dat", header=T)
-    methods<-c("no", "nn", "nr") 
-    #methods<-c("no", "nn", "nr", "ff", "nz", "nd", "ns") #levels(d$scoring)
-    n<-length(methods)
-    x<-1:length(levels(d$phenotype))
-    par(mar=c(5,4,4,5))
-    e<-c()
-    for(i in 1:n) {
-	print(methods[i])
-	if(i == 1) {
-	    plot(x, d[d$scoring==methods[i],]$n_seed, type="l", col=1, ylim=c(0,100), xlab="Phenotypes", ylab="Number of seeds", xaxt="n")
-	} 
-	e<-rbind(e, d[d$scoring==methods[i],]$n_seed_in_modules)
-    }
-    #legend("topright", c("# of seeds", "Connected seeds", "Neighboring seeds", "High scoring seeds"), lty=rep(1, n+1), col=(0:n)+1)
-    legend("topright", c("# of seeds", "GWAS coverage", "PWAS-1 coverage", "PWAS-2 coverage"), lty=rep(1, n+1), col=(0:n)+1)
-    lambda<-function(x) { substring(x, 6) }
-    text(1:length(levels(d$phenotype)), par("usr")[3]-0.02, srt=30, adj=1, labels=sapply(levels(d$phenotype), lambda), xpd=T, cex=0.7)
-    par(new=TRUE)
-    e<-as.matrix(e)
-    print(dim(e))
-    barplot(e, beside=TRUE, horiz=F, col=(1:n)+1, width=0.1, space=c(0,1.3), ylim=c(0,100), axes=F)
-    axis(4, 1:100, labels=1:100)
-    text(par("usr")[2]+1, 70, srt=90, adj=1, labels="Number of covered seeds within modules using MCL", xpd=T, cex=1)
-    dev.off()
- 
-    postscript(paste(dir.name, "S5_a.eps", sep=""), horizontal=F)#width = 480, height = 480, quality = 100)
-    d<-read.table("module_summary_top1_connected.dat", header=T)
-    methods<-c("no", "nn", "nr") 
-    #methods<-c("no", "nn", "nr", "ff", "nz", "nd", "ns") #levels(d$scoring)
-    n<-length(methods)
-    x<-1:length(levels(d$phenotype))
-    par(mar=c(5,4,4,5))
-    e<-c()
-    for(i in 1:n) {
-	print(methods[i])
-	if(i == 1) {
-	    plot(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_seed, type="l", col=i+1, ylim=c(0,1), xlab="Phenotypes", ylab="Ratio of covered seeds within modules", xaxt="n")
-	} 
-	else {
-	    lines(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_seed, lty=1, col=i+1)
-	}
-	e<-rbind(e, d[d$scoring==methods[i],]$n_module)
-    }
-    #legend("topright", methods, lty=rep(1, n), col=(1:n)+1)
-    legend("topright", c("GWAS", "PWAS-1", "PWAS-2"), lty=rep(1, n), col=(1:n)+1)
-    lambda<-function(x) { substring(x, 6) }
-    text(1:length(levels(d$phenotype)), par("usr")[3]-0.02, srt=30, adj=1, labels=sapply(levels(d$phenotype), lambda), xpd=T, cex=0.7)
-    par(new=TRUE)
-    e<-as.matrix(e)
-    print(dim(e))
-    barplot(e, beside=TRUE, horiz=F, col=(1:n)+1, width=0.1, space=c(0,1.3), ylim=c(0,10), axes=F)
-    axis(4, 1:10, labels=1:10)
-    text(par("usr")[2]+1, 7, srt=90, adj=1, labels="Number of modules using CC", xpd=T, cex=1)
-    dev.off()
-
-    postscript(paste(dir.name, "S5_b.eps", sep=""), horizontal=F) #width = 480, height = 480, quality = 100)
-    d<-read.table("module_summary_top1_mcl.dat", header=T)
-    methods<-c("no", "nn", "nr") 
-    #methods<-c("no", "nn", "nr", "ff", "nz", "nd", "ns") #levels(d$scoring)
-    n<-length(methods)
-    x<-1:length(levels(d$phenotype))
-    par(mar=c(5,4,4,5))
-    e<-c()
-    for(i in 1:n) {
-	print(methods[i])
-	if(i == 1) {
-	    plot(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_seed, type="l", col=i+1, ylim=c(0,1), xlab="Phenotypes", ylab="Ratio of covered seeds within modules", xaxt="n")
-	} 
-	else {
-	    lines(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_seed, lty=1, col=i+1)
-	}
-	e<-rbind(e, d[d$scoring==methods[i],]$n_module)
-    }
-    #legend("topright", methods, lty=rep(1, n), col=(1:n)+1)
-    legend("topright", c("GWAS", "PWAS-1", "PWAS-2"), lty=rep(1, n), col=(1:n)+1)
-    lambda<-function(x) { substring(x, 6) }
-    text(1:length(levels(d$phenotype)), par("usr")[3]-0.02, srt=30, adj=1, labels=sapply(levels(d$phenotype), lambda), xpd=T, cex=0.7)
-    par(new=TRUE)
-    e<-as.matrix(e)
-    print(dim(e))
-    barplot(e, beside=TRUE, horiz=F, col=(1:n)+1, width=0.1, space=c(0,1.3), ylim=c(0,15), axes=F)
-    axis(4, 1:15, labels=1:15)
-    text(par("usr")[2]+1, 10, srt=90, adj=1, labels="Number of modules using MCL", xpd=T, cex=1)
-    dev.off()
-
-    postscript(paste(dir.name, "S5_c.eps", sep=""), horizontal=F)#width = 480, height = 480, quality = 100)
-    d<-read.table("module_summary_top1_connected.dat", header=T)
-    methods<-c("no", "nn", "nr") 
-    #methods<-c("no", "nn", "nr", "ff", "nz", "nd", "ns") #levels(d$scoring)
-    n<-length(methods)
-    x<-1:length(levels(d$phenotype))
-    par(mar=c(5,4,4,5))
-    e<-c()
-    for(i in 1:n) {
-	print(methods[i])
-	if(i == 1) {
-	    plot(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_all_in_modules, type="l", col=i+1, ylim=c(0,1), xlab="Phenotypes", ylab="Ratio of seeds within modules", xaxt="n")
-	} 
-	else {
-	    lines(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_all_in_modules, lty=1, col=i+1)
-	}
-	e<-rbind(e, d[d$scoring==methods[i],]$n_module)
-    }
-    #legend("topright", methods, lty=rep(1, n), col=(1:n)+1)
-    legend("topright", c("GWAS", "PWAS-1", "PWAS-2"), lty=rep(1, n), col=(1:n)+1)
-    lambda<-function(x) { substring(x, 6) }
-    text(1:length(levels(d$phenotype)), par("usr")[3]-0.02, srt=30, adj=1, labels=sapply(levels(d$phenotype), lambda), xpd=T, cex=0.7)
-    par(new=TRUE)
-    e<-as.matrix(e)
-    print(dim(e))
-    barplot(e, beside=TRUE, horiz=F, col=(1:n)+1, width=0.1, space=c(0,1.3), ylim=c(0,10), axes=F)
-    axis(4, 1:10, labels=1:10)
-    text(par("usr")[2]+1, 7, srt=90, adj=1, labels="Number of modules using CC", xpd=T, cex=1)
-    dev.off()
-
-    postscript(paste(dir.name, "S5_d.eps", sep=""), horizontal=F) #width = 480, height = 480, quality = 100)
-    d<-read.table("module_summary_top1_mcl.dat", header=T)
-    methods<-c("no", "nn", "nr") 
-    #methods<-c("no", "nn", "nr", "ff", "nz", "nd", "ns") #levels(d$scoring)
-    n<-length(methods)
-    x<-1:length(levels(d$phenotype))
-    par(mar=c(5,4,4,5))
-    e<-c()
-    for(i in 1:n) {
-	print(methods[i])
-	if(i == 1) {
-	    plot(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_all_in_modules, type="l", col=i+1, ylim=c(0,1), xlab="Phenotypes", ylab="Ratio of seeds within modules", xaxt="n")
-	} 
-	else {
-	    lines(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_all_in_modules, lty=1, col=i+1)
-	}
-	e<-rbind(e, d[d$scoring==methods[i],]$n_module)
-    }
-    #legend("topright", methods, lty=rep(1, n), col=(1:n)+1)
-    legend("topright", c("GWAS", "PWAS-1", "PWAS-2"), lty=rep(1, n), col=(1:n)+1)
-    lambda<-function(x) { substring(x, 6) }
-    text(1:length(levels(d$phenotype)), par("usr")[3]-0.02, srt=30, adj=1, labels=sapply(levels(d$phenotype), lambda), xpd=T, cex=0.7)
-    par(new=TRUE)
-    e<-as.matrix(e)
-    print(dim(e))
-    barplot(e, beside=TRUE, horiz=F, col=(1:n)+1, width=0.1, space=c(0,1.3), ylim=c(0,15), axes=F)
-    axis(4, 1:15, labels=1:15)
-    text(par("usr")[2]+1, 10, srt=90, adj=1, labels="Number of modules using MCL", xpd=T, cex=1)
-    dev.off()
 }
 
 ### MANUSCRIPT TESTS ###
@@ -808,6 +678,241 @@ old_figures <- function() {
     #xlab="Diseases Groups (w.r.t. number of initially annotated proteins)", 
     barplot(as.matrix(t(f)), beside=T, col=color5, ylim=c(0,100), ylab="AUC(%)", xlab="Number of seeds", names.arg=c("1-19", "20-292"))
     legend(3, 100, methods, fill=color5, bty="n", ncol=3)
+    dev.off()
+
+    postscript(paste(dir.name, "S5_a.eps", sep=""), horizontal=F) #width = 480, height = 480, quality = 100)
+    d<-read.table("module_summary_top1_mcl_n3.dat", header=T)
+    #a<-read.table("module_summary_top1_mcl.dat", header=T)
+    #d<-rbind(d,a[a$scoring=="nr",])
+    methods<-c("no", "nn", "n3") 
+    n<-length(methods)
+    x<-1:length(levels(d$phenotype))
+    par(mar=c(5,4,4,5))
+    e<-c()
+    for(i in 1:n) {
+	print(methods[i])
+	if(i == 1) {
+	    plot(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_seed, type="l", col=i+1, ylim=c(0,1), xlab="Phenotypes", ylab="Ratio of covered seeds within modules", xaxt="n")
+	} 
+	else {
+	    lines(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_seed, lty=1, col=i+1)
+	}
+	if(i != 1) {
+	    e<-rbind(e, d[d$scoring==methods[i],]$n_module)
+	}
+    }
+    legend("topright", c("GWAS", "PWAS-1", "PWAS-2"), lty=rep(1, n), col=(1:n)+1)
+    lambda<-function(x) { substring(x, 6) }
+    text(1:length(levels(d$phenotype)), par("usr")[3]-0.02, srt=30, adj=1, labels=sapply(levels(d$phenotype), lambda), xpd=T, cex=0.7)
+    par(new=TRUE)
+    e<-as.matrix(e)
+    print(dim(e))
+    barplot(e, beside=TRUE, horiz=F, col=(2:n)+1, width=0.1, space=c(0,1.3), ylim=c(0,30), axes=F)
+    axis(4, 1:15, labels=1:15)
+    text(par("usr")[2]+1, 10, srt=90, adj=1, labels="Number of modules using MCL", xpd=T, cex=1)
+    dev.off()
+
+    postscript(paste(dir.name, "S5_b.eps", sep=""), horizontal=F) #width = 480, height = 480, quality = 100)
+    d<-read.table("module_summary_top1_mcl_n5.dat", header=T)
+    methods<-c("no", "nn", "n5") 
+    n<-length(methods)
+    x<-1:length(levels(d$phenotype))
+    par(mar=c(5,4,4,5))
+    e<-c()
+    for(i in 1:n) {
+	print(methods[i])
+	if(i == 1) {
+	    plot(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_all_in_modules, type="n", col=i+1, ylim=c(0,1), xlab="Phenotypes", ylab="Ratio of seeds within modules", xaxt="n")
+	} 
+	else {
+	    lines(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_all_in_modules, lty=1, col=i+1)
+	}
+	if(i != 1) {
+	    e<-rbind(e, d[d$scoring==methods[i],]$n_module)
+	}
+    }
+    legend("topright", c("GWAS", "PWAS-1", "PWAS-2"), lty=rep(1, n), col=(1:n)+1)
+    lambda<-function(x) { substring(x, 6) }
+    text(1:length(levels(d$phenotype)), par("usr")[3]-0.02, srt=30, adj=1, labels=sapply(levels(d$phenotype), lambda), xpd=T, cex=0.7)
+    par(new=TRUE)
+    e<-as.matrix(e)
+    print(dim(e))
+    barplot(e, beside=TRUE, horiz=F, col=(2:n)+1, width=0.1, space=c(0,1.3), ylim=c(0,30), axes=F)
+    axis(4, 1:15, labels=1:15)
+    text(par("usr")[2]+1, 10, srt=90, adj=1, labels="Number of modules using MCL", xpd=T, cex=1)
+    dev.off()
+
+    postscript(paste(dir.name, "S5_1.eps", sep=""), horizontal=F)#width = 480, height = 480, quality = 100)
+    d<-read.table("module_summary_top1_connected.dat", header=T)
+    methods<-c("no", "nn", "nr") 
+    #methods<-c("no", "nn", "nr", "ff", "nz", "nd", "ns") #levels(d$scoring)
+    n<-length(methods)
+    x<-1:length(levels(d$phenotype))
+    par(mar=c(5,4,4,5))
+    e<-c()
+    for(i in 1:n) {
+	print(methods[i])
+	if(i == 1) {
+	    plot(x, d[d$scoring==methods[i],]$n_seed, type="l", col=1, ylim=c(0,100), xlab="Phenotypes", ylab="Number of seeds", xaxt="n")
+	} 
+	e<-rbind(e, d[d$scoring==methods[i],]$n_seed_in_modules)
+    }
+    legend("topright", c("# of seeds", "GWAS coverage", "PWAS-1 coverage", "PWAS-2 coverage"), lty=rep(1, n+1), col=(0:n)+1)
+    lambda<-function(x) { substring(x, 6) }
+    text(1:length(levels(d$phenotype)), par("usr")[3]-0.02, srt=30, adj=1, labels=sapply(levels(d$phenotype), lambda), xpd=T, cex=0.7)
+    par(new=TRUE)
+    e<-as.matrix(e)
+    print(dim(e))
+    barplot(e, beside=TRUE, horiz=F, col=(1:n)+1, width=0.1, space=c(0,1.3), ylim=c(0,100), axes=F)
+    axis(4, 1:10, labels=1:10)
+    text(par("usr")[2]+1, 70, srt=90, adj=1, labels="Number of covered seeds within modules using CC", xpd=T, cex=1)
+    dev.off()
+
+    postscript(paste(dir.name, "S5_2.eps", sep=""), horizontal=F) #width = 480, height = 480, quality = 100)
+    d<-read.table("module_summary_top1_mcl.dat", header=T)
+    methods<-c("no", "nn", "nr") 
+    #methods<-c("no", "nn", "nr", "ff", "nz", "nd", "ns") #levels(d$scoring)
+    n<-length(methods)
+    x<-1:length(levels(d$phenotype))
+    par(mar=c(5,4,4,5))
+    e<-c()
+    for(i in 1:n) {
+	print(methods[i])
+	if(i == 1) {
+	    plot(x, d[d$scoring==methods[i],]$n_seed, type="l", col=1, ylim=c(0,100), xlab="Phenotypes", ylab="Number of seeds", xaxt="n")
+	} 
+	e<-rbind(e, d[d$scoring==methods[i],]$n_seed_in_modules)
+    }
+    #legend("topright", c("# of seeds", "Connected seeds", "Neighboring seeds", "High scoring seeds"), lty=rep(1, n+1), col=(0:n)+1)
+    legend("topright", c("# of seeds", "GWAS coverage", "PWAS-1 coverage", "PWAS-2 coverage"), lty=rep(1, n+1), col=(0:n)+1)
+    lambda<-function(x) { substring(x, 6) }
+    text(1:length(levels(d$phenotype)), par("usr")[3]-0.02, srt=30, adj=1, labels=sapply(levels(d$phenotype), lambda), xpd=T, cex=0.7)
+    par(new=TRUE)
+    e<-as.matrix(e)
+    print(dim(e))
+    barplot(e, beside=TRUE, horiz=F, col=(1:n)+1, width=0.1, space=c(0,1.3), ylim=c(0,100), axes=F)
+    axis(4, 1:100, labels=1:100)
+    text(par("usr")[2]+1, 70, srt=90, adj=1, labels="Number of covered seeds within modules using MCL", xpd=T, cex=1)
+    dev.off()
+ 
+    postscript(paste(dir.name, "S5_3.eps", sep=""), horizontal=F)#width = 480, height = 480, quality = 100)
+    d<-read.table("module_summary_top1_connected.dat", header=T)
+    methods<-c("no", "nn", "nr") 
+    #methods<-c("no", "nn", "nr", "ff", "nz", "nd", "ns") #levels(d$scoring)
+    n<-length(methods)
+    x<-1:length(levels(d$phenotype))
+    par(mar=c(5,4,4,5))
+    e<-c()
+    for(i in 1:n) {
+	print(methods[i])
+	if(i == 1) {
+	    plot(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_seed, type="l", col=i+1, ylim=c(0,1), xlab="Phenotypes", ylab="Ratio of covered seeds within modules", xaxt="n")
+	} 
+	else {
+	    lines(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_seed, lty=1, col=i+1)
+	}
+	e<-rbind(e, d[d$scoring==methods[i],]$n_module)
+    }
+    #legend("topright", methods, lty=rep(1, n), col=(1:n)+1)
+    legend("topright", c("GWAS", "PWAS-1", "PWAS-2"), lty=rep(1, n), col=(1:n)+1)
+    lambda<-function(x) { substring(x, 6) }
+    text(1:length(levels(d$phenotype)), par("usr")[3]-0.02, srt=30, adj=1, labels=sapply(levels(d$phenotype), lambda), xpd=T, cex=0.7)
+    par(new=TRUE)
+    e<-as.matrix(e)
+    print(dim(e))
+    barplot(e, beside=TRUE, horiz=F, col=(1:n)+1, width=0.1, space=c(0,1.3), ylim=c(0,10), axes=F)
+    axis(4, 1:10, labels=1:10)
+    text(par("usr")[2]+1, 7, srt=90, adj=1, labels="Number of modules using CC", xpd=T, cex=1)
+    dev.off()
+
+    postscript(paste(dir.name, "S5_4.eps", sep=""), horizontal=F) #width = 480, height = 480, quality = 100)
+    d<-read.table("module_summary_top1_mcl.dat", header=T)
+    methods<-c("no", "nn", "nr") 
+    #methods<-c("no", "nn", "nr", "ff", "nz", "nd", "ns") #levels(d$scoring)
+    n<-length(methods)
+    x<-1:length(levels(d$phenotype))
+    par(mar=c(5,4,4,5))
+    e<-c()
+    for(i in 1:n) {
+	print(methods[i])
+	if(i == 1) {
+	    plot(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_seed, type="l", col=i+1, ylim=c(0,1), xlab="Phenotypes", ylab="Ratio of covered seeds within modules", xaxt="n")
+	} 
+	else {
+	    lines(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_seed, lty=1, col=i+1)
+	}
+	e<-rbind(e, d[d$scoring==methods[i],]$n_module)
+    }
+    #legend("topright", methods, lty=rep(1, n), col=(1:n)+1)
+    legend("topright", c("GWAS", "PWAS-1", "PWAS-2"), lty=rep(1, n), col=(1:n)+1)
+    lambda<-function(x) { substring(x, 6) }
+    text(1:length(levels(d$phenotype)), par("usr")[3]-0.02, srt=30, adj=1, labels=sapply(levels(d$phenotype), lambda), xpd=T, cex=0.7)
+    par(new=TRUE)
+    e<-as.matrix(e)
+    print(dim(e))
+    barplot(e, beside=TRUE, horiz=F, col=(1:n)+1, width=0.1, space=c(0,1.3), ylim=c(0,15), axes=F)
+    axis(4, 1:15, labels=1:15)
+    text(par("usr")[2]+1, 10, srt=90, adj=1, labels="Number of modules using MCL", xpd=T, cex=1)
+    dev.off()
+
+    postscript(paste(dir.name, "S5_5.eps", sep=""), horizontal=F)#width = 480, height = 480, quality = 100)
+    d<-read.table("module_summary_top1_connected.dat", header=T)
+    methods<-c("no", "nn", "nr") 
+    #methods<-c("no", "nn", "nr", "ff", "nz", "nd", "ns") #levels(d$scoring)
+    n<-length(methods)
+    x<-1:length(levels(d$phenotype))
+    par(mar=c(5,4,4,5))
+    e<-c()
+    for(i in 1:n) {
+	print(methods[i])
+	if(i == 1) {
+	    plot(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_all_in_modules, type="l", col=i+1, ylim=c(0,1), xlab="Phenotypes", ylab="Ratio of seeds within modules", xaxt="n")
+	} 
+	else {
+	    lines(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_all_in_modules, lty=1, col=i+1)
+	}
+	e<-rbind(e, d[d$scoring==methods[i],]$n_module)
+    }
+    #legend("topright", methods, lty=rep(1, n), col=(1:n)+1)
+    legend("topright", c("GWAS", "PWAS-1", "PWAS-2"), lty=rep(1, n), col=(1:n)+1)
+    lambda<-function(x) { substring(x, 6) }
+    text(1:length(levels(d$phenotype)), par("usr")[3]-0.02, srt=30, adj=1, labels=sapply(levels(d$phenotype), lambda), xpd=T, cex=0.7)
+    par(new=TRUE)
+    e<-as.matrix(e)
+    print(dim(e))
+    barplot(e, beside=TRUE, horiz=F, col=(1:n)+1, width=0.1, space=c(0,1.3), ylim=c(0,10), axes=F)
+    axis(4, 1:10, labels=1:10)
+    text(par("usr")[2]+1, 7, srt=90, adj=1, labels="Number of modules using CC", xpd=T, cex=1)
+    dev.off()
+
+    postscript(paste(dir.name, "S5_6.eps", sep=""), horizontal=F) #width = 480, height = 480, quality = 100)
+    d<-read.table("module_summary_top1_mcl.dat", header=T)
+    methods<-c("no", "nn", "nr") 
+    #methods<-c("no", "nn", "nr", "ff", "nz", "nd", "ns") #levels(d$scoring)
+    n<-length(methods)
+    x<-1:length(levels(d$phenotype))
+    par(mar=c(5,4,4,5))
+    e<-c()
+    for(i in 1:n) {
+	print(methods[i])
+	if(i == 1) {
+	    plot(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_all_in_modules, type="l", col=i+1, ylim=c(0,1), xlab="Phenotypes", ylab="Ratio of seeds within modules", xaxt="n")
+	} 
+	else {
+	    lines(x, d[d$scoring==methods[i],]$n_seed_in_modules/d[d$scoring==methods[i],]$n_all_in_modules, lty=1, col=i+1)
+	}
+	e<-rbind(e, d[d$scoring==methods[i],]$n_module)
+    }
+    #legend("topright", methods, lty=rep(1, n), col=(1:n)+1)
+    legend("topright", c("GWAS", "PWAS-1", "PWAS-2"), lty=rep(1, n), col=(1:n)+1)
+    lambda<-function(x) { substring(x, 6) }
+    text(1:length(levels(d$phenotype)), par("usr")[3]-0.02, srt=30, adj=1, labels=sapply(levels(d$phenotype), lambda), xpd=T, cex=0.7)
+    par(new=TRUE)
+    e<-as.matrix(e)
+    print(dim(e))
+    barplot(e, beside=TRUE, horiz=F, col=(1:n)+1, width=0.1, space=c(0,1.3), ylim=c(0,15), axes=F)
+    axis(4, 1:15, labels=1:15)
+    text(par("usr")[2]+1, 10, srt=90, adj=1, labels="Number of modules using MCL", xpd=T, cex=1)
     dev.off()
 }
 
