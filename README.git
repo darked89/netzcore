@@ -29,7 +29,7 @@ git pull origin
 git push origin master
 # or (if master is the only branch in shared repo
 #git push origin
-#git push sefarad:repo.git/netzcore/
+#git push sefarad:repo.git/netzcore/ #master
 
 # Other
 git remote add backup dayan:backup

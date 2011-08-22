@@ -3,9 +3,10 @@ import os
 # GLOBAL VARIABLES
 only_print_command = False
 use_cluster = False #!
-leave_one_out_xval = False #True #! False #
-score_with_all_seeds = True #False 
+leave_one_out_xval = True #! False #
+score_with_all_seeds = True #False #!
 only_auc = False # In the analysis_xval if True auc.txt created only, other graphs are not drawn
+navlakha_data = True #False #!
 
 DEFAULT_TOP_SCORING_CUTOFF = "5%" #"10%" #"1%" #"5%" # If ends with "%" taken as percentage otherwise as score - At the time of analysis it was "10%"
 N_LINKER_THRESHOLD = 2 # For Netlink method
@@ -13,7 +14,7 @@ DEFAULT_SEED_SCORE = 1.0 # Default score for seed nodes, used when no score give
 DEFAULT_NON_SEED_SCORE = 0.01 # Default score for non-seed nodes
 ALLOWED_MAX_DEGREE = 100000 #175 #90 # Max degree allowed in the graph filtering
 N_SAMPLE_GRAPH = 100 # Number of random graphs to be generated
-N_X_VAL = 5 #None #! #5 #182 # Number of cross validation folds, readjusted if leave_one_out_xval is True
+N_X_VAL = None #! #5 #182 # Number of cross validation folds, readjusted if leave_one_out_xval is True
 N_SEED = None #Will be set during run
 N_RANDOM_NEGATIVE_FOLDS = None #10 # Number of non-seed scores to be averaged for negative score calculation, 
 			    # If 0 all non seeds are included as they are, If None all non seeds are included averaged to scale with the size of test seeds
@@ -27,8 +28,8 @@ delay_experiment = True
 tex_format = True #False 
 functional_enrichment = False
 
-MODE = "module" # prepare, score, analyze, compare, summary, module
-user_friendly_id = "biana_no_tap_relevance-omim_alzheimer-ns_nz_nd_union-top5" # "biana_no_tap-omim" #biana_no_tap_no_reliability-omim_alzheimer-nd-top5 #"biana_no_tap-omim_perturbed_%d_10" % i_parameter #"biana_no_tap-all_seed20below" #"biana-all" #"biana_no_tap-omim" #"omim_alzheimer-diabetes" #"all_vs_all" # a.k.a. emre friendly id for compare and summary
+MODE = "compare" # prepare, score, analyze, compare, summary, module
+user_friendly_id = "navlakha" #"biana_no_tap_relevance-omim_alzheimer-ns_nz_nd_union-top5" # "biana_no_tap-omim" #biana_no_tap_no_reliability-omim_alzheimer-nd-top5 #"biana_no_tap-omim_perturbed_%d_10" % i_parameter #"biana_no_tap-all_seed20below" #"biana-all" #"biana_no_tap-omim" #"omim_alzheimer-diabetes" #"all_vs_all" # a.k.a. emre friendly id for compare and summary
 summary_seed_cutoff = 1 #None #2 #20 # Seed cutoff considered for inclusion of an experiment in sum_up_experiments, if None seed.dat is not created. Also used in compare_experiments if analysis_type is user
 prepare_mutated = None # Creates permutad/pruned networks 
 analyze_network = False 
@@ -48,7 +49,7 @@ hsdl_phenotypes = [ "hsdl_" + p.replace(" ", "_").lower() for p in hsdl_phenotyp
 
 
 ppis = []
-#ppis += ["hprd"] #, "ophid"]
+ppis += ["hprd"] #, "ophid"]
 #ppis += ["goh", "entrez", "biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
 #ppis += ["rivasi"]
 #ppis += ["biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
@@ -56,7 +57,7 @@ ppis = []
 #ppis += ["entrez"]
 #ppis += ["biana_no_reliability"]
 #ppis += ["biana_no_tap_no_reliability"] 
-ppis += ["biana_no_tap_relevance"]
+#ppis += ["biana_no_tap_relevance"]
 #ppis += ["biana_no_tap_no_reliability_permuted_p%s_%s" % (p, i) for p in xrange(10,110,10) for i in xrange(1,101) ] 
 #ppis += ["biana_no_tap_no_reliability_permuted_p%s_%s" % (p, i) for p in xrange(10,110,10) for i in xrange(1,11) ] 
 #ppis += ["biana_no_tap_no_reliability_pruned_p%s_%s" % (p, i) for p in xrange(i_parameter,i_parameter+10,10) for i in xrange(1,11) ] 
@@ -72,7 +73,7 @@ phenotypes = []
 #phenotypes += navlakha_phenotypes # Now located at the bottom of the page
 #phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes 
 #phenotypes += hsdl_phenotypes
-phenotypes += omim_phenotypes 
+#phenotypes += omim_phenotypes 
 #phenotypes += [ "perturbed_%s_p%i_%i" % (d, p, i) for d in omim_phenotypes for p in xrange(10,100,10) for i in xrange(1,101) ]
 #phenotypes += [ "perturbed_%s_p%i_%i" % (d, p, i) for d in omim_phenotypes for p in xrange(i_parameter,i_parameter+10,10) for i in xrange(1,11) ]  
 #phenotypes += goh_phenotypes 
@@ -92,6 +93,7 @@ scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
 scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
 #scoring_parameters += [("nr", 1, 1)]
 scoring_parameters += [("nd", 1, 1)]
+scoring_parameters += [("mcl", 1, 1)]
 #scoring_parameters += [("nz", 1, 5)]
 #scoring_parameters += [("ns", 3, 2)]
 #scoring_parameters += [("ff", 1, 5)]
@@ -151,7 +153,8 @@ THRESHOLDS = { "nr": [ j*10**-i for i in xrange(2,7) for j in xrange(1,10) ] + [
 		"ff": [ j*10**-i for i in xrange(2,5) for j in xrange(1,10) ] + [ 0.05*i for i in xrange(1,31) ], 
 		"nd": [ 0.01*i for i in xrange(1,101) ],  
 		"nz": [ 0.01*i for i in xrange(1,101) ],
-		"ns": [ 0.01*i for i in xrange(1,101) ] } 
+		"ns": [ 0.01*i for i in xrange(1,101) ],
+		"mcl": [ 0.01*i for i in xrange(1,101) ] } 
 
 
 # Scoring related parameters 
@@ -181,11 +184,12 @@ THRESHOLDS = { "nr": [ j*10**-i for i in xrange(2,7) for j in xrange(1,10) ] + [
 #SCORING = "ff" #"FunctionalFlow" 
 
 
-navlakha_phenotypes = ["abacavir", "abdominal", "acromesomelic", "acth", "adenocarcinoma", "adenomas", "adrenal", "adrenocortical", "adrenoleukodystrophy", "adrenomyeloneuropathy", "afibrinogenemia", "agammaglobulinemia", "aids", "alagille", "albinism", "alcohol", "aldosterone", "alexander", "alport", "alzheimer", "amelogenesis", "amyloidosis", "amyotrophic", "anemia", "angelman", "angioedema", "anorexia", "anterior", "antley-bixler", "aortic", "aplastic", "apolipoprotein", "arrhythmogenic", "arthrogryposis", "asthma", "ataxia", "atelosteogenesis", "atherosclerosis", "atopy", "atrial", "atrioventricular", "attention", "autism", "autoimmune", "azoospermia", "bamforth-lazarus", "bardet-biedl", "bare", "bartter", "basal", "bcg", "becker", "beckwith-wiedemann", "bernard-soulier", "bethlem", "bladder", "bleeding", "blepharophimosis", "blood", "blue-cone", "boomerang", "brachydactyly", "bradyopsia", "brain", "branchiootorenal", "breast", "brugada", "budd-chiari", "c1r,c1s", "c4", "c8", "cardiomyopathy", "carnitine", "cataract", "caudal", "celiac", "central", "cerebellar", "cerebral", "cerebrooculofacioskeletal", "charcot-marie-tooth", "cholestasis", "chondrodysplasia", "chondrosarcoma", "chorea", "choreoathetosis", "chromosome", "chronic", "cirrhosis", "cleft", "cockayne", "coenzyme", "cold-induced", "coloboma", "colon", "colorblindness", "colorectal", "combined", "complement", "complex", "cone", "cone-rod", "congenital", "corneal", "cornelia", "coronary", "corpus", "craniosynostosis", "creatine", "creutzfeldt-jakob", "crohn", "crouzon", "cutis", "cystic", "deafness", "dejerine-sottas", "dementia", "dent", "dermatitis", "diabetes", "dna", "dysfibrinogenemia", "dyskeratosis", "dyslexia", "dystonia", "ectodermal", "ectopia", "ehlers-danlos", "elliptocytosis", "emery-dreifuss", "emphysema", "encephalopathy", "endometrial", "epidermolysis", "epidermolytic", "epilepsy", "epileptic", "epiphyseal", "episodic", "esophageal", "exudative", "factor", "fanconi", "fetal", "fibromatosis", "fletcher", "focal", "fundus", "gastric", "gastrointestinal", "gaucher", "generalized", "germ", "giant", "glanzmann", "glaucoma", "glioblastoma", "glomerulosclerosis", "glycine", "glycogen", "gm2-gangliosidosis", "goiter", "gonadal", "graves", "griscelli", "growth", "h.", "hdl", "heinz", "hemangioma", "hematuria", "hemochromatosis", "hemolytic", "hemolytic-uremic", "hemophagocytic", "hemophilia", "hemorrhagic", "hepatic", "hepatitis", "hepatoblastoma", "hepatocellular", "hereditary", "hermansky", "heterotaxy", "high", "hirschsprung", "histiocytoma", "hiv", "holoprosencephaly", "homocystinuria", "huntington", "hypercholanemia", "hypercholesterolemia", "hyperekplexia", "hyperinsulin", "hyperlipoproteinemia", "hyperparathyroidism", "hypertension", "hyperthyroidism", "hypertriglyceridemia", "hypodontia", "hypogonadotropic", "hypokalemic", "hypomagnesemia", "hypoparathyroidism", "hypophosphat", "hypothyroidism", "hypotrichosis", "ichthyosiform", "ichthyosis", "iga", "immunodeficiency", "inclusion", "inflammatory", "insomnia", "insulin", "intervertebral", "intrauterine", "invasive", "iridogoniodysgenesis", "jackson-weiss", "jervell", "joubert", "juvenile", "kallmann", "keratitis", "keratosis", "ladd", "larsen", "leber", "leigh", "leiomyomatosis", "leopard", "leprosy", "lethal", "leukemia", "leuko", "li", "lipodystrophy", "lipoid", "lipoma", "lipoprotein", "lissencephaly", "loeys-dietz", "long", "longevity", "lumbar", "lung", "lupus", "lymphangioleiomyomatosis", "lymphoma", "lymphoproliferative", "macrothrombocytopenia", "macular", "major", "malaria", "male", "malignant", "marfan", "mast", "maturity-onset", "meckel", "medullary", "medulloblastoma", "megakaryoblastic", "megaloblastic", "melanoma", "memory", "meningioma", "mental", "metachromatic", "methemoglobinemia", "microcephaly", "microphthalmia", "migraine", "mismatch", "mitochondrial", "mody", "mowat-wilson", "mucoepidermoid", "mucopolysaccharidosis", "muir-torre", "multiple", "muscle", "muscular", "myasthenic", "mycobacterial", "mycobacterium", "myelodysplastic", "myelogenous", "myeloid", "myeloproliferative", "myocardial", "myoclonic", "myopathy", "myotonia", "nasu-hakola", "nephrolithiasis", "nephronophthisis", "nephrotic", "neural", "neuroblastoma", "neurofibromatosis", "neuropathy", "neutral", "neutropenia", "nevus", "nicotine", "night", "nonsmall", "noonan", "obesity", "obsessive-compulsive", "oguchi", "oligodontia", "omenn", "opitz", "optic", "orofacial", "orthostatic", "ossification", "osteoarthritis", "osteogenesis", "osteolysis", "osteopetrosis", "osteoporosis", "osteosarcoma", "ovarian", "ovarioleukodystrophy", "pachyonychia", "paget", "pancreatic", "pancreatitis", "parathyroid", "parietal", "parkinson", "paroxysmal", "peroxisomal", "persistent", "pfeiffer", "phenylketonuria", "pheochromocytoma", "phosphoglycerate", "pick", "pituitary", "placental", "platelet", "polycystic", "polycythemia", "polyposis", "pontocerebellar", "porphyria", "prader-willi", "premature", "progressive", "prostate", "pseudohermaphroditism", "pseudohypoaldosteronism", "pseudohypoparathyroidism", "psoriasis", "psoriatic", "pulmonary", "pyogenic", "pyruvate", "qt", "refsum", "renal", "retinal", "retinitis", "rett", "rhabdomyosarcoma", "rheumatoid", "rhizomelic", "rieger", "roussy-levy", "rubenstein-taybi", "sarcoma", "sars", "scapuloperoneal", "schizophrenia", "scid", "senior-loken", "sensory", "severe", "short", "simpson-golabi-behmel", "skin,hair,eye", "smith-magenis", "spastic", "spherocytosis", "spinal", "spinocerebellar", "spondylocarpotarsal", "spondyloepimetaphyseal", "spondyloepiphyseal", "squamous", "stature", "stevens-johnson", "stickler", "stroke", "subcortical", "symphalangism", "syndactyly", "systemic", "t-cell", "tetralogy", "thalassemia", "thrombocythemia", "thrombocytopenia", "thrombophilia", "thyroid", "thyrotropin-releasing", "trichothiodystrophy", "tuberculosis", "tuberous", "ullrich", "usher", "venous", "ventricular", "vohwinkel", "waardenburg", "williams-beuren", "wilms", "xeroderma", "zellweger"]
+navlakha_phenotypes = ['abacavir', 'abdominal', 'acampomelic', 'acromesomelic', 'acth', 'adenocarcinoma', 'adenomas', 'adrenal', 'adrenocortical', 'adrenoleukodystrophy', 'adrenomyeloneuropathy', 'afibrinogenemia', 'agammaglobulinemia', 'aids', 'alagille', 'albinism', 'alcohol', 'aldosterone', 'alexander', 'alport', 'alzheimer', 'amelogenesis', 'amyloidosis', 'amyotrophic', 'anemia', 'angelman', 'angioedema', 'anorexia', 'anterior', 'antley-bixler', 'aortic', 'aplastic', 'apolipoprotein', 'arrhythmogenic', 'arthrogryposis', 'asthma', 'ataxia', 'atelosteogenesis', 'atherosclerosis', 'atopy', 'atrial', 'atrioventricular', 'attention', 'autism', 'autoimmune', 'azoospermia', 'bamforth-lazarus', 'bardet-biedl', 'bare', 'bartter', 'basal', 'bcg', 'becker', 'beckwith-wiedemann', 'bernard-soulier', 'bethlem', 'bladder', 'bleeding', 'blepharophimosis', 'blood', 'blue-cone', 'boomerang', 'brachydactyly', 'bradyopsia', 'brain', 'branchiootorenal', 'breast', 'brugada', 'budd-chiari', 'butterfly', 'c1q', 'c1r,c1s', 'c4', 'c8', 'campomelic', 'cardiomyopathy', 'carnitine', 'cataract', 'caudal', 'celiac', 'central', 'cerebellar', 'cerebral', 'cerebrooculofacioskeletal', 'charcot-marie-tooth', 'cholestasis', 'chondrodysplasia', 'chondrosarcoma', 'chorea', 'choreoathetosis', 'chromosome', 'chronic', 'cirrhosis', 'cleft', 'cockayne', 'coenzyme', 'cold-induced', 'coloboma', 'colon', 'colorblindness', 'colorectal', 'combined', 'complement', 'complex', 'cone', 'cone-rod', 'congenital', 'corneal', 'cornelia', 'coronary', 'corpus', 'craniofacial', 'craniosynostosis', 'creatine', 'creutzfeldt-jakob', 'crohn', 'crouzon', 'cutis', 'cystic', 'deafness', 'dejerine-sottas', 'dementia', 'dent', 'dermatitis', 'diabetes', 'dna', 'dysfibrinogenemia', 'dyskeratosis', 'dyslexia', 'dystonia', 'ectodermal', 'ectopia', 'ehlers-danlos', 'elliptocytosis', 'emery-dreifuss', 'emphysema', 'encephalopathy', 'endometrial', 'enolase', 'epidermolysis', 'epidermolytic', 'epilepsy', 'epileptic', 'epiphyseal', 'episodic', 'erythremia', 'erythrocytosis', 'esophageal', 'exostoses', 'exudative', 'factor', 'fanconi', 'fetal', 'fibromatosis', 'fletcher', 'focal', 'foveomacular', 'fructose', 'fundus', 'gastric', 'gastrointestinal', 'gaucher', 'generalized', 'germ', 'giant', 'glanzmann', 'glaucoma', 'glioblastoma', 'glomerulosclerosis', 'glycine', 'glycogen', 'glycogenosis', 'gm2-gangliosidosis', 'goiter', 'gonadal', 'graves', 'griscelli', 'growth', 'h.', 'hdl', 'heinz', 'hemangioma', 'hematuria', 'hemochromatosis', 'hemolytic', 'hemolytic-uremic', 'hemophagocytic', 'hemophilia', 'hemorrhagic', 'hepatic', 'hepatitis', 'hepatoblastoma', 'hepatocellular', 'hereditary', 'hermansky', 'heterotaxy', 'high', 'von_hippel-lindau', 'hirschsprung', 'histiocytoma', 'hiv', 'holoprosencephaly', 'homocystinuria', 'huntington', 'hypercholanemia', 'hypercholesterolemia', 'hyperekplexia', 'hyperinsulin', 'hyperlipoproteinemia', 'hyperoxaluria', 'hyperparathyroidism', 'hypertension', 'hyperthyroidism', 'hypertriglyceridemia', 'hypodontia', 'hypogonadotropic', 'hypokalemic', 'hypomagnesemia', 'hypoparathyroidism', 'hypophosphat', 'hypothyroidism', 'hypotrichosis', 'ichthyosiform', 'ichthyosis', 'iga', 'immunodeficiency', 'inclusion', 'inflammatory', 'insomnia', 'insulin', 'intervertebral', 'intracranial', 'intrauterine', 'invasive', 'iridogoniodysgenesis', 'iron', 'jackson-weiss', 'jervell', 'joubert', 'juvenile', 'kallmann', 'kaposi', 'keratitis', 'keratosis', 'ladd', 'larsen', 'leber', 'leigh', 'leiomyomatosis', 'leopard', 'leprosy', 'lethal', 'leukemia', 'leuko', 'li', 'liddle', 'lipodystrophy', 'lipoid', 'lipoma', 'lipoprotein', 'lissencephaly', 'loeys-dietz', 'long', 'longevity', 'lumbar', 'lung', 'lupus', 'lymphangioleiomyomatosis', 'lymphoma', 'lymphoproliferative', 'macrothrombocytopenia', 'macular', 'major', 'malaria', 'male', 'malignant', 'marfan', 'mast', 'maturity-onset', 'meckel', 'medullary', 'medulloblastoma', 'megakaryoblastic', 'megaloblastic', 'melanoma', 'memory', 'meningioma', 'mental', 'metachromatic', 'metaphyseal', 'methemoglobinemia', 'microcephaly', 'microphthalmia', 'migraine', 'mismatch', 'mitochondrial', 'mody', 'mowat-wilson', 'mucoepidermoid', 'mucopolysaccharidosis', 'muir-torre', 'multiple', 'muscle', 'muscular', 'myasthenic', 'mycobacterial', 'mycobacterium', 'myelodysplastic', 'myelogenous', 'myeloid', 'myeloproliferative', 'myocardial', 'myoclonic', 'myopathy', 'myotonia', 'nasu-hakola', 'nephrolithiasis', 'nephronophthisis', 'nephrotic', 'neural', 'neuroblastoma', 'neurofibromatosis', 'neuropathy', 'neutral', 'neutropenia', 'nevus', 'nicotine', 'niemann', 'night', 'nonsmall', 'noonan', 'obesity', 'obsessive-compulsive', 'oguchi', 'oligodontia', 'omenn', 'opitz', 'optic', 'orofacial', 'orthostatic', 'ossification', 'osteoarthritis', 'osteogenesis', 'osteolysis', 'osteopetrosis', 'osteoporosis', 'osteosarcoma', 'ovarian', 'ovarioleukodystrophy', 'pachyonychia', 'paget', 'pancreatic', 'pancreatitis', 'parathyroid', 'parietal', 'parkinson', 'paroxysmal', 'peroxisomal', 'persistent', 'pfeiffer', 'phenylketonuria', 'pheochromocytoma', 'phosphoglycerate', 'pick', 'pituitary', 'placental', 'platelet', 'polycystic', 'polycythemia', 'polyposis', 'pontocerebellar', 'porphyria', 'prader-willi', 'premature', 'progressive', 'prostate', 'pseudohermaphroditism', 'pseudohypoaldosteronism', 'pseudohypoparathyroidism', 'psoriasis', 'psoriatic', 'pulmonary', 'pyogenic', 'pyruvate', 'qt', 'refsum', 'renal', 'retinal', 'retinitis', 'rett', 'rhabdomyosarcoma', 'rheumatoid', 'rhizomelic', 'rieger', 'roussy-levy', 'rubenstein-taybi', 'sarcoma', 'sars', 'scapuloperoneal', 'schizophrenia', 'scid', 'senior-loken', 'sensory', 'severe', 'short', 'simpson-golabi-behmel', 'skin,hair,eye', 'sleep', 'smith-magenis', 'spastic', 'spherocytosis', 'spinal', 'spinocerebellar', 'spondylocarpotarsal', 'spondyloepimetaphyseal', 'spondyloepiphyseal', 'squamous', 'stature', 'stevens-johnson', 'stickler', 'stroke', 'subcortical', 'symphalangism', 'syndactyly', 'synpolydactyly', 'systemic', 't-cell', 'tetralogy', 'thalassemia', 'thrombocythemia', 'thrombocytopenia', 'thrombophilia', 'thyroid', 'thyrotropin-releasing', 'transient', 'trichothiodystrophy', 'tuberculosis', 'tuberous', 'ullrich', 'usher', 'uv', 'venous', 'ventricular', 'vohwinkel', 'waardenburg', 'von_willebrand', 'williams-beuren', 'wilms', 'xeroderma', 'zellweger']
 
-#navlakha_phenotypes = ["chorea"] 
+#navlakha_phenotypes = ["afibrinogenemia"] 
+#navlakha_phenotypes = ["myocardial"] 
 
 navlakha_phenotypes = [ "navlakha_" + p.replace(" ", "_").lower() for p in navlakha_phenotypes ] 
 
-#phenotypes += navlakha_phenotypes #!
+phenotypes += navlakha_phenotypes #!
 

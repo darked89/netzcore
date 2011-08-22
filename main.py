@@ -27,12 +27,15 @@ def main(ppis, phenotypes, scoring_parameters, i_parameter):
 		experiments.append((ppi, phenotype, parameters[0], parameters[1], parameters[2]))
 
     if MODE == "compare":
-	compare_experiments(experiments, COMPARISON_GOLD_STANDARD_FILE, tex_format, functional_enrichment, user_friendly_id, exclude_seeds_in_comparison, summary_seed_cutoff, analysis_type = "common_union") # user - for cutoff analysis, also used for navlakha data #!
+	if navlakha_data:
+	    compare_experiments(experiments, COMPARISON_GOLD_STANDARD_FILE, tex_format, functional_enrichment, user_friendly_id, exclude_seeds_in_comparison, summary_seed_cutoff, analysis_type = "user") # for cutoff analysis
+	else:
+	    compare_experiments(experiments, COMPARISON_GOLD_STANDARD_FILE, tex_format, functional_enrichment, user_friendly_id, exclude_seeds_in_comparison, summary_seed_cutoff, analysis_type = "common_intersection") 
     elif MODE == "summary":
 	sum_up_experiments(ppis, phenotypes, "auc", tex_format, user_friendly_id, summary_seed_cutoff)
 	sum_up_experiments(ppis, phenotypes, "cov", tex_format, user_friendly_id, summary_seed_cutoff)
     elif MODE == "module":
-	analyze_modules(experiments, "mcl") # connected
+	analyze_modules(experiments, "mcl", "go", user_friendly_id) # connected
     else:
 	#experiment_count = 0
 	for experiment in experiments:
@@ -158,6 +161,7 @@ def decide_interaction_data(PPI, ASSOCIATION, association_scores_file):
     node_file = None
     node_description_file = None 
     network_dir = None
+    module_file = None
     # BIANA ppi
     if PPI.startswith("biana"):
 	network_dir = data_dir + "human_interactome_biana" + os.sep
@@ -265,6 +269,7 @@ def decide_interaction_data(PPI, ASSOCIATION, association_scores_file):
 	network_file = data_dir + "navlakha" + os.sep + "hprd.sif"
 	network_file_filtered = network_file[:-4] + "_degree_filtered.sif"
 	node_file = association_scores_file
+	module_file = network_file_filtered + ".mcl"
     # Navlakha OPHID ppi
     elif PPI == "ophid":
 	node_description_file = None 
@@ -333,11 +338,14 @@ def decide_interaction_data(PPI, ASSOCIATION, association_scores_file):
 	    interaction_relevance_file = network_dir + "aneurist.eda"
 	    DEFAULT_NON_SEED_SCORE = 0.00001 
     elif PPI == "javi":
-	network_dir = data_dir + "human_interactome_javi" + os.sep
+	#network_dir = data_dir + "human_interactome_javi" + os.sep
+	network_dir = data_dir + "salmonella_human_interactome" + os.sep
 	node_description_file = None
 	network_file_identifier_type = "userentityid"
-	node_file = network_dir + "root_set.txt"
-	network_file = network_dir + "human_network.tab"
+	#node_file = network_dir + "root_set.txt"
+	#network_file = network_dir + "human_network.tab"
+	node_file = network_dir + "salmonella_effectors.tab"
+	network_file = network_dir + "complete_network_uniq.sif"
 	network_file_filtered = network_file
 	#DEFAULT_NON_SEED_SCORE = 0.00001 
     elif PPI == "daniel":
@@ -384,7 +392,7 @@ def decide_interaction_data(PPI, ASSOCIATION, association_scores_file):
 
     return (interaction_relevance_file, interaction_relevance_file2, biana_network_file_filtered_by_method, \
 	    biana_network_file_filtered_by_reliability, node_file, node_description_file, \
-	    network_file_identifier_type, network_file, network_file_filtered, specie, network_dir)
+	    network_file_identifier_type, network_file, network_file_filtered, specie, network_dir, module_file)
 
 
 def decide_title(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, N_LINKER_THRESHOLD):
@@ -408,19 +416,20 @@ def decide_directory_hierarchy(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERAT
 	Decide directory structure and create necessary folders
     """
     # Project directory structure
-    #input_base_dir = data_dir + "input_david" + os.sep  
+    #input_base_dir = data_dir + "input_javi" + os.sep 
     input_base_dir = data_dir + "input" + os.sep
     input_base_dir_network = input_base_dir + PPI + os.sep
     input_base_dir_association = input_base_dir_network + ASSOCIATION + os.sep
     input_dir = input_base_dir_association
     sampling_dir = input_base_dir_network + "sampled_graphs" + os.sep
-    #output_base_dir = data_dir + "output_david" + os.sep 
+    #output_base_dir = data_dir + "output_javi" + os.sep 
     output_base_dir = data_dir + "output" + os.sep
     output_base_dir_network = output_base_dir + PPI + os.sep
     output_base_dir_association = output_base_dir_network + ASSOCIATION + os.sep
     output_dir = output_base_dir_association + SCORING + os.sep
     summary_dir = data_dir + "summary" + os.sep
     compare_dir = data_dir + "compare" + os.sep
+    module_dir = data_dir + "module" + os.sep
 
     # Create directory hirerarchy
     if not os.path.exists(input_base_dir): 
@@ -445,6 +454,8 @@ def decide_directory_hierarchy(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERAT
 	os.mkdir(summary_dir)
     if not os.path.exists(compare_dir): 
 	os.mkdir(compare_dir)
+    if not os.path.exists(module_dir): 
+	os.mkdir(module_dir)
 
     if SCORING == "ns" or SCORING == "nh" or SCORING == "n1":
 	output_dir = output_dir + "r%di%d" % (N_REPETITION, N_ITERATION) + os.sep
@@ -459,7 +470,7 @@ def decide_directory_hierarchy(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERAT
 	if not os.path.exists(output_dir): 
 	    os.mkdir(output_dir)
 
-    return (input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association, summary_dir, compare_dir)
+    return (input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association, summary_dir, compare_dir, module_dir)
 
 
 def decide_scoring_and_analysis_files(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association):
@@ -500,7 +511,7 @@ def decide_score_commands(node_scores_file, edge_scores_file, output_scores_file
 	Decide commands to be used in scoring
     """
     score_xval_commands = { "ns": Template(src_dir + "scoreNetwork/scoreN -s s -n %s.$fold -e %s -o %s.$fold -r %d -i %d &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, score_log_file)),
-			    "nz": Template(src_dir + "scoreNetwork/scoreN -s z -n %s.$fold -e %s -o %s.$fold -i %d -x %d -d %s &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir + "sampled_graph.sif.", score_log_file)),
+			    "nz": Template(src_dir + "scoreNetwork/scoreN -s z -n %s.$fold -e %s -o %s.$fold -i %d -x %d -d %s &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file)),
 			    "nh": Template(src_dir + "scoreNetwork/scoreN -s h -n %s.$fold -e %s -o %s.$fold -r %d -i %d -x %d -d %s &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir + "sampled_graph.sif.", score_log_file)),
 			    "n1": Template(src_dir + "scoreNetwork/scoreN -s 1 -n %s.$fold -e %s -o %s.$fold -r %d -i %d -x %d -d %s &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir + "sampled_graph.sif.", score_log_file)),
 			    "nd": Template(src_dir + "scoreNetwork/scoreN -s d -n %s.$fold -e %s.$fold -o %s.$fold &> %s.$fold" % (node_scores_file, edge_scores_as_node_scores_file, output_scores_file, score_log_file)),
@@ -513,7 +524,7 @@ def decide_score_commands(node_scores_file, edge_scores_file, output_scores_file
 			  }
 
     score_commands = { "ns": src_dir + "scoreNetwork/scoreN -s s -n %s -e %s -o %s -r %d -i %d &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, score_log_file),
-		       "nz": src_dir + "scoreNetwork/scoreN -s z -n %s -e %s -o %s -i %d -x %d -d %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir + "sampled_graph.sif.", score_log_file), 
+		       "nz": src_dir + "scoreNetwork/scoreN -s z -n %s -e %s -o %s -i %d -x %d -d %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir, score_log_file), 
 		       "nh": src_dir + "scoreNetwork/scoreN -s h -n %s -e %s -o %s -r %d -i %d -x %d -d %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir + "sampled_graph.sif.", score_log_file), 
 		       "n1": src_dir + "scoreNetwork/scoreN -s 1 -n %s -e %s -o %s -r %d -i %d -x %d -d %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir + "sampled_graph.sif.", score_log_file), 
 		       "nd": src_dir + "scoreNetwork/scoreN -s d -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_as_node_scores_file, output_scores_file, score_log_file),
@@ -536,13 +547,13 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, f
     # Interaction files (Interaction data to be used)
     (interaction_relevance_file, interaction_relevance_file2, biana_network_file_filtered_by_method, \
 	    biana_network_file_filtered_by_reliability, node_file, node_description_file, \
-	    network_file_identifier_type, network_file, network_file_filtered, specie, network_dir) = decide_interaction_data(PPI, ASSOCIATION, association_scores_file)
+	    network_file_identifier_type, network_file, network_file_filtered, specie, network_dir, module_file) = decide_interaction_data(PPI, ASSOCIATION, association_scores_file)
 
     # Human readable title for the run
     title = decide_title(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, N_LINKER_THRESHOLD)
 
     # Project directory structure
-    (input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association, summary_dir, compare_dir) = decide_directory_hierarchy(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, N_LINKER_THRESHOLD)
+    (input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association, summary_dir, compare_dir, module_dir) = decide_directory_hierarchy(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, N_LINKER_THRESHOLD)
 
     # Input/Output score, logging and analysis files
     (seed_scores_file, node_scores_file, node_mapping_file, edge_scores_file, edge_scores_as_node_scores_file, output_scores_file, \
@@ -560,7 +571,10 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, f
 	N_SEED, n_linker, n_path = prepare_data.get_number_of_mapped_seeds(input_log_file)
 	if leave_one_out_xval:
 	    N_X_VAL = N_SEED
-	score(SCORING, score_commands, score_xval_commands, output_scores_file, log_file, job_file)
+	if SCORING == "mcl": # MCL
+	    score_mcl(node_scores_file, edge_scores_file, output_scores_file, module_file, log_file)
+	else:
+	    score(SCORING, score_commands, score_xval_commands, output_scores_file, log_file, job_file)
     elif MODE == "analyze":
 	N_SEED, n_linker, n_path = prepare_data.get_number_of_mapped_seeds(input_log_file)
 	#if N_X_VAL is None:
@@ -575,73 +589,80 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, f
 	raise ValueError("Unrecognized mode!")
     return
 
-def analyze_modules(experiments, module_detection_type="connected", enrichment_type="go"):
+def analyze_modules(experiments, module_detection_type="connected", enrichment_type="go", user_friendly_id=None):
     prev_assoc = None 
     method_and_val = None
     #assoc_to_pvals = {}
-    f2 = open("module_summary_top5_mcl_go_unique_n3union.dat", 'w')
-    if enrichment_type == "go":
-	f2.write("ppi phenotype scoring n_seed_go n_module n_seed_go_in_modules n_go_in_modules ratio\n")
-    else:
-	f2.write("ppi phenotype scoring n_seed n_module n_seed_in_modules n_all_in_modules ratio\n")
-    for experiment in experiments:
+    file_module_summary = None
+    for i, experiment in enumerate(experiments):
 	PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION = experiment
 	# Disease association files (Association data to be used)
 	association_scores_file, association_scores_file_identifier_type, association_scores_validation_file, candidates_file, association_dir = decide_association_data(ASSOCIATION)
 	# Interaction files (Interaction data to be used)
 	(interaction_relevance_file, interaction_relevance_file2, biana_network_file_filtered_by_method, \
 	    biana_network_file_filtered_by_reliability, node_file, node_description_file, \
-	    network_file_identifier_type, network_file, network_file_filtered, specie, network_dir) = decide_interaction_data(PPI, ASSOCIATION, association_scores_file)
+	    network_file_identifier_type, network_file, network_file_filtered, specie, network_dir, module_file) = decide_interaction_data(PPI, ASSOCIATION, association_scores_file)
 	# Project directory structure
-	(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association, summary_dir, compare_dir) = decide_directory_hierarchy(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, N_LINKER_THRESHOLD)
+	(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association, summary_dir, compare_dir, module_dir) = decide_directory_hierarchy(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, N_LINKER_THRESHOLD)
 	# Input/Output score, logging and analysis files
 	(seed_scores_file, node_scores_file, node_mapping_file, edge_scores_file, edge_scores_as_node_scores_file, output_scores_file, \
 	score_log_file, sampled_file_prefix, log_file, input_log_file, job_file, output_log_file, predictions_file, \
 	labels_file, r_script_file, tex_script_file) = decide_scoring_and_analysis_files(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association)
-	f = open("modules.txt", 'a')
+	if i == 0:
+	    module_dir += user_friendly_id + os.sep
+	    if not os.path.exists(module_dir): 
+		os.mkdir(module_dir)
+	    file_module_summary = open(module_dir + "module_summary.dat", 'w')
+	    if enrichment_type == "go":
+		file_module_summary.write("ppi phenotype scoring n_seed_go n_module n_seed_go_in_modules n_go_in_modules ratio\n")
+	    else:
+		file_module_summary.write("ppi phenotype scoring n_seed n_module n_seed_in_modules n_all_in_modules ratio\n")
+	file_module = open(module_dir + "modules.txt", 'a')
 	if prev_assoc != ASSOCIATION:
 	    #nodes = compare_experiments([ (PPI, ASSOCIATION) + parameters for parameters in scoring_parameters], None, False, False, "test", False, 1, "common_intersection_return")
 	    #print ASSOCIATION, len(nodes)
-	    #val = analyze_results.check_connected_seed_enrichment_of_modules_of_given_nodes(nodes, edge_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, module_detection_type)
+	    #val = analyze_results.check_connected_seed_enrichment_of_modules_of_given_nodes(nodes, edge_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, association_scores_file_identifier_type, file_module.write, DEFAULT_NON_SEED_SCORE, module_detection_type)
 	    #print ">>> %s %s %s %.2f %d %d %d %d" % (PPI, ASSOCIATION, "nu", val[0], val[4], val[3], val[1], val[2])
 	    #prev_assoc = ASSOCIATION
 	    #break
-	    print ASSOCIATION
+	    print PPI, ASSOCIATION
 	    if enrichment_type == "go":
 		seeds, seed_ids, all_ids = analyze_results.get_seed_and_all_nodes_and_ids(node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_NON_SEED_SCORE)
-		response = analyze_results.check_functional_enrichment(list(seed_ids), list(all_ids), association_scores_file_identifier_type, None, specie = specie, mode = "unordered")
-		go_ids = set([ row[6] for row in response if float(row[5]) <= GO_ENRICHMENT_P_VALUE_CUTOFF ])
+		file_module.write("%s - %s - Seed GO terms\n" % (PPI, ASSOCIATION))
+		response = analyze_results.check_functional_enrichment(list(seed_ids), list(all_ids), association_scores_file_identifier_type, file_module.write, specie = specie, mode = "unordered")
+		go_ids = set(row[6] for row in response if float(row[5]) <= GO_ENRICHMENT_P_VALUE_CUTOFF)
 		#print len(go_ids), len(response)
 	    else:
 		go_ids = None
 	    if method_and_val is not None:
 		method_and_val.sort(lambda x, y: cmp(y[1], x[1]))
-		print "%s\t%s" % (prev_assoc, "\t".join(map(lambda x: "%s %.2f %d %d %d %d" % (x[0], x[1][0], x[1][1], x[1][2], x[1][3], x[1][4]), method_and_val)))
+		print "%s\t%s" % (prev_assoc, "\t".join(map(lambda x: "%s %d %d %d %d %.2f" % (x[0], x[1][4], x[1][3], x[1][1], x[1][2], x[1][0]), method_and_val)))
 		#assoc_to_pvals[prev_assoc] = method_and_val
 	    method_and_val = []
-	    #f.write("%s %s no\n" % (PPI, ASSOCIATION))
-	    val = analyze_results.check_connected_seed_enrichment_in_network(edge_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, module_detection_type, go_ids, specie = specie, p_value_cutoff = GO_ENRICHMENT_P_VALUE_CUTOFF)
-	    f2.write("%s %s %s %d %d %d %d %f\n" % (PPI, ASSOCIATION, "no", val[4], val[3], val[1], val[2], val[0]))
+	    file_module.write("%s %s no\n" % (PPI, ASSOCIATION))
+	    val = analyze_results.check_connected_seed_enrichment_in_network(edge_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, association_scores_file_identifier_type, file_module.write, DEFAULT_NON_SEED_SCORE, module_detection_type, go_ids, specie = specie, p_value_cutoff = GO_ENRICHMENT_P_VALUE_CUTOFF)
+	    file_module_summary.write("%s %s %s %d %d %d %d %f\n" % (PPI, ASSOCIATION, "no", val[4], val[3], val[1], val[2], val[0]))
 	    method_and_val.append(("no", val))
-	    #f.write("%s %s nn\n" % (PPI, ASSOCIATION))
-	    val = analyze_results.check_connected_seed_enrichment_of_neighbors_in_network(edge_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, module_detection_type, go_ids, specie = specie, p_value_cutoff = GO_ENRICHMENT_P_VALUE_CUTOFF)
-	    f2.write("%s %s %s %d %d %d %d %f\n" % (PPI, ASSOCIATION, "nn", val[4], val[3], val[1], val[2], val[0]))
+	    file_module.write("%s %s nn\n" % (PPI, ASSOCIATION))
+	    val = analyze_results.check_connected_seed_enrichment_of_neighbors_in_network(edge_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, association_scores_file_identifier_type, file_module.write, DEFAULT_NON_SEED_SCORE, module_detection_type, go_ids, specie = specie, p_value_cutoff = GO_ENRICHMENT_P_VALUE_CUTOFF)
+	    file_module_summary.write("%s %s %s %d %d %d %d %f\n" % (PPI, ASSOCIATION, "nn", val[4], val[3], val[1], val[2], val[0]))
 	    method_and_val.append(("nn", val))
-	    scoring_parameters = [("nz", 1, 5), ("ns", 3, 2), ("nd", 1, 1)] #! 
-	    nodes = compare_experiments([ (PPI, ASSOCIATION) + parameters for parameters in scoring_parameters], None, False, False, "test", False, 1, "common_union_return")
-	    #f.write("%s %s nu\n" % (PPI, ASSOCIATION))
-	    val = analyze_results.check_connected_seed_enrichment_of_modules_of_given_nodes(nodes, edge_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, module_detection_type, go_ids, specie = specie, p_value_cutoff = GO_ENRICHMENT_P_VALUE_CUTOFF)
-	    f2.write("%s %s %s %d %d %d %d %f\n" % (PPI, ASSOCIATION, "nu", val[4], val[3], val[1], val[2], val[0]))
-	    method_and_val.append(("nu", val))
+	    #scoring_parameters = [("nz", 1, 5), ("ns", 3, 2), ("nd", 1, 1)] 
+	    nodes = compare_experiments([ (PPI, ASSOCIATION) + parameters for parameters in scoring_parameters], None, False, False, "test", False, 1, "common_intersection_return") 
+	    file_module.write("%s %s nc\n" % (PPI, ASSOCIATION))
+	    val = analyze_results.check_connected_seed_enrichment_of_modules_of_given_nodes(nodes, edge_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, association_scores_file_identifier_type, file_module.write, DEFAULT_NON_SEED_SCORE, module_detection_type, go_ids, specie = specie, p_value_cutoff = GO_ENRICHMENT_P_VALUE_CUTOFF)
+	    file_module_summary.write("%s %s %s %d %d %d %d %f\n" % (PPI, ASSOCIATION, "nc", val[4], val[3], val[1], val[2], val[0]))
+	    method_and_val.append(("nc", val))
 	prev_assoc = ASSOCIATION
-	#f.write("%s %s %s\n" % (PPI, ASSOCIATION, SCORING))
-	val = analyze_results.check_connected_seed_enrichment_of_high_scoring_modules(edge_scores_file, output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_CUTOFF, association_scores_file_identifier_type, f.write, DEFAULT_NON_SEED_SCORE, module_detection_type, go_ids, specie = specie, p_value_cutoff = GO_ENRICHMENT_P_VALUE_CUTOFF)
-	f2.write("%s %s %s %d %d %d %d %f\n" % (PPI, ASSOCIATION, SCORING, val[4], val[3], val[1], val[2], val[0]))
+	file_module.write("%s %s %s\n" % (PPI, ASSOCIATION, SCORING))
+	val = analyze_results.check_connected_seed_enrichment_of_high_scoring_modules(edge_scores_file, output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_CUTOFF, association_scores_file_identifier_type, file_module.write, DEFAULT_NON_SEED_SCORE, module_detection_type, go_ids, specie = specie, p_value_cutoff = GO_ENRICHMENT_P_VALUE_CUTOFF)
+	file_module_summary.write("%s %s %s %d %d %d %d %f\n" % (PPI, ASSOCIATION, SCORING, val[4], val[3], val[1], val[2], val[0]))
 	method_and_val.append((SCORING, val))
-	#f.close()
+	file_module.close()
     method_and_val.sort(lambda x, y: cmp(y[1], x[1]))
-    print "%s\t%s" % (prev_assoc, "\t".join(map(lambda x: "%s %.2f %d %d %d %d" % (x[0], x[1][0], x[1][1], x[1][2], x[1][3], x[1][4]), method_and_val)))
-    f2.close()
+    #print "%s\t%s" % (prev_assoc, "\t".join(map(lambda x: "%s %.2f %d %d %d %d" % (x[0], x[1][0], x[1][1], x[1][2], x[1][3], x[1][4]), method_and_val)))
+    print "%s\t%s" % (prev_assoc, "\t".join(map(lambda x: "%s %d %d %d %d %.2f" % (x[0], x[1][4], x[1][3], x[1][1], x[1][2], x[1][0]), method_and_val)))
+    file_module_summary.close()
     return
 
 def compare_experiments(experiments, gold_standard_file=None, tex_format=False, functional_enrichment=False, user_friendly_id="test", exclude_seeds = True, seed_cutoff=None, analysis_type = "common_intersection"):
@@ -663,9 +684,9 @@ def compare_experiments(experiments, gold_standard_file=None, tex_format=False, 
 	# Interaction files (Interaction data to be used)
 	(interaction_relevance_file, interaction_relevance_file2, biana_network_file_filtered_by_method, \
 	    biana_network_file_filtered_by_reliability, node_file, node_description_file, \
-	    network_file_identifier_type, network_file, network_file_filtered, specie, network_dir) = decide_interaction_data(PPI, ASSOCIATION, association_scores_file)
+	    network_file_identifier_type, network_file, network_file_filtered, specie, network_dir, module_file) = decide_interaction_data(PPI, ASSOCIATION, association_scores_file)
 	# Project directory structure
-	(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association, summary_dir, compare_dir) = decide_directory_hierarchy(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, N_LINKER_THRESHOLD)
+	(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association, summary_dir, compare_dir, module_dir) = decide_directory_hierarchy(PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, N_LINKER_THRESHOLD)
 	# Input/Output score, logging and analysis files
 	(seed_scores_file, node_scores_file, node_mapping_file, edge_scores_file, edge_scores_as_node_scores_file, output_scores_file, \
 	score_log_file, sampled_file_prefix, log_file, input_log_file, job_file, output_log_file, predictions_file, \
@@ -710,10 +731,10 @@ def compare_experiments(experiments, gold_standard_file=None, tex_format=False, 
 	    for line in f.readlines():
 		if line.startswith(" ppv sens"):
 		    continue
-		tScore, ppv, sens = line.strip().split()#map(float, line.strip().split())
-		if ppv == 'None' or sens == 'None':
+		words = line.strip().split()
+		if words[1] == 'NA' or words[2] == 'NA':
 		    continue
-		tScore, ppv, sens = map(float, line.strip().split())
+		tScore, ppv, sens = map(float, words)
 		#threshold_to_values[tScore] = (ppv_sum + ppv, sens_sum + sens)
 		threshold_to_values.setdefault(tScore, []).append((ppv, sens))
 	    f.close()
@@ -731,9 +752,9 @@ def compare_experiments(experiments, gold_standard_file=None, tex_format=False, 
 	f = open(compare_dir + "results.dat", "w")
 	f.write(" ppv sens\n")
 	for scoring, threshold_to_values in scoring_to_values.iteritems():
-	    print scoring
+	    #print scoring
 	    for tScore, values in threshold_to_values.iteritems():
-		print tScore, values
+		#print tScore, values
 		ppv_values, sens_values =(zip(*values))
 		ppv_mean, ppv_sigma = calculate_mean_and_sigma.calc_mean_and_sigma(ppv_values)
 		sens_mean, sens_sigma = calculate_mean_and_sigma.calc_mean_and_sigma(sens_values)
@@ -812,7 +833,7 @@ def sum_up_experiments(ppis, phenotypes, analysis_type="auc", tex_format=False, 
 	    for phenotype in phenotypes:
 		if phenotype in phenotypes_to_skip:
 		    continue
-		(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association, summary_dir, compare_dir) = decide_directory_hierarchy(ppi, phenotype, "nx", 1, 1, N_LINKER_THRESHOLD)
+		(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association, summary_dir, compare_dir, module_dir) = decide_directory_hierarchy(ppi, phenotype, "nx", 1, 1, N_LINKER_THRESHOLD)
 		(seed_scores_file, node_scores_file, node_mapping_file, edge_scores_file, edge_scores_as_node_scores_file, output_scores_file, \
 		score_log_file, sampled_file_prefix, log_file, input_log_file, job_file, output_log_file, predictions_file, \
 		labels_file, r_script_file, tex_script_file) = decide_scoring_and_analysis_files(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association)
@@ -830,7 +851,7 @@ def sum_up_experiments(ppis, phenotypes, analysis_type="auc", tex_format=False, 
     for ppi in ppis:
 	for phenotype in phenotypes:
 	    # Project directory structure
-	    (input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association, summary_dir, compare_dir) = decide_directory_hierarchy(ppi, phenotype, "nx", 1, 1, N_LINKER_THRESHOLD)
+	    (input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association, summary_dir, compare_dir, module_dir) = decide_directory_hierarchy(ppi, phenotype, "nx", 1, 1, N_LINKER_THRESHOLD)
 	    # Input/Output score, logging and analysis files
 	    (seed_scores_file, node_scores_file, node_mapping_file, edge_scores_file, edge_scores_as_node_scores_file, output_scores_file, \
 	    score_log_file, sampled_file_prefix, log_file, input_log_file, job_file, output_log_file, predictions_file, \
@@ -845,8 +866,8 @@ def sum_up_experiments(ppis, phenotypes, analysis_type="auc", tex_format=False, 
 		    parameter = sub_words[3].strip()
 		auc = float(words[1])
 		auc_dev = float(words[2].strip("+/-"))
-		cov = float(words[3])
-		cov_dev = float(words[4].strip("+/-"))
+		cov = float(words[5]) # 4
+		cov_dev = float(words[6].strip("+/-")) # 5
 		if analysis_type == "auc":
 		    #if auc<=0.5 and n_seed <= 20 and (method == "ns" or method == "nd"):
 		    #	print ppi, phenotype, n_seed, method, auc
@@ -1004,7 +1025,10 @@ def prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix,
 	if analyze_network:
 	    prepare_data.analyze_network(network_file)
 	prepare_data.create_degree_filtered_network_file(network_file, network_file_filtered, ALLOWED_MAX_DEGREE, ONLY_LARGEST_COMPONENT)
+	g = prepare_data.get_network_as_graph(network_file_filtered, use_edge_data=True)
+	analyze_results.get_modules_of_graph(g, "mcl", output_file=module_file, inflation=2)
     #prepare_data.analyze_network(network_file_filtered, out_file = input_log_file)
+
 
     seed_to_score = None
     # Get node to association mapping
@@ -1141,18 +1165,41 @@ def score(SCORING, score_commands, score_xval_commands, output_scores_file, log_
 	score_xval(SCORING, score_xval_commands, output_scores_file, log_file, job_file) 
     return
 
+def score_mcl(node_scores_file, edge_scores_file, output_scores_file, module_file, log_file):
+    if N_SEED == 1:
+	return
+    f = open(log_file, "a")
+    if score_with_all_seeds:
+	f.write("scoring based on mcl using %s %s %s\n" % (node_scores_file, edge_scores_file, output_scores_file))
+	analyze_results.score_mcl(node_scores_file, edge_scores_file, output_scores_file, module_file, DEFAULT_NON_SEED_SCORE)
+    else:
+	for k in range(1, N_X_VAL+1):
+	    if not os.path.exists(output_scores_file + ".%d" % k): 
+		if only_print_command:
+		    raise ValueError("No external commands exist for mcl!")
+		else:
+		    f.write("scoring based on mcl using %s %s %s\n" % (node_scores_file + ".%d" % k, edge_scores_file, output_scores_file + ".%d" % k))
+		    if use_cluster:
+			raise ValueError("Can not use cluster for mcl!")
+		    else:
+			analyze_results.score_mcl(node_scores_file + ".%d" % k, edge_scores_file, output_scores_file + ".%d" % k, module_file, DEFAULT_NON_SEED_SCORE)
+    f.close()
+    return
 
 def analyze(PPI, SCORING, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, specie, network_file, candidates_file, functional_enrichment):
     """
 	Does cross validation and percentage analysis on the output files
     """
-    if N_SEED == 1:
-	return
-    analyzed = analyze_xval(SCORING, r_script_file, output_scores_file, node_scores_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, log_file, candidates_file, analysis_type = "auc") # user - for cutoff analysis, also used for navlakha data #!
-    if analyzed:
-	analyze_xval_percentage(log_file, output_scores_file, node_scores_file, output_log_file)
-	# No need to analyze original by default, do it explicitly if need be
-	#analyze_original(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, specie, network_file, functional_enrichment)
+    if navlakha_data:
+	#if N_SEED == 1: 
+	#	return
+	analyze_navlakha(SCORING, r_script_file, output_scores_file, node_scores_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, log_file, candidates_file)
+    else:
+	analyzed = analyze_xval(SCORING, r_script_file, output_scores_file, node_scores_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, log_file, candidates_file, analysis_type = "auc") # user - for cutoff analysis, was used before for navlakha data 
+	if analyzed:
+	    analyze_xval_percentage(log_file, output_scores_file, node_scores_file, output_log_file)
+	    # No need to analyze original by default, do it explicitly if need be
+	    #analyze_original(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, specie, network_file, functional_enrichment)
     return
 
 
@@ -1215,6 +1262,58 @@ def score_original(SCORING, score_commands, output_scores_file, log_file, job_fi
     return
 
 
+def analyze_navlakha(SCORING, r_script_file, output_scores_file, node_scores_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, log_file, candidates_file):
+    #if not os.path.exists(candidates_file):
+    	#print "Candidates file does not exist:%s" % candidates_file
+    	#raise ValueError("Candidates file does not exist:%s" % candidates_file)
+    #return False
+    # For user defined threshold performance analysis
+    r_data_file = ".".join(r_script_file.rsplit(".")[:-1]) + ".dat" # there is a name like: h.
+    #if os.path.exists(r_data_file): # To avoid redoing already done analysis
+    #	#f = open(r_data_file, "a")
+    #	return False 
+    f = open(r_data_file, "w")
+    f.write(" ppv sens\n")
+    thresholds = THRESHOLDS[SCORING]
+    counts_at_thresholds = [ [0.0] * 4 for tScore in thresholds] #nTP_sum, nFP_sum, nFN_sum, nTN_sum = 0.0, 0.0, 0.0, 0.0
+    threshold_to_ppv = {}
+    threshold_to_sens = {}
+    for k in range(1, N_X_VAL+1):
+	dictNodeResult, setNodeTest, non_seeds = analyze_results.get_values_from_files_for_performance_metric_counts(file_result = output_scores_file+".%d" % k, file_seed_test_scores = node_scores_file+".%d.test"%k, file_node_scores = node_scores_file, default_score = DEFAULT_NON_SEED_SCORE, candidates_file = None)
+	#print setNodeTest
+	nFP, nTN = (0.0, 0.0)
+	for i, tScore in enumerate(thresholds):
+	    nTP, nFN = analyze_results.calculate_performance_metric_counts_using_navlakha(dictNodeResult, setNodeTest, score_threshold = tScore, non_seeds = None)
+	    #if i == 10:
+	    #	print tScore, nTP, nFN
+	    for j, v in enumerate([nTP, nFP, nFN, nTN]):
+	    	counts_at_thresholds[i][j] += v
+	    #if nTP == 0.0:
+	    #	threshold_to_ppv.setdefault(tScore, []).append(0.0)
+	    #else:
+	    #	threshold_to_ppv.setdefault(tScore, []).append(nTP/(nTP+nFP))
+	    #threshold_to_sens.setdefault(tScore, []).append(nTP/(nTP+nFN))
+    dictNodeResult, setNodeTest, non_seeds = analyze_results.get_values_from_files_for_performance_metric_counts(file_result = output_scores_file, file_seed_test_scores = candidates_file, file_node_scores = node_scores_file, default_score = DEFAULT_NON_SEED_SCORE, candidates_file = None)
+    #print setNodeTest
+    nTP, nFN = (0.0, 0.0)
+    for i, tScore in enumerate(thresholds):
+    	nFP, nTN = analyze_results.calculate_performance_metric_counts_using_navlakha(dictNodeResult, setNodeTest, score_threshold = tScore, non_seeds = non_seeds)
+    	for j, v in enumerate([nTP, nFP, nFN, nTN]):
+    	    counts_at_thresholds[i][j] += v
+    	#threshold_to_ppv.setdefault(tScore, []).append(nTP/(nTP+nFP))
+    	#threshold_to_sens.setdefault(tScore, []).append(nTP/(nTP+nFN))
+    for i, tScore in enumerate(thresholds):
+    	nTP, nFP, nFN, nTN = counts_at_thresholds[i]
+    	(acc, sens, spec, ppv) = analyze_results.calculatePerformance(nTP, nFP, nFN, nTN)
+	if ppv is None:
+	    ppv = "NA"
+    #	ppv = sum(threshold_to_ppv[tScore])/len(threshold_to_ppv[tScore])
+    #	sens = sum(threshold_to_sens[tScore])/len(threshold_to_sens[tScore])
+    	f.write("%f %s %s\n" % (tScore, ppv, sens))
+    f.close()
+    return False
+
+
 def analyze_xval(SCORING, r_script_file, output_scores_file, node_scores_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, log_file, candidates_file, analysis_type="auc"):
     if analysis_type == "auc":
 	#if os.path.exists(r_script_file):
@@ -1233,14 +1332,15 @@ def analyze_xval(SCORING, r_script_file, output_scores_file, node_scores_file, p
 	    analyze_results.record_performance_AUC_in_log_file(output_dir, output_log_file, title)
 	    return True
 	return False 
-    elif analysis_type == "user": # e.g. for the analysis of navlakha
+    elif analysis_type == "user": # only checks the candidates and counts seeds inside the candidate set as tp
+	# For user defined threshold performance analysis
 	if not os.path.exists(candidates_file):
 	    raise ValueError("Candidates file does not exist:%s" % candidates_file)
 	# For user defined threshold performance analysis
 	r_data_file = ".".join(r_script_file.rsplit(".")[:-1]) + ".dat" # there is a name like: h.
 	if os.path.exists(r_data_file):
 	    #f = open(r_data_file, "a")
-	    return False # To avoid reding already done analysis
+	    return False # To avoid redoing already done analysis
 	f = open(r_data_file, "w")
 	f.write(" ppv sens\n")
 	#thresholds = [0.025, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.975 ]
@@ -1251,22 +1351,22 @@ def analyze_xval(SCORING, r_script_file, output_scores_file, node_scores_file, p
 	    if any(map(lambda x: x in dictNodeResult, setNodeTest)) == False:
 		continue
 	    for i, tScore in enumerate(thresholds):
-		nTP, nFP, nFN, nTN = analyze_results.calculate_performance_metric_counts(dictNodeResult, setNodeTest, non_seeds, score_threshold = tScore, n_random_negative_folds = N_RANDOM_NEGATIVE_FOLDS, replicable = REPLICABLE, candidates_based=True)
+		nTP, nFP, nFN, nTN = analyze_results.calculate_performance_metric_counts_using_candidates(dictNodeResult, setNodeTest, non_seeds, score_threshold = tScore)
 		for j, v in enumerate([nTP, nFP, nFN, nTN]):
 		    counts_at_thresholds[i][j] += v
 	for i, tScore in enumerate(thresholds):
 	    nTP, nFP, nFN, nTN = counts_at_thresholds[i]
 	    (acc, sens, spec, ppv) = analyze_results.calculatePerformance(nTP, nFP, nFN, nTN)
+	    if ppv is None:
+		ppv = "NA"
 	    f.write("%f %s %s\n" % (tScore, ppv, sens))
 	f.close()
 	return False
     ## OLD - slightly slower
     elif analysis_type == "user2":
-	# For user defined threshold performance analysis
 	r_data_file = ".".join(r_script_file.rsplit(".")[:-1]) + ".dat2" # there is a name like: h.
 	if os.path.exists(r_data_file):
 	    return False
-	#thresholds = [ 0.02, 0.9 ] #[0.025, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.975 ]
 	thresholds = THRESHOLDS[SCORING]
 	f = open(r_data_file, "w")
 	f.write(" ppv sens\n")
@@ -1301,7 +1401,7 @@ def analyze_xval_percentage(log_file, output_scores_file, node_scores_file, outp
     f = open(log_file, "a")
     coverages = []
     f.write("\nXVAL SEED COVERAGE ANALYSIS\n")
-    for percentage in (10, 25, 50): 
+    for percentage in (10, 25, 50): # probably was 1, 5, 20
 	percentage = "%f%%" % percentage
 	f.write("---- %s:\n" % percentage)
 	n_seed_sum = 0.0

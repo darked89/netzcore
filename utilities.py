@@ -14,8 +14,32 @@ def main():
     #get_unique_ids_for_biana_ids("biana_ids.txt", "UniprotAccession", "biana_id_to_uniprot_ids.txt") # change type to unique
     #get_unique_ids_for_biana_ids("biana_ids.txt", "GeneID", "biana_id_to_gene_ids.txt")
 
-    check_pearson_correlation_between_seed_connectivity_and_performance()
+    #check_pearson_correlation_between_seed_connectivity_and_performance()
 
+    convert_sif_file_to_R_matrix(DATA_DIR + "input_runs_for_draft/entrez/edge_scores.sif", "test_ppi.dat")
+    return
+
+def convert_sif_file_to_R_matrix(file_name, out_file_name):
+    id_pair_to_score = {}
+    ids = set()
+    for line in open(file_name):
+	id1, score, id2 = line.strip().split()
+	ids.add(id1)
+	ids.add(id2)
+	id_pair_to_score[(id1, id2)] = score
+	id_pair_to_score[(id2, id1)] = score
+    ids = sorted(list(ids))
+    f = open(out_file_name, 'w')
+    f.write(" %s\n" % " ".join(ids))
+    for id1 in ids:
+	f.write("%s" % id1)
+	for id2 in ids:
+	    if (id1, id2) in id_pair_to_score:
+		f.write(" %s" % id_pair_to_score[(id1, id2)])
+	    else:
+		f.write(" 0")
+	f.write("\n")
+    f.close()
     return
 
 def check_pearson_correlation_between_seed_connectivity_and_performance():

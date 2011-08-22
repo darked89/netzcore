@@ -8,12 +8,84 @@ from biana.utilities import graph_utilities as network_utilities
 from funcassociate import client
 from biana.utilities import TsvReader
 
-def get_modules_of_graph(sub_graph, module_detection_type):
+
+def score_mcl(node_scores_file, network_file, output_scores_file, module_file, default_non_seed_score):
+    g = network_utilities.create_network_from_sif_file(network_file, use_edge_data=True)
+    #modules = get_modules_of_graph(g, "mcl", inflation=2) # if edge weight based clustering is desired
+    seeds, nodes = get_seeds_from_node_scores_file(node_scores_file, default_non_seed_score)
+    modules = get_modules_from_file(module_file)
+    f = open(output_scores_file, 'w')
+    node_to_score = {}
+    #selected = set()
+    for module in modules:
+	module = set(module)
+	#common = module&seeds
+	#if 100*float(len(common))/len(module) > threshold:
+	    #selected |= module
+	#score = float(len(common))/len(module)
+	#n = len(module)-len(common)
+	#if n == 0:
+	#    continue
+	#score = 1.0/n
+	for node in module:
+	    #node_to_score[node] = score
+	    neighbors = set(g.neighbors(node))
+	    common = neighbors & module
+	    if node in common:
+		common.remove(node)
+	    #if len(common) == 0:
+	    #	continue
+	    score = float(len(common&seeds)) / len(module)
+	    node_to_score[node] = score
+    for node in nodes:
+	if node in node_to_score:
+	    f.write("%s\t%f\n" % (node, node_to_score[node]))
+	else:
+	    f.write("%s\t0.0\n" % node)
+    f.close()
+    return
+
+def get_seed_and_all_nodes_and_ids(node_scores_file, node_mapping_file, default_non_seed_score):
+    id_to_mapped_ids = get_id_to_mapped_id_mapping(node_mapping_file)
+    dummy, dummy, initial_node_to_score, dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = node_scores_file, store_edge_type = False)
+    seeds = set()
+    seed_ids = set()
+    all_ids = set()
+    for node in initial_node_to_score:
+	if initial_node_to_score[node] > default_non_seed_score:
+	    seeds.add(node)
+	    if node in id_to_mapped_ids:
+		seed_ids.add(id_to_mapped_ids[node][0])
+	if node in id_to_mapped_ids:
+	    all_ids.add(id_to_mapped_ids[node][0])
+    return seeds, seed_ids, all_ids
+
+def get_seeds_from_node_scores_file(node_scores_file, default_non_seed_score):
+    nodes, dummy, initial_node_to_score, dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = node_scores_file, store_edge_type = False)
+    seeds = set()
+    for node in initial_node_to_score:
+	if initial_node_to_score[node] > default_non_seed_score:
+	    seeds.add(node)
+    return seeds, nodes
+
+def get_modules_from_file(output_file):
+    f = open(output_file)
+    modules = []
+    for line in f:
+	words = line.strip().split("\t")
+	modules.append(words)
+    f.close()
+    return modules
+
+def get_modules_of_graph(sub_graph, module_detection_type, output_file=None, inflation=1.7):
     if module_detection_type == "connected":
 	modules = network_utilities.get_connected_components(sub_graph, return_as_graph_list=True)
     elif module_detection_type == "mcl":
 	from os import system
-	temp_file_name = ".temp_module_file.txt89734234"
+	if output_file is None:
+	    temp_file_name = ".temp_module_file.txt89734234"
+	else:
+	    temp_file_name = output_file
 	f = open(temp_file_name, 'w')
 	nodes = set()
 	for node1, node2, data in sub_graph.edges(data=True):
@@ -25,7 +97,7 @@ def get_modules_of_graph(sub_graph, module_detection_type):
 		f.write("%s\n" % node)
 	f.close()
 	# Optimum inflation parameter was 1.7-1.8 in a recent comparison paper
-	system("mcl %s --abc -I 1.7 -o %s 2>> %s" % (temp_file_name, temp_file_name + ".mcl", temp_file_name + ".err"))
+	system("mcl %s --abc -I %f -o %s 2>> %s" % (temp_file_name, inflation, temp_file_name + ".mcl", temp_file_name + ".err"))
 	f = open(temp_file_name + ".mcl")
 	modules = []
 	for line in f:
@@ -37,7 +109,7 @@ def get_modules_of_graph(sub_graph, module_detection_type):
     #print len(modules), map(len, modules)
     return modules
 
-def get_seed_function_enrichment_in_modules(modules, sub_graph, seeds, seed_ids, all_ids, id_to_mapped_ids, go_ids, id_type = "genesymbol", specie = "Homo sapiens", p_value_cutoff = 0.05): 
+def get_seed_function_enrichment_in_modules(modules, sub_graph, seeds, seed_ids, all_ids, id_to_mapped_ids, output_method, go_ids, id_type = "genesymbol", specie = "Homo sapiens", p_value_cutoff = 0.05): 
     """
 	Get functional enrichment of seed within modules 
     """
@@ -45,7 +117,7 @@ def get_seed_function_enrichment_in_modules(modules, sub_graph, seeds, seed_ids,
     n_seed, n_all = 0, 0
     n_go_term, n_go_term_all = 0, 0
     n_module = 0 
-    # FuncAssoc row: n_gene n_sub_query n_all LOD p_val adj_p_val go_id go_name
+    # FuncAssoc row: n_gene n_all LOD p_val adj_p_val go_id go_name
     #response = check_functional_enrichment(list(seed_ids), list(all_ids), id_type, None, specie = specie, mode = "unordered")
     #for row in response:
     #	print row 
@@ -65,7 +137,8 @@ def get_seed_function_enrichment_in_modules(modules, sub_graph, seeds, seed_ids,
 	i += 1
 	n_seed += k
 	n_all += N
-	response_module = check_functional_enrichment(list(ids_in_module), list(all_ids), id_type, None, specie = specie, mode = "unordered")
+	output_method("%s\n" % ", ".join(ids_in_module))
+	response_module = check_functional_enrichment(list(ids_in_module), list(all_ids), id_type, output_method, specie = specie, mode = "unordered")
 	for row in response_module:
 	    if float(row[5]) <= p_value_cutoff:
 		if row[6] in go_ids:
@@ -82,20 +155,6 @@ def get_seed_function_enrichment_in_modules(modules, sub_graph, seeds, seed_ids,
     #return (ratio, n_go_term, n_go_term_all, n_module, len(go_ids))
     return (ratio, len(seed_go_terms_in_modules), len(all_go_terms_in_modules), n_module, len(go_ids))
 
-def get_seed_and_all_nodes_and_ids(node_scores_file, node_mapping_file, default_non_seed_score):
-    id_to_mapped_ids = get_id_to_mapped_id_mapping(node_mapping_file)
-    dummy, dummy, initial_node_to_score, dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = node_scores_file, store_edge_type = False)
-    seeds = set()
-    seed_ids = set()
-    all_ids = set()
-    for node in initial_node_to_score:
-	if initial_node_to_score[node] > default_non_seed_score:
-	    seeds.add(node)
-	    if node in id_to_mapped_ids:
-		seed_ids.add(id_to_mapped_ids[node][0])
-	if node in id_to_mapped_ids:
-	    all_ids.add(id_to_mapped_ids[node][0])
-    return seeds, seed_ids, all_ids
 
 def get_connected_seed_enrichment_in_modules(modules, sub_graph, seeds, seed_ids, all_ids, id_to_mapped_ids, output_method = None, enrichment_type = "seed"): #"non_seed_in_between_connections"):
     """
@@ -213,7 +272,7 @@ def check_connected_seed_enrichment_in_network(network_file, node_scores_file, n
     if go_ids is None:
 	(ratio, n_seed, n_all, n_module, n) = get_connected_seed_enrichment_in_modules(modules, sub_graph, seeds, seed_ids, all_ids, id_to_mapped_ids, output_method)
     else:
-	(ratio, n_seed, n_all, n_module, n) = get_seed_function_enrichment_in_modules(modules, sub_graph, seeds, seed_ids, all_ids, id_to_mapped_ids, go_ids, id_type = id_type, specie = specie, p_value_cutoff = p_value_cutoff)
+	(ratio, n_seed, n_all, n_module, n) = get_seed_function_enrichment_in_modules(modules, sub_graph, seeds, seed_ids, all_ids, id_to_mapped_ids, output_method, go_ids, id_type = id_type, specie = specie, p_value_cutoff = p_value_cutoff)
     return (ratio, n_seed, n_all, n_module, n)
 
 
@@ -254,7 +313,7 @@ def check_connected_seed_enrichment_of_neighbors_in_network(network_file, node_s
     if go_ids is None:
 	(ratio, n_seed, n_all, n_module, n) = get_connected_seed_enrichment_in_modules(modules, sub_graph, seeds, seed_ids, all_ids, id_to_mapped_ids, output_method)
     else:
-	(ratio, n_seed, n_all, n_module, n) = get_seed_function_enrichment_in_modules(modules, sub_graph, seeds, seed_ids, all_ids, id_to_mapped_ids, go_ids, id_type = id_type, specie = specie, p_value_cutoff = p_value_cutoff)
+	(ratio, n_seed, n_all, n_module, n) = get_seed_function_enrichment_in_modules(modules, sub_graph, seeds, seed_ids, all_ids, id_to_mapped_ids, output_method, go_ids, id_type = id_type, specie = specie, p_value_cutoff = p_value_cutoff)
     return (ratio, n_seed, n_all, n_module, n) 
 
 def check_connected_seed_enrichment_of_modules_of_given_nodes(nodes, network_file, node_scores_file, node_mapping_file, id_type, output_method, default_non_seed_score, module_detection_type = "connected", go_ids = None, specie = "Homo sapiens", p_value_cutoff = 0.05):
@@ -289,7 +348,7 @@ def check_connected_seed_enrichment_of_modules_of_given_nodes(nodes, network_fil
     if go_ids is None:
 	(ratio, n_seed, n_all, n_module, n) = get_connected_seed_enrichment_in_modules(modules, sub_graph, seeds, seed_ids, all_ids, id_to_mapped_ids, output_method)
     else:
-	(ratio, n_seed, n_all, n_module, n) = get_seed_function_enrichment_in_modules(modules, sub_graph, seeds, seed_ids, all_ids, id_to_mapped_ids, go_ids, id_type = id_type, specie = specie, p_value_cutoff = p_value_cutoff)
+	(ratio, n_seed, n_all, n_module, n) = get_seed_function_enrichment_in_modules(modules, sub_graph, seeds, seed_ids, all_ids, id_to_mapped_ids, output_method, go_ids, id_type = id_type, specie = specie, p_value_cutoff = p_value_cutoff)
     return (ratio, n_seed, n_all, n_module, n) 
 
 def check_connected_seed_enrichment_of_high_scoring_modules(network_file, output_scores_file, node_scores_file, node_mapping_file, cutoff, id_type, output_method, default_non_seed_score, module_detection_type = "connected", go_ids = None, specie = "Homo sapiens", p_value_cutoff = 0.05):
@@ -316,7 +375,7 @@ def check_connected_seed_enrichment_of_high_scoring_modules(network_file, output
     if go_ids is None:
 	(ratio, n_seed, n_all, n_module, n) = get_connected_seed_enrichment_in_modules(modules, sub_graph, seeds, seed_ids, all_ids, id_to_mapped_ids, output_method)
     else:
-	(ratio, n_seed, n_all, n_module, n) = get_seed_function_enrichment_in_modules(modules, sub_graph, seeds, seed_ids, all_ids, id_to_mapped_ids, go_ids, id_type = id_type, specie = specie, p_value_cutoff = p_value_cutoff)
+	(ratio, n_seed, n_all, n_module, n) = get_seed_function_enrichment_in_modules(modules, sub_graph, seeds, seed_ids, all_ids, id_to_mapped_ids, output_method, go_ids, id_type = id_type, specie = specie, p_value_cutoff = p_value_cutoff)
     return (ratio, n_seed, n_all, n_module, n) #min(vals)
 
 def check_functional_enrichment_of_high_scoring_modules(network_file, module_detection_type, output_scores_file, node_scores_file, node_mapping_file, cutoff, id_type, output_method, default_non_seed_score = 0, exclude_seeds = False, specie = "Homo sapiens", mode = "unordered"):
@@ -528,7 +587,7 @@ def check_functional_enrichment(subset_gene_ids, gene_ids, id_type, output_metho
 
     for row in response["over"]:
 	if mode == "unordered":
-	    row.pop(1)
+	    row = row[:1] + row[2:] #row.pop(1)
         if row[4] is 0:
             row[4] = zero
 	if mode == "unordered":
@@ -556,7 +615,7 @@ def check_functional_enrichment(subset_gene_ids, gene_ids, id_type, output_metho
 	info = response["request_info"]
 	for k in info.keys():
 	    output_method("%s: %s\n" % (k, info[k]))
-    return
+    return response["over"]
 
 
 def record_performance_AUC_in_log_file(absolute_dir, log_file, title):
@@ -743,8 +802,20 @@ def get_non_seeds_from_node_scores_file(file_node_scores, default_score = 0):
     non_seeds = [ id for id, score in dictNode.iteritems() if score <= default_score ]
     return non_seeds
 
+def calculate_performance_metric_counts_using_navlakha(dictNodeResult, setNodeTest, score_threshold, non_seeds = None):
+    (nP, nN) = (0.0, 0.0)
+    for id in setNodeTest: 
+	if non_seeds is not None:
+	    if id not in non_seeds:
+		continue
+	score = dictNodeResult[id]
+	if score >= score_threshold:
+	    nP += 1
+	else:
+	    nN += 1
+    return (nP, nN)
 
-def calculate_performance_metric_counts(dictNodeResult, setNodeTest, non_seeds, score_threshold, n_random_negative_folds = None, replicable=123, candidates_based=False):
+def calculate_performance_metric_counts_using_candidates(dictNodeResult, setNodeTest, non_seeds, score_threshold):
     (nTP, nFP, nFN, nTN) = (0.0, 0.0, 0.0, 0.0)
     for id, score in dictNodeResult.iteritems(): # if candidates based - for each candidate
         if id in setNodeTest: # in the initial association file
@@ -752,15 +823,22 @@ def calculate_performance_metric_counts(dictNodeResult, setNodeTest, non_seeds, 
                 nTP += 1
             else:
                 nFN += 1
-	elif candidates_based: 
-	    if id in non_seeds: # not in the initial association file
+	else: 
+	    if id in non_seeds: # not in the initial association file but in the candidates
 		if score >= score_threshold:
 		    nFP += 1 
 		else:
 		    nTN += 1 
+    return (nTP, nFP, nFN, nTN)
 
-    if candidates_based:
-	return (nTP, nFP, nFN, nTN)
+def calculate_performance_metric_counts_using_random_negatives(dictNodeResult, setNodeTest, non_seeds, score_threshold, n_random_negative_folds = None, replicable=123):
+    (nTP, nFP, nFN, nTN) = (0.0, 0.0, 0.0, 0.0)
+    for id, score in dictNodeResult.iteritems(): # if candidates based - for each candidate
+        if id in setNodeTest: # in the initial association file
+            if score >= score_threshold:
+                nTP += 1
+            else:
+                nFN += 1
 
     if n_random_negative_folds == 0:
 	for id, score in dictNodeResult.iteritems():
@@ -798,7 +876,7 @@ def calculate_performance_metric_counts_using_files(file_result, file_seed_test_
 				 If 0 all negative data is used
     """
     dictNodeResult, setNodeTest, non_seeds = get_values_from_files_for_performance_metric_counts(file_result, file_seed_test_scores, file_node_scores, default_score, candidates_file)
-    return calculate_performance_metric_counts(dictNodeResult, setNodeTest, non_seeds, score_threshold, n_random_negative_folds, replicable)
+    return calculate_performance_metric_counts_using_random_negatives(dictNodeResult, setNodeTest, non_seeds, score_threshold, n_random_negative_folds, replicable)
 
 
 def get_values_from_files_for_performance_metric_counts(file_result, file_seed_test_scores, file_node_scores, default_score, candidates_file = None):
@@ -819,19 +897,19 @@ def calculatePerformance(nTP, nFP, nFN, nTN):
     try:
 	acc = (nTP + nTN) / (nTP + nFP + nTN + nFN)
     except ZeroDivisionError:
-	acc = 0.0 #None
+	acc = None
     try:
         sens = nTP / (nTP + nFN)
     except:
-        sens = 0.0 #None
+        sens = None
     try:
         spec = nTN / (nTN + nFP)
     except:
-        spec = 0.0 #None
+        spec = None
     try:
         ppv = nTP / (nTP + nFP)
     except:
-        ppv = 0.0 #None
+        ppv = None
 
     #if spec is not None:
     #    return (sens, (1-spec))
