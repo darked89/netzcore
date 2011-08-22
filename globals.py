@@ -28,11 +28,11 @@ delay_experiment = True
 tex_format = True #False 
 functional_enrichment = False
 
-MODE = "compare" # prepare, score, analyze, compare, summary, module
-user_friendly_id = "navlakha" #"biana_no_tap_relevance-omim_alzheimer-ns_nz_nd_union-top5" # "biana_no_tap-omim" #biana_no_tap_no_reliability-omim_alzheimer-nd-top5 #"biana_no_tap-omim_perturbed_%d_10" % i_parameter #"biana_no_tap-all_seed20below" #"biana-all" #"biana_no_tap-omim" #"omim_alzheimer-diabetes" #"all_vs_all" # a.k.a. emre friendly id for compare and summary
-summary_seed_cutoff = 1 #None #2 #20 # Seed cutoff considered for inclusion of an experiment in sum_up_experiments, if None seed.dat is not created. Also used in compare_experiments if analysis_type is user
-prepare_mutated = None # Creates permutad/pruned networks 
-analyze_network = False 
+MODE = "score" # prepare, score, analyze, compare, summary, module
+user_friendly_id = "entrez-omim" # "navlakha" #"biana_no_tap" # a.k.a. emre friendly id for compare and summary
+summary_seed_cutoff = None #2 #20 # Seed cutoff considered for inclusion of an experiment in sum_up_experiments, if None seed.dat is not created. Also used in compare_experiments if analysis_type is user
+prepare_mutated = None #"perturbed" # Creates permutad/pruned networks 
+analyze_network = False #True
 exclude_seeds_in_comparison = True
 
 
@@ -44,56 +44,73 @@ goh_phenotypes = ["goh_developmental", "goh_connective_tissue", "goh_ear,nose,th
 chen_phenotypes = ["atherosclerosis",  "ischaemic_stroke",  "systemic_scleroderma",  "migraine",  "epilepsy",  "cirrhosis",  "ulcerative_colitis",  "cervical_carcinoma",  "osteoarthritis",  "inflammatory_bowel_disease",  "myocardial_ischemia",  "endometrial_carcinoma",  "pancreatitis",  "graves_disease",  "neural_tube_defects",  "lymphoma",  "endometriosis",  "autism",  "hypercholesterolaemia"]
 chen_phenotypes = [ "chen_" + p for p in chen_phenotypes ]
 
+rob_phenotypes = ['cacl2', 'miconazole', 'galactose', 'licl', 'cykloheximide', 'methanol', 'nacl', 'doxorubicin', 'heat', 'arsenite', 'mms', 'hydroxyurea', 'cisplatin', 'dtt', 'tunicamycin', 'superoxide', 'glycerol']
+rob_phenotypes = [ "rob_" + p for p in rob_phenotypes ]
+
 hsdl_phenotypes = [ "INNER_CELL_MASS", "TROPHECTODERM", "Embryonic_stem_cell", "ECTODERM", "MESENDODERM", "ENDODERM", "MESODERM", "neural_progenitor_cell", "neural_stem_cell", "heart", "cardiomyocyte", "digestive_tube", "pancreas", "liver" ]
 hsdl_phenotypes = [ "hsdl_" + p.replace(" ", "_").lower() for p in hsdl_phenotypes ]
 
-
 ppis = []
-ppis += ["hprd"] #, "ophid"]
+#ppis += ["hprd"] #, "ophid"]
 #ppis += ["goh", "entrez", "biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
+ppis += ["biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
+ppis += ["goh"] 
+ppis += ["entrez"]
+#ppis += ["baldo_synthetic"]
+#ppis += [ "biogrid_yeast" ]
+#ppis += [ "biogrid_yeast_with_genetic_interactions" ]
+#ppis += [ "biogrid_yeast_genetic_interactions" ]
+#ppis += [ "biogrid_yeast_no_tap" ]
+#ppis += [ "yeastnet2" ]
 #ppis += ["rivasi"]
-#ppis += ["biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
-#ppis += ["goh"]
-#ppis += ["entrez"]
 #ppis += ["biana_no_reliability"]
 #ppis += ["biana_no_tap_no_reliability"] 
 #ppis += ["biana_no_tap_relevance"]
+#ppis += ["biana_no_tap_no_reliability_permuted_p10_71"] 
 #ppis += ["biana_no_tap_no_reliability_permuted_p%s_%s" % (p, i) for p in xrange(10,110,10) for i in xrange(1,101) ] 
 #ppis += ["biana_no_tap_no_reliability_permuted_p%s_%s" % (p, i) for p in xrange(10,110,10) for i in xrange(1,11) ] 
-#ppis += ["biana_no_tap_no_reliability_pruned_p%s_%s" % (p, i) for p in xrange(i_parameter,i_parameter+10,10) for i in xrange(1,11) ] 
-#ppis += ["biana_no_tap_no_reliability_pruned_non_seed_interactions_p%s_%s" % (p, i) for p in xrange(10,100,10) for i in xrange(1,101) ] 
+#ppis += ["biana_no_tap_no_reliability_pruned_non_seed_interactions_p%s_%s" % (p, i) for p in xrange(10,100,10) for i in xrange(1,11) ] 
 #ppis += ["biana_no_tap_no_reliability_pruned_p%s_%s" % (p, i) for p in xrange(10,100,10) for i in xrange(1,11) ] 
-#ppis += ["david"]
+#ppis += ["biana_no_tap_no_reliability_pruned_p%s_%s" % (p, i) for p in xrange(i_parameter,i_parameter+10,10) for i in xrange(1,11) ] 
+#ppis += ["david_OGU", "david_OIN", "david_homology_OGU", "david_homology_OIN"]
 #ppis += ["javi"] #["goh"] #["piana_joan_exp", "piana_joan_all"] #["david"] #["goh", "biana_no_tap_no_reliability", "biana_no_reliability", "biana_no_tap_relevance"]
 #ppis = ["ori_coexpression_1e-2", "ori_network", "ori_coexpression", "ori_coexpression_colocalization", "ori_colocalization", "ori_coexpression_colocalization_1e-2"]
 #ppis += ["ori_no_tap_coexpression_1e-2", "ori_no_tap_network", "ori_no_tap_coexpression", "ori_no_tap_coexpression_colocalization", "ori_no_tap_colocalization", "ori_no_tap_coexpression_colocalization_1e-2"]
 #ppi += ["goh_1e5", "biana_coexpression"]
 
 phenotypes = []
+#phenotypes += ["baldo_synthetic"]
+#phenotypes += rob_phenotypes 
+#phenotypes += ["navlakha_abdominal"]
+#phenotypes += navlakha_phenotypes
+phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes 
 #phenotypes += navlakha_phenotypes # Now located at the bottom of the page
-#phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes 
 #phenotypes += hsdl_phenotypes
 #phenotypes += omim_phenotypes 
 #phenotypes += [ "perturbed_%s_p%i_%i" % (d, p, i) for d in omim_phenotypes for p in xrange(10,100,10) for i in xrange(1,101) ]
-#phenotypes += [ "perturbed_%s_p%i_%i" % (d, p, i) for d in omim_phenotypes for p in xrange(i_parameter,i_parameter+10,10) for i in xrange(1,11) ]  
 #phenotypes += goh_phenotypes 
 #phenotypes += chen_phenotypes 
+#phenotypes += ["chen_autism"]
+#phenotypes += ["omim_aneurysm", "omim_autism"]
 #phenotypes += ["omim_prostate_cancer"]
 #phenotypes += ["omim_breast_cancer", "omim_lung_cancer"]
 #phenotypes += ["omim_leukemia"]
+#phenotypes += ["omim_hypertension"]
 #phenotypes += ["omim_alzheimer"] 
 #phenotypes += ["omim_insulin"] 
 #phenotypes += ["omim_diabetes"]
 #phenotypes += ["omim_parkinson_disease"]
+#phenotypes += ["perturbed_omim_mental_retardation_p10_11"]
 #phenotypes += ["apoptosis_joan"]
 #phenotypes += ["custom"] #["aneurysm"] #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
 
 scoring_parameters = []
-scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)]
-scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
+#scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)] 
+#scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
+#scoring_parameters += [("nd", 1, 1)] 
+scoring_parameters += [("rw", 1, 1), ("np", 1, 1)] 
 #scoring_parameters += [("nr", 1, 1)]
-scoring_parameters += [("nd", 1, 1)]
-scoring_parameters += [("mcl", 1, 1)]
+#scoring_parameters += [("mcl", 1, 1)]
 #scoring_parameters += [("nz", 1, 5)]
 #scoring_parameters += [("ns", 3, 2)]
 #scoring_parameters += [("ff", 1, 5)]
@@ -111,22 +128,20 @@ scoring_parameters += [("mcl", 1, 1)]
 
 
 # Directory of the project
-base_dir = ".."
+base_dir = ".." #os.path.abspath("..") #"/data-sbi/emre/netzcore"
 base_dir = os.path.abspath(base_dir) + os.sep
-data_dir = base_dir + "data" + os.sep
+data_dir = base_dir + "data" + os.sep 
 data_dir = os.path.abspath(data_dir) + os.sep
-src_dir = base_dir + "src" + os.sep
+src_dir = base_dir + "src" + os.sep 
 
 # BIANA node & network files
-biana_node_file_prefix = data_dir + "human_interactome_biana" + os.sep + "human_nodes"
-biana_network_file_prefix = data_dir + "human_interactome_biana" + os.sep + "human_network"
+biana_network_dir = data_dir + "human_interactome_biana" + os.sep
+biana_node_file_prefix = biana_network_dir + "human_nodes"
+biana_network_file_prefix = biana_network_dir + "human_network"
 
 # PPIs from existing studies
-goh_network_file = data_dir + "goh_human_ppi" + os.sep + "ppi.sif"
-rhodes_network_file = data_dir + "rhodes_human_probabilistic_ppi" + os.sep + "ppi.sif"
-goh_network_file_filtered_by_degree = goh_network_file[:-4] + "_degree_filtered.sif"
-rhodes_network_file_filtered_by_degree = rhodes_network_file[:-4] + "_degree_filtered.sif"
-rhodes_interaction_relevance_file = rhodes_network_file[:-4] + ".eda"
+goh_network_dir = data_dir + "goh_human_ppi" + os.sep
+rhodes_network_dir = data_dir + "rhodes_human_probabilistic_ppi" + os.sep 
 
 # Gene info file 
 gene_info_file = data_dir + "gene_info" + os.sep + "genes.tsv"
@@ -141,7 +156,7 @@ COMPARISON_GOLD_STANDARD_FILE = data_dir + "alzheimer_gold" + os.sep + "gene_lis
 #COMPARISON_GOLD_STANDARD_FILE = data_dir + "uwaging" + os.sep + "mutex_uwaging_genage_netage.txt" # 99 intersection of uwaging - genage & uwaging - netage & genage - netage
 #COMPARISON_GOLD_STANDARD_FILE = data_dir + "netage" + os.sep + "longetivity.txt" # 456, 8 from uwaging, 91 from genage
 
-scoring_methods = ["nd", "nz", "ns", "ff", "nr", "nw", "nl", "nx", "nh", "n1", "nb"]
+scoring_methods = ["nd", "nz", "ns", "ff", "nr", "nw", "nl", "nx", "nh", "n1", "nb", "rw", "np"]
 
 THRESHOLDS = { "nr": [ 4e-6, 2e-5, 5e-5, 1e-4, 2e-4, 3e-4, 4e-4, 5e-4, 1e-3, 0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9 ],
 		"ff": [ 1e-3, 1e-2, 2e-2, 5e-2, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3 ], 

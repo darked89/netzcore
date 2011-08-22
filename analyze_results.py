@@ -672,7 +672,7 @@ def create_R_script(fileName, absolute_dir, title, only_auc=False):
     f.write("l<-read.table(\"%slabels.txt\")\n" % absolute_dir)
     f.write("pred<-prediction(v, l)\n")
     #if image_type = "eps":
-    f.write("#postscript(\"%sperformance.eps\", width = 6, height = 6, horizontal = FALSE, onefile = FALSE, paper = \"special\", title = \"%s\")\n" % (absolute_dir, title))
+    f.write("postscript(\"%sperformance.eps\", width = 6, height = 6, horizontal = FALSE, onefile = FALSE, paper = \"special\", title = \"%s\")\n" % (absolute_dir, title))
     #else:
     #	f.write("bitmap(\"%sperformance.jpg\", res = 1200, height = 6, width = 6, type = \"jpeg\", horizontal = FALSE, onefile = FALSE, paper = \"special\", title = \"%s\")" % (absolute_dir, title)) 
     f.write("par(mfrow=c(2,2))\n")
@@ -739,7 +739,7 @@ def create_ROCR_files(list_node_scores_and_labels, file_predictions, file_labels
     return
 
 
-def get_validation_node_scores_and_labels(file_result, file_seed_test_scores, file_node_scores, n_random_negative_folds = None, default_score = 0, replicable = 123, candidates_file = None):
+def get_validation_node_scores_and_labels(file_result, file_seed_test_scores, file_node_scores, n_random_negative_folds = None, default_score = 0, replicable = 123, candidates_file = None, previous_negative_sample_size=None):
     """
 	Returns a list of scores and labels [ ([0-1], [01]) ] for validation
 	file_result: File to parse output scores 
@@ -758,18 +758,22 @@ def get_validation_node_scores_and_labels(file_result, file_seed_test_scores, fi
 	dictNodeResult = dictNodeResult.fromkeys(setCandidates)
 
     if n_random_negative_folds == 0:
+	negative_sample_size = None
 	#node_validation_data.extend([(dictNodeResult[id], 0) for id in non_seeds ])
 	node_validation_data.extend([(dictNodeResult[id], 0) for id in set(dictNodeResult.keys()) & set(non_seeds) ])
     else:
 	n_actual_folds = 0
 	negative_sample_size = len(setNodeTest)
+	if previous_negative_sample_size is not None: # was ignoring some negatives in 5-fold (e.g. when there are 9 seeds, the data consist of 9 positive, 1 negative data instance
+	    if previous_negative_sample_size > negative_sample_size:
+		negative_sample_size = previous_negative_sample_size 
 	negative_scores = [ 0 ] * negative_sample_size 
 	for sample in generate_samples_from_list_without_replacement(non_seeds, negative_sample_size, n_random_negative_folds, replicable = replicable):
 	    for i, id in enumerate(sample):
 		negative_scores[i] += dictNodeResult[id] 
 	    n_actual_folds += 1
 	node_validation_data.extend(map(lambda x: (x/n_actual_folds, 0), negative_scores))
-    return node_validation_data
+    return node_validation_data, negative_sample_size
 
 
 def generate_samples_from_list_without_replacement(elements, sample_size, n_folds = None, replicable = None):
