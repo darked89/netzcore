@@ -3,11 +3,11 @@ Executables are located under /sbi/users/emre/bin/
 
     * netzcore (suggested n_iteration: 5, n_random_graph*: 100)
 
-scoreN -s z -n node_score.txt -e node_score_node.txt -o output.txt -i n_iteration -d path_to_random_graphs -x n_random_graph
+scoreN -s z -n node_score.txt -e node_score_node.txt -o output.txt -i n_iteration -d prefix_of_random_graphs -x n_random_graph
 
-* random graph names under the directory given by -d  are in this format sampled_graph.sif.i where i is the i^th random graph.
+* An integer from 1 to n_random_graph will be appended at the end of prefix_of_random_graph (given by -d option) while reading random graphs (thus prefix_of_random_graphs should also include the directory under which graph files reside).
 
-** you can generate random networks using graph_utilities.randomize_graph fucntion with randomization_type "preserve_topology_and_node_degree"
+** you can generate random networks using graph_utilities.randomize_graph function with randomization_type "preserve_topology_and_node_degree"
 
     * netscore (suggested n_repetition: 3, n_iteration: 2)
 

@@ -1,3 +1,8 @@
+// This file is a slight modification of page_rank.hpp in Boost Graph Library
+// to calculate Page Rank with priors. Thus original license of the code
+// is inhereted for the code (see below for original license).
+// 2011 - Emre Guney (Universitat Pompeu Fabra)
+//
 // Copyright 2004-5 The Trustees of Indiana University.
 // Copyright 2002 Brad King and Douglas Gregor
 
@@ -11,7 +16,7 @@
 #ifndef BOOST_GRAPH_PAGE_RANK_WITH_PRIORS_HPP
 #define BOOST_GRAPH_PAGE_RANK_WITH_PRIORS_HPP
 
-#include <boost/property_map.hpp>
+#include <boost/property_map/property_map.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/properties.hpp>
 #include <boost/graph/iteration_macros.hpp>

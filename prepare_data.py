@@ -9,6 +9,11 @@ from biana.utilities import TsvReader
 from biana.utilities import graph_utilities as network_utilities
 
 def get_number_of_mapped_seeds(filename):
+    """
+    Get number of seeds, average number of neighboring seeds and average 
+    shortest path length between seeds from the log file (the most recent
+    lines would be considered if multiple lines with seed info exist)
+    """
     f = open(filename)
     n_seed = None
     n_linker = None
@@ -193,7 +198,7 @@ def create_edge_scores_as_node_scores_file(edges, node_to_score, edge_to_score, 
 		score_v = node_to_score[v]
 	    else:
 		score_v = default_score
-	weight = default_score
+	weight = 1 # before it was default_score but makes no change since all included in edge_to_score has 1 as minimum anyways 
 	if (u,v) in edge_to_score:
 	    weight = edge_to_score[(u,v)]
 	elif (v,u) in edge_to_score:
