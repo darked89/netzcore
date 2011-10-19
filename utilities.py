@@ -1,3 +1,4 @@
+import os
 
 DATA_DIR = "/home/emre/arastirma/netzcore/data/"
 
@@ -16,7 +17,126 @@ def main():
 
     #check_pearson_correlation_between_seed_connectivity_and_performance()
 
-    convert_sif_file_to_R_matrix(DATA_DIR + "input_runs_for_draft/entrez/edge_scores.sif", "test_ppi.dat")
+    #convert_sif_file_to_R_matrix(DATA_DIR + "input_runs_for_draft/entrez/edge_scores.sif", "test_ppi.dat")
+
+    case_study_neighborhood()
+    return
+
+
+def case_study_neighborhood():
+    network_file = DATA_DIR + "input/biana_no_tap_relevance/edge_scores.sif"
+    seeds_file = DATA_DIR + "input/biana_no_tap_relevance/omim_alzheimer/seeds.txt" 
+    neighborhood_network_file = DATA_DIR + "compare/biana_no_tap_relevance-omim_alzheimer-nn/seed_neighborhood.sif"
+    #get_neighbors_of_nodes_in_network(network_file, seeds_file, neighborhood_network_file)
+
+    user_entity_id_mapping_file = DATA_DIR + "input_runs_for_draft/biana_no_tap_relevance/node_mapping.tsv.genesymbol.single"
+    #seed_genes_file = DATA_DIR + "compare/biana_no_tap_relevance-omim_alzheimer-nd-top5/seeds.txt"
+    all_genes_file = DATA_DIR + "compare/biana_no_tap_relevance-omim_alzheimer-nd-top5/all.txt"
+    seed_genes_file = DATA_DIR + "omim/alzheimer.txt" 
+    aging_file = DATA_DIR + "uwaging/mutex_uwaging_genage_netage.txt"
+    ad_file = DATA_DIR + "alzheimer_gold/gene_list.txt"
+
+    f = open(DATA_DIR + "compare/biana_no_tap_relevance-omim_alzheimer-nn/results.dat", 'w')
+    f.write("\tpicked_good\ttotal\tgood\tpicked\n")
+
+    comparison = get_corresponding_genes_of_ues(neighborhood_network_file, user_entity_id_mapping_file)
+    seeds = set([gene.strip() for gene in open(seed_genes_file)])
+    #all_genes2 = set([gene.strip() for gene in open(all_genes_file)])
+    all_genes = get_corresponding_genes_of_ues(network_file, user_entity_id_mapping_file)
+    ad_genes = set([gene.strip() for gene in open(ad_file)]) & all_genes
+    aging_genes = set([gene.strip() for gene in open(aging_file)]) & all_genes
+    print len(seeds&aging_genes), len(all_genes&seeds), len(aging_genes)
+    #print len(seeds), len(all_genes), len(comparison)
+    from scipy.stats import hypergeom
+    picked = comparison-seeds
+    total = all_genes-seeds
+    print "comparison:", len(picked)
+    print "all:", len(total)
+
+    good = ad_genes-seeds
+    matched_ad = (comparison&ad_genes)-seeds
+    picked_good = matched_ad
+    print "ad:", len(good)
+    print "matched_ad:", len(matched_ad)
+    print "p_value:", sum(hypergeom.pmf(range(len(picked_good),len(picked)+1), len(total), len(good), len(picked)))
+    print len(picked_good), len(total), len(good), len(picked)
+    f.write("%s\t%d\t%d\t%d\t%d\n" % ("p0", len(picked_good), len(total), len(good), len(picked)))
+
+    good = aging_genes-seeds
+    matched_aging = (comparison&aging_genes)-seeds
+    picked_good = matched_aging
+    print "aging:", len(good)
+    print "matched_aging:", len(matched_aging)
+    print "p_value:", sum(hypergeom.pmf(range(len(picked_good),len(picked)+1), len(total), len(good), len(picked)))
+
+    print "ad-aging:", len((ad_genes&aging_genes)-seeds)
+    print "matched_ad-matched_aging:", len(matched_ad&matched_aging)
+
+    # Check effect of pruning
+    seeds_file = DATA_DIR + "input/biana_no_tap_relevance/omim_alzheimer/seeds.txt" 
+    for p in xrange(10, 90, 10):
+	n_picked_good, n_total, n_good, n_picked = [0.0] * 4
+	#os.mkdir(DATA_DIR + "compare/biana_no_tap_relevance-omim_alzheimer-nn/%d" % p)
+	for i in xrange(1,101):
+	    #network_file = DATA_DIR + "human_interactome_biana/pruned/omim_alzheimer/%d/sampled_graph.sif.%d" % (p, i)
+	    network_file = DATA_DIR + "human_interactome_biana/permuted/%d/sampled_graph.sif.%d" % (p, i)
+	    neighborhood_network_file = DATA_DIR + "compare/biana_no_tap_relevance-omim_alzheimer-nn/%d/seed_neighborhood.sif.%d" % (p, i)
+	    #get_neighbors_of_nodes_in_network(network_file, seeds_file, neighborhood_network_file)
+	    comparison = get_corresponding_genes_of_ues(neighborhood_network_file, user_entity_id_mapping_file)
+	    all_genes = get_corresponding_genes_of_ues(network_file, user_entity_id_mapping_file)
+	    ad_genes = set([gene.strip() for gene in open(ad_file)]) & all_genes
+	    picked = comparison-seeds
+	    total = all_genes-seeds
+	    good = ad_genes-seeds
+	    matched_ad = (comparison&ad_genes)-seeds
+	    picked_good = matched_ad
+	    #print len(picked_good), len(total), len(good), len(picked)
+	    n_picked_good += len(picked_good)
+	    n_total += len(total)
+	    n_good += len(good)
+	    n_picked += len(picked)
+	n_picked_good, n_total, n_good, n_picked = map(lambda x: int(round(x/100)), [n_picked_good, n_total, n_good, n_picked])
+	print n_picked_good, n_total, n_good, n_picked
+	print "p_value:", sum(hypergeom.pmf(range(n_picked_good,n_picked+1), n_total, n_good, n_picked))
+	f.write("%s\t%d\t%d\t%d\t%d\n" % ("p%d"%p, n_picked_good, n_total, n_good, n_picked))
+    f.close()
+    return
+
+def get_corresponding_genes_of_ues(network_file, mapping_file, network_file_delim=" "):
+    ueid_to_gene = {}
+    f = open(mapping_file)
+    f.readline()
+    for line in f:
+	ueid, gene = line.strip().split("\t")
+	ueid_to_gene[ueid] = gene
+    f.close()
+    comparison = set()
+    for line in open(network_file):
+	words = line.strip().split(network_file_delim)
+	if len(words) == 3:
+	    id1, score, id2 = words
+	else:
+	    id1 = words[0]
+	    id2 = id1
+	for ueid in [id1, id2]:
+	    gene = ueid_to_gene[ueid]
+	    if gene != "-":
+		comparison.add(gene)
+    return comparison
+
+def get_neighbors_of_nodes_in_network(network_file, node_file, output_file):
+    import biana.utilities.graph_utilities as gu
+    g = gu.create_network_from_sif_file(network_file, use_edge_data=True)
+    nodes = [ line.strip() for line in open(node_file) ]
+    neighbors = []
+    for node in nodes:
+	neighbors.extend(g.neighbors(node))
+    neighbors.extend(nodes)
+    g_sub = g.subgraph(neighbors)
+    f = open(output_file, 'w')
+    for u,v,w in g_sub.edges(data=True):
+	f.write("%s %s %s\n" % (u,w,v))
+    f.close()
     return
 
 def convert_sif_file_to_R_matrix(file_name, out_file_name):
@@ -44,8 +164,8 @@ def convert_sif_file_to_R_matrix(file_name, out_file_name):
 
 def check_pearson_correlation_between_seed_connectivity_and_performance():
     from scipy import stats
-    method_to_values = read_R_data_file(DATA_DIR + "summary/biana_no_tap-all/auc_ppis.dat")
-    metric_to_values = read_R_data_file(DATA_DIR + "summary/biana_no_tap-all/seeds.dat")
+    method_to_values = read_R_data_file(DATA_DIR + "summary/biana_no_tap7_vs_all5-top5/auc_ppis.dat")
+    metric_to_values = read_R_data_file(DATA_DIR + "summary/biana_no_tap7_vs_all5-top5/seeds.dat")
     for method, values1 in method_to_values.iteritems():
 	values1.sort()
 	for metric, values2 in metric_to_values.iteritems():
@@ -200,7 +320,6 @@ def prune_network():
 
 def analyze_network():
     import biana.utilities.graph_utilities as gu
-
     g = gu.create_network_from_sif_file("/data/emre/toy_data/test_interactions_small.sif")
     degrees = g.degree(with_labels=True)
     node_to_values = gu.get_node_degree_related_values(g, ["v2","v3"])
@@ -225,8 +344,6 @@ def analyze_network():
 #print biana_output_converter.get_primary_uniprot_accessions("/home/emre/arastirma/netzcore/data/human_interactome_biana/human_nodes.tsv")
 
 def get_detection_methods():
-    import sys
-
     create_new_session(sessionID="biana_session",dbname="test_biana",dbhost="127.0.0.1",dbuser="",dbpassword="",unification_protocol="(p3)(noself)(noprevious)uniprot_seqtax_geneid_scoppdb")
     objSession = available_sessions["biana_session"]
     temp = available_sessions["biana_session"].create_new_user_entity_set( identifier_description_list = [("geneid","390")], attribute_restriction_list=[], id_type="embedded", new_user_entity_set_id="User_Entity_Set_1", negative_attribute_restriction_list=[])

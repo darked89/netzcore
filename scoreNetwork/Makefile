@@ -133,4 +133,5 @@ clean:
 	rm -f graph/*.o
 	rm -f $(DIRFFLOW)/*.o
 	rm -f $(DIRGRAPHFFLOW)/*.o
+	rm -f $(EXEMAIN)
 

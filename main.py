@@ -448,6 +448,27 @@ def decide_interaction_data(PPI, ASSOCIATION, association_scores_file):
 	node_file = association_scores_file
 	network_file = network_dir + "network.sif"
 	network_file_filtered = network_file
+    # RH screen (~GI for human)
+    elif PPI == "rh_human_gi":
+	node_description_file = None 
+	network_file_identifier_type = "genesymbol"
+	network_file = data_dir + "rh_human_gi" + os.sep + "fully_combined_RH_network_e-6_bPPI_genes.sif"
+	network_file_filtered = network_file
+	node_file = association_scores_file
+    # HumanNet
+    elif PPI == "humannet":
+	node_description_file = None 
+	network_file_identifier_type = "genesymbol"
+	network_file = data_dir + "humannet" + os.sep + "HumanNet.v1.join_evidence1_bPPI_genes.sif"
+	network_file_filtered = network_file
+	node_file = association_scores_file
+    # ENTREZ network with interactions for only genes in bPPI
+    elif PPI == "entrez_sub":
+	node_description_file = None 
+	network_file_identifier_type = "genesymbol"
+	network_file = data_dir + "entrez_human_ppi" + os.sep + "ppi_bPPI_genes.sif"
+	network_file_filtered = network_file
+	node_file = association_scores_file
     else:
 	raise ValueError("Unrecognized ppi!")
 
@@ -932,8 +953,8 @@ def sum_up_experiments(ppis, phenotypes, analysis_type="auc", tex_format=False, 
 		    parameter = sub_words[3].strip()
 		auc = float(words[1])
 		auc_dev = float(words[2].strip("+/-"))
-		cov = float(words[5]) # 4
-		cov_dev = float(words[6].strip("+/-")) # 5
+		cov = float(words[3]) 
+		cov_dev = float(words[4].strip("+/-")) 
 		if analysis_type == "auc":
 		    #if auc<=0.5 and n_seed <= 20 and (method == "ns" or method == "nd"):
 		    #	print ppi, phenotype, n_seed, method, auc
@@ -1133,7 +1154,7 @@ def prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix,
 	    seed_nodes = all_nodes & seed_nodes
 	    seed_to_score = dict([(node, DEFAULT_SEED_SCORE) for node in seed_nodes])
 	else:
-	    seed_nodes = seed_node_to_score.keys()
+	    seed_nodes = set(seed_node_to_score.keys())
 	    seed_nodes = all_nodes & seed_nodes
 	    seed_to_score = dict([(node, seed_node_to_score[node]) for node in seed_nodes])
 	prepare_data.create_node_scores_file(nodes = (all_nodes & seed_nodes), node_to_score = seed_to_score, node_scores_file = seed_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
@@ -1406,7 +1427,7 @@ def analyze_xval(SCORING, r_script_file, output_scores_file, node_scores_file, p
     if analysis_type == "auc":
 	#if os.path.exists(r_script_file):
 	#    return False
-	if not os.path.exists(r_script_file): 
+	if not os.path.exists(r_script_file):
 	    list_node_scores_and_labels = []
 	    previous_negative_sample_size = None
 	    for k in range(1, N_X_VAL+1):
@@ -1414,13 +1435,14 @@ def analyze_xval(SCORING, r_script_file, output_scores_file, node_scores_file, p
 		list_node_scores_and_labels.append(node_validation_data)
 	    analyze_results.create_ROCR_files(list_node_scores_and_labels, predictions_file, labels_file)
 	    analyze_results.create_R_script(r_script_file, output_dir, title, only_auc=only_auc) # If only_auc is True only area under ROC curve is checked, other graphs are not drawn
-	if not os.path.exists(os.path.dirname(r_script_file)+os.sep+"auc.txt"):
+	if not os.path.exists(os.path.dirname(r_script_file)+os.sep+"auc.txt"): 
 	    os.system("R CMD BATCH %s" % (r_script_file))
 	    #os.system("convert %sperformance.eps %sperformance.jpg" % (output_dir, output_dir))
 	    #analyze_results.create_tex_script(tex_script_file, output_dir, title)
 	    analyze_results.record_performance_AUC_in_log_file(output_dir, output_log_file, title)
 	    return True
-	return False 
+	analyze_results.record_performance_AUC_in_log_file(output_dir, output_log_file, title) #!
+	return True #False #!
     elif analysis_type == "user": # only checks the candidates and counts seeds inside the candidate set as tp
 	# For user defined threshold performance analysis
 	if not os.path.exists(candidates_file):
@@ -1490,7 +1512,7 @@ def analyze_xval_percentage(log_file, output_scores_file, node_scores_file, outp
     f = open(log_file, "a")
     coverages = []
     f.write("\nXVAL SEED COVERAGE ANALYSIS\n")
-    for percentage in (10, 25, 50): # probably was 1, 5, 20
+    for percentage in (5, 10, 25): #(10, 25, 50): # (1, 5, 20):
 	percentage = "%f%%" % percentage
 	f.write("---- %s:\n" % percentage)
 	n_seed_sum = 0.0
@@ -1528,7 +1550,7 @@ def analyze_original(PPI, output_scores_file, log_file, node_scores_file, associ
     #	    prepare_data.convert_file_using_new_id_mapping(output_scores_file, node_description_file, network_file_identifier_type, association_scores_file_identifier_type, output_scores_file+"."+association_scores_file_identifier_type)
 
     f.write("\nSEED COVERAGE ANALYSIS\n")
-    for percentage in (10, 25, 50):
+    for percentage in (5, 10, 25): #(10, 25, 50):
 	percentage = "%f%%" % percentage
 	f.write("---- %s:\n" % percentage)
 	#f.write("%s\n" % output_scores_file)

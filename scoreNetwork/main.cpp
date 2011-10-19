@@ -51,18 +51,20 @@ void runNetlink(string fileNode, string fileEdge, string fileOutput, float thres
 void functionalFlow(string fileProtein, string fileInteraction, string fileOutput, int nIteration, float seedScoreThreshold);
 
 void printHelp(char *name) {
-    cout << name << endl //"scoreN\n" 
+    cout << endl << name  
+	 << " [ Copyleft (GPLv3) - 2011 - Emre Guney (Universitat Pompeu Fabra) ]\n" << endl
+	 << " Arguments: " << endl
 	 //<< "-s <prioritization_method>{NetScore:s|NetZcore:z|NetShort:d|fFlow:f|NetRank:r|NetRandom:x|NetZScore:h|NetZ1Score:1|NetWeen:w|NetLink:l}\n"
-	 << "-s <prioritization_method>{NetScore:s|NetZcore:z|NetShort:d|fFlow:f|NetRank:r}\n"
-	 << "-n <node_file>\n" 
-	 << "-e <edge_file>\n" 
-	 << "-o <output_file>\n"
-	 << "-i <number_of_iterations>\n"
-	 << "-r <number_of_repetitions>\n"
-	 << "-t <seed_score_threshold>\n"
-	 << "-x <number_of_sampled_graphs>\n" 
-	 << "-d <sampled_graph_prefix>\n"
-	 << "-h\n"
+	 << "\t -s <prioritization_method>{NetScore:s|NetZcore:z|NetShort:d|fFlow:f|NetRank:r}\n"
+	 << "\t -n <node_file>\n" 
+	 << "\t -e <edge_file>\n" 
+	 << "\t -o <output_file>\n"
+	 << "\t -i <number_of_iterations>\n"
+	 << "\t -r <number_of_repetitions>\n"
+	 << "\t -t <seed_score_threshold>\n"
+	 << "\t -x <number_of_sampled_graphs>\n" 
+	 << "\t -d <sampled_graph_prefix>\n"
+	 << "\t -h\n"
 	 << endl;
 }
 
