@@ -7,7 +7,7 @@ def main():
     #get_seed_gene_counts(DATA_DIR + "input_runs_for_draft/biana_no_tap_no_reliability/")
 
     #file_name = DATA_DIR + "omim/alzheimer.txt"
-    #out_file_name = "test.tex"
+    #out_file_name = "test.txt"
     #check_functional_enrichment(file_name, out_file_name)
 
     #get_common_non_empty_navlakha_files()
@@ -19,9 +19,120 @@ def main():
 
     #convert_sif_file_to_R_matrix(DATA_DIR + "input_runs_for_draft/entrez/edge_scores.sif", "test_ppi.dat")
 
-    case_study_neighborhood()
+    #case_study_neighborhood()
+
+    get_go_terms()
+
     return
 
+def get_go_terms():
+    base_dir = "/home/emre/arastirma/netzcore/data/module/biana_no_tap-omim/"
+    f = open(base_dir + "modules.txt")
+    phenotype_to_functions = {}
+    phenotype_to_genes = {}
+    flag = False
+    phenotypes = []
+    go_id_to_go_term = {}
+    for line in f:
+	if line.endswith(" ns\n"):
+	    flag = True
+	    pheno = line.strip().split(" ")[-2]
+	    phenotype_to_functions[pheno] = set()
+	    phenotype_to_genes[pheno] = set()
+	    phenotypes.append(pheno)
+	    continue
+	if flag:
+	    if line.startswith("biana_no_tap"):
+		flag = False
+		continue
+	    words = line.strip().split("\t")
+	    if len(words) > 5 and words[5].startswith("GO:"):
+		# Get go terms
+		go_id_to_go_term[words[5]] = words[6]
+		phenotype_to_functions[pheno].add(words[5])
+	    elif line[0] != "#":
+		# Get genes
+		words = line.strip().split(", ")
+		for word in words:
+		    phenotype_to_genes[pheno].add(word)
+    f.close()
+    #print len(phenotype_to_functions["omim_alzheimer"]), len(phenotype_to_genes["omim_alzheimer"])
+
+    # Functional similarity matrix
+    f = open(base_dir + "functional_similarity.dat", 'w')
+    f2 = open(base_dir + "functional_similarity_matrix.dat", 'w')
+    f2.write("%s\n" % " ".join(phenotypes))
+    f.write("phenotype1 phenotype2 n_go_1 n_go_2 n_go_intersection n_go_union jaccard\n")
+    #print phenotype_to_functions
+    for i, pheno1 in enumerate(phenotypes):
+	f2.write("%s " % pheno1)
+	values = []
+	for j, pheno2 in enumerate(phenotypes):
+	    g1 = phenotype_to_functions[pheno1]
+	    g2 = phenotype_to_functions[pheno2]
+	    if len(g1|g2) != 0:
+		jaccard = float(len(g1&g2))/len(g1|g2)
+	    else:
+		jaccard = 0
+	    if i < j:
+		f.write("%s %s %d %d %d %d %f\n" % (pheno1, pheno2, len(g1), len(g2), len(g1&g2), len(g1|g2), jaccard))
+	    values.append(jaccard)
+	f2.write("%s\n" % " ".join(map(str, values)))
+    f.close()
+    f2.close()
+
+    # Gene similarity matrix
+    f = open(base_dir + "gene_similarity_matrix.dat", 'w')
+    f.write("%s\n" % " ".join(phenotypes))
+    for i, pheno1 in enumerate(phenotypes):
+	f.write("%s " % pheno1)
+	values = []
+	for j, pheno2 in enumerate(phenotypes):
+	    g1 = phenotype_to_genes[pheno1]
+	    g2 = phenotype_to_genes[pheno2]
+	    if len(g1|g2) != 0:
+		jaccard = float(len(g1&g2))/len(g1|g2)
+	    else:
+		jaccard = 0
+	    values.append(jaccard)
+	f.write("%s\n" % " ".join(map(str, values)))
+    f.close()
+
+    # Phenotype vs function matrix
+    f = open(base_dir + "phenotype_vs_functions.dat", 'w')
+    f.write("%s\n" % " ".join(phenotypes))
+    all_go_ids = reduce(lambda x,y: x|y, phenotype_to_functions.values())
+    for go_id in all_go_ids:
+	f.write("%s " % "_".join(go_id_to_go_term[go_id].split(" ")))
+	values = []
+	for pheno in phenotypes:
+	    if go_id in phenotype_to_functions[pheno]:
+		values.append(1)
+	    else:
+		values.append(0)
+	f.write("%s\n" % " ".join(map(str, values)))
+    f.close()
+
+    # Phenotype vs gene matrix
+    f = open(base_dir + "phenotype_vs_genes.dat", 'w')
+    f.write("%s\n" % " ".join(phenotypes))
+    all_genes = reduce(lambda x,y: x|y, phenotype_to_genes.values())
+    for gene in all_genes:
+	f.write("%s " % gene)
+	values = []
+	for pheno in phenotypes:
+	    if gene in phenotype_to_genes[pheno]:
+		values.append(1)
+	    else:
+		values.append(0)
+	f.write("%s\n" % " ".join(map(str, values)))
+    f.close()
+
+    #duplicated_genes = set(line.strip() for line in open("/home/emre/arastirma/data/disease/itan2010_gene_duplication/duplicated_genes.txt"))
+    duplicated_genes = set(line.strip() for line in open("/home/emre/arastirma/data/disease/itan2010_gene_duplication/duplicated_genes_cheung.txt"))
+    for pheno in phenotypes:
+	print pheno, len(phenotype_to_genes[pheno]), len(phenotype_to_genes[pheno] & duplicated_genes)
+    return 
 
 def case_study_neighborhood():
     network_file = DATA_DIR + "input/biana_no_tap_relevance/edge_scores.sif"

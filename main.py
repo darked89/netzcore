@@ -684,7 +684,7 @@ def analyze_modules(experiments, module_detection_type="connected", enrichment_t
     for i, experiment in enumerate(experiments):
 	PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION = experiment
 	# Disease association files (Association data to be used)
-	association_scores_file, association_scores_file_identifier_type, association_scores_validation_file, candidates_file, association_dir = decide_association_data(ASSOCIATION)
+	association_scores_file, association_scores_file_identifier_type, association_scores_validation_file, candidates_file, association_dir = decide_association_data(ASSOCIATION, PPI)
 	# Interaction files (Interaction data to be used)
 	(interaction_relevance_file, interaction_relevance_file2, biana_network_file_filtered_by_method, \
 	    biana_network_file_filtered_by_reliability, node_file, node_description_file, \
@@ -704,6 +704,8 @@ def analyze_modules(experiments, module_detection_type="connected", enrichment_t
 		file_module_summary.write("ppi phenotype scoring n_seed_go n_module n_seed_go_in_modules n_go_in_modules ratio\n")
 	    else:
 		file_module_summary.write("ppi phenotype scoring n_seed n_module n_seed_in_modules n_all_in_modules ratio\n")
+	if i != 0:
+	    module_dir += user_friendly_id + os.sep
 	file_module = open(module_dir + "modules.txt", 'a')
 	if prev_assoc != ASSOCIATION:
 	    #nodes = compare_experiments([ (PPI, ASSOCIATION) + parameters for parameters in scoring_parameters], None, False, False, "test", False, 1, "common_intersection_return")
