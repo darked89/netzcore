@@ -2,11 +2,11 @@ import os
 
 # GLOBAL VARIABLES
 only_print_command = False
-use_cluster = False #!
-leave_one_out_xval = True #! False #
-score_with_all_seeds = True #False #!
+use_cluster = True
+leave_one_out_xval = False #
+score_with_all_seeds = False
 only_auc = False # In the analysis_xval if True auc.txt created only, other graphs are not drawn
-navlakha_data = True #False #!
+navlakha_data = False 
 
 DEFAULT_TOP_SCORING_CUTOFF = "5%" #"10%" #"1%" #"5%" # If ends with "%" taken as percentage otherwise as score - At the time of analysis it was "10%"
 N_LINKER_THRESHOLD = 2 # For Netlink method
@@ -14,7 +14,7 @@ DEFAULT_SEED_SCORE = 1.0 # Default score for seed nodes, used when no score give
 DEFAULT_NON_SEED_SCORE = 0.01 # Default score for non-seed nodes
 ALLOWED_MAX_DEGREE = 100000 #175 #90 # Max degree allowed in the graph filtering
 N_SAMPLE_GRAPH = 100 # Number of random graphs to be generated
-N_X_VAL = None #! #5 #182 # Number of cross validation folds, readjusted if leave_one_out_xval is True
+N_X_VAL = 5 #182 # Number of cross validation folds, readjusted if leave_one_out_xval is True
 N_SEED = None #Will be set during run
 N_RANDOM_NEGATIVE_FOLDS = None #10 # Number of non-seed scores to be averaged for negative score calculation, 
 			    # If 0 all non seeds are included as they are, If None all non seeds are included averaged to scale with the size of test seeds
@@ -28,8 +28,8 @@ delay_experiment = True
 tex_format = True #False 
 functional_enrichment = False
 
-MODE = "score" # prepare, score, analyze, compare, summary, module
-user_friendly_id = "entrez-omim" # "navlakha" #"biana_no_tap" # a.k.a. emre friendly id for compare and summary
+MODE = "summary" # prepare, score, analyze, compare, summary, module
+user_friendly_id = "bppi_coexp" # "navlakha" #"biana_no_tap" # a.k.a. emre friendly id for compare and summary
 summary_seed_cutoff = None #2 #20 # Seed cutoff considered for inclusion of an experiment in sum_up_experiments, if None seed.dat is not created. Also used in compare_experiments if analysis_type is user
 prepare_mutated = None #"perturbed" # Creates permutad/pruned networks 
 analyze_network = False #True
@@ -53,10 +53,14 @@ hsdl_phenotypes = [ "hsdl_" + p.replace(" ", "_").lower() for p in hsdl_phenotyp
 ppis = []
 #ppis += ["hprd"] #, "ophid"]
 #ppis += ["goh", "entrez", "biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
-ppis += ["biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
-ppis += ["goh"] 
-ppis += ["entrez"]
+#ppis += ["biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
+#ppis += ["goh"] 
+#ppis += ["entrez"]
 #ppis += ["baldo_synthetic"]
+#ppis += ["rh_human_gi"]
+#ppis += ["humannet"]
+#ppis += ["entrez_sub"]
+#ppis += ["bppi_sub"]
 #ppis += [ "biogrid_yeast" ]
 #ppis += [ "biogrid_yeast_with_genetic_interactions" ]
 #ppis += [ "biogrid_yeast_genetic_interactions" ]
@@ -66,6 +70,7 @@ ppis += ["entrez"]
 #ppis += ["biana_no_reliability"]
 #ppis += ["biana_no_tap_no_reliability"] 
 #ppis += ["biana_no_tap_relevance"]
+ppis += ["biana_no_tap_coexpression_no_weight", "biana_no_tap_coexpression", "biana_no_tap_coexpression_differential", "biana_no_tap_coexpression_no_weight_localization", "biana_no_tap_coexpression_localization", "biana_no_tap_coexpression_differential_localization"]
 #ppis += ["biana_no_tap_no_reliability_permuted_p10_71"] 
 #ppis += ["biana_no_tap_no_reliability_permuted_p%s_%s" % (p, i) for p in xrange(10,110,10) for i in xrange(1,101) ] 
 #ppis += ["biana_no_tap_no_reliability_permuted_p%s_%s" % (p, i) for p in xrange(10,110,10) for i in xrange(1,11) ] 
@@ -83,7 +88,7 @@ phenotypes = []
 #phenotypes += rob_phenotypes 
 #phenotypes += ["navlakha_abdominal"]
 #phenotypes += navlakha_phenotypes
-phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes 
+#phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes 
 #phenotypes += navlakha_phenotypes # Now located at the bottom of the page
 #phenotypes += hsdl_phenotypes
 #phenotypes += omim_phenotypes 
@@ -103,12 +108,13 @@ phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes
 #phenotypes += ["perturbed_omim_mental_retardation_p10_11"]
 #phenotypes += ["apoptosis_joan"]
 #phenotypes += ["custom"] #["aneurysm"] #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
+phenotypes += ["aneurysm"]
 
 scoring_parameters = []
-#scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)] 
-#scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
-#scoring_parameters += [("nd", 1, 1)] 
-scoring_parameters += [("rw", 1, 1), ("np", 1, 1)] 
+scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)] 
+scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
+scoring_parameters += [("nd", 1, 1)] 
+#scoring_parameters += [("rw", 1, 1), ("np", 1, 1)] 
 #scoring_parameters += [("nr", 1, 1)]
 #scoring_parameters += [("mcl", 1, 1)]
 #scoring_parameters += [("nz", 1, 5)]
@@ -206,5 +212,5 @@ navlakha_phenotypes = ['abacavir', 'abdominal', 'acampomelic', 'acromesomelic', 
 
 navlakha_phenotypes = [ "navlakha_" + p.replace(" ", "_").lower() for p in navlakha_phenotypes ] 
 
-phenotypes += navlakha_phenotypes #!
+#phenotypes += navlakha_phenotypes 
 

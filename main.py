@@ -52,7 +52,7 @@ def main(ppis, phenotypes, scoring_parameters, user_friendly_id=user_friendly_id
 	    if MODE in ("score", "all") and use_cluster and delay_experiment:
 		delay = 10
 		experiment_count = get_number_of_jobs_in_queues()
-		while experiment_count > 20: #!
+		while experiment_count > 60: #!
 		    time.sleep(delay)
 		    experiment_count = get_number_of_jobs_in_queues()
     
@@ -81,9 +81,10 @@ def decide_association_data(ASSOCIATION, PPI):
     elif ASSOCIATION == "aneurysm":
 	association_dir = data_dir + "aneurysm" + os.sep
 	#aneurysm_scores_file = association_dir + "aneurysm_associated_genes.txt"
-	association_scores_file = association_dir + "aneurysm_associated_genes_all_equal.txt"
+	#association_scores_file = association_dir + "aneurysm_associated_genes_all_equal.txt"
+	#association_scores_validation_file = association_dir + "aneurysm_new_9.txt" 
+	association_scores_file = association_dir + "aneurysm_associated_genes_all_equal_updated.txt"
 	association_scores_file_identifier_type = "genesymbol"
-	association_scores_validation_file = association_dir + "aneurysm_new_9.txt" 
     elif ASSOCIATION == "breast_cancer":
 	association_dir = data_dir + "breast_cancer" + os.sep
 	#association_scores_file = association_dir + "breast_cancer_gene_names_all_equal.txt"
@@ -222,6 +223,27 @@ def decide_interaction_data(PPI, ASSOCIATION, association_scores_file):
 	    elif PPI == "biana_no_tap_reliability_relevance":
 		network_file = biana_network_file_filtered_by_reliability 
 		interaction_relevance_file = biana_network_file_prefix + "_stringscore.eda"
+	    elif PPI.startswith("biana_no_tap_coexpression"):
+		network_file_identifier_type = "geneid"
+		node_description_file = gene_info_file 
+		if PPI == "biana_no_tap_coexpression":
+		    network_file = data_dir + "aneurysm" + os.sep + "human_network_no_tap_only_with_geneids.sif"
+		    interaction_relevance_file = data_dir + "aneurysm" + os.sep + "aneurysm_coexp.eda"
+		elif PPI == "biana_no_tap_coexpression_no_weight":
+		    network_file = data_dir + "aneurysm" + os.sep + "human_network_no_tap_only_with_geneids.sif"
+		    interaction_relevance_file = None
+		elif PPI == "biana_no_tap_coexpression_differential":
+		    network_file = data_dir + "aneurysm" + os.sep + "human_network_no_tap_only_with_geneids.sif"
+		    interaction_relevance_file = data_dir + "aneurysm" + os.sep + "aneurysm_coexp_differential.eda"
+		elif PPI == "biana_no_tap_coexpression_localization":
+		    network_file = data_dir + "aneurysm" + os.sep + "human_network_no_tap_only_with_geneids_localization_filtered.sif"
+		    interaction_relevance_file = data_dir + "aneurysm" + os.sep + "aneurysm_coexp.eda"
+		elif PPI == "biana_no_tap_coexpression_differential_localization":
+		    network_file = data_dir + "aneurysm" + os.sep + "human_network_no_tap_only_with_geneids_localization_filtered.sif"
+		    interaction_relevance_file = data_dir + "aneurysm" + os.sep + "aneurysm_coexp_differential.eda"
+		elif PPI == "biana_no_tap_coexpression_no_weight_localization":
+		    network_file = data_dir + "aneurysm" + os.sep + "human_network_no_tap_only_with_geneids_localization_filtered.sif"
+		    interaction_relevance_file = None
 	    elif PPI.startswith("biana_no_tap_no_reliability_permuted_"):
 		node_description_file = None 
 		node_file = data_dir + "input" + os.sep + "biana_no_tap_no_reliability" + os.sep + ASSOCIATION + os.sep + "seed_scores.sif"
@@ -255,7 +277,7 @@ def decide_interaction_data(PPI, ASSOCIATION, association_scores_file):
 	    node_file = association_scores_file
 	    network_dir = data_dir + "input" + os.sep + PPI + os.sep
 	    network_file = network_dir + "edge_scores.sif"
-	if PPI.startswith("biana_no_tap_no_reliability_permuted_") or PPI.startswith("biana_no_tap_no_reliability_pruned_non_seed_interactions_") or PPI.startswith("biana_no_tap_no_reliability_pruned_"):
+	if PPI.startswith("biana_no_tap_coexpression") or PPI.startswith("biana_no_tap_no_reliability_permuted_") or PPI.startswith("biana_no_tap_no_reliability_pruned_non_seed_interactions_") or PPI.startswith("biana_no_tap_no_reliability_pruned_"):
 	    network_file_filtered = network_file
 	else:
 	    network_file_filtered = network_file[:-4] + "_degree_filtered.sif" # Using only the largest strongly connected component
@@ -431,14 +453,14 @@ def decide_interaction_data(PPI, ASSOCIATION, association_scores_file):
 	node_description_file = None
 	network_file_identifier_type = "orfname"
 	node_file = association_scores_file
-	network_file = network_dir + PPI + ".sif"
+	network_file = network_dir + PPI + "_ppi_genes.sif"
 	network_file_filtered = network_file
     elif PPI == "yeastnet2":
 	network_dir = data_dir + "rob" + os.sep
 	node_description_file = None
 	network_file_identifier_type = "orfname"
 	node_file = association_scores_file
-	network_file = network_dir + "yeastnet2.sif"
+	network_file = network_dir + "yeastnet2_ppi_genes.sif"
 	interaction_relevance_file = network_dir + "yeastnet2.eda"
 	network_file_filtered = network_file
     elif PPI == "baldo_synthetic":
@@ -448,6 +470,34 @@ def decide_interaction_data(PPI, ASSOCIATION, association_scores_file):
 	node_file = association_scores_file
 	network_file = network_dir + "network.sif"
 	network_file_filtered = network_file
+    # RH screen (~GI for human)
+    elif PPI == "rh_human_gi":
+        node_description_file = None
+        network_file_identifier_type = "genesymbol"
+        network_file = data_dir + "rh_human_gi" + os.sep + "fully_combined_RH_network_e-6_bPPI_genes.sif"
+        network_file_filtered = network_file
+        node_file = association_scores_file
+    # HumanNet
+    elif PPI == "humannet":
+        node_description_file = None
+        network_file_identifier_type = "genesymbol"
+        network_file = data_dir + "humannet" + os.sep + "HumanNet.v1.join_evidence1_bPPI_genes.sif"
+        network_file_filtered = network_file
+        node_file = association_scores_file
+    # ENTREZ network with interactions for only genes in bPPI
+    elif PPI == "entrez_sub":
+        node_description_file = None
+        network_file_identifier_type = "genesymbol"
+        network_file = data_dir + "entrez_human_ppi" + os.sep + "ppi_bPPI_genes.sif"
+        network_file_filtered = network_file
+        node_file = association_scores_file
+    # bPPI network with interactions for only genes (only first genesymbol for each is taken) that have gene ids
+    elif PPI == "bppi_sub":
+        node_description_file = None
+        network_file_identifier_type = "genesymbol"
+        network_file = data_dir + "human_interactome_biana" + os.sep + "human_network_no_tap_only_with_geneids.sif"
+        network_file_filtered = network_file
+        node_file = association_scores_file
     else:
 	raise ValueError("Unrecognized ppi!")
 
@@ -1133,7 +1183,7 @@ def prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix,
 	    seed_nodes = all_nodes & seed_nodes
 	    seed_to_score = dict([(node, DEFAULT_SEED_SCORE) for node in seed_nodes])
 	else:
-	    seed_nodes = seed_node_to_score.keys()
+	    seed_nodes = set(seed_node_to_score.keys())
 	    seed_nodes = all_nodes & seed_nodes
 	    seed_to_score = dict([(node, seed_node_to_score[node]) for node in seed_nodes])
 	prepare_data.create_node_scores_file(nodes = (all_nodes & seed_nodes), node_to_score = seed_to_score, node_scores_file = seed_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
