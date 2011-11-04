@@ -40,4 +40,11 @@ git pull backup master
 # from other place
 git clone backup project
 
+# Creating a git repo from existing repo
+mkdir /backup/emre/git/netzcore.git/
+cd /backup/emre/git/netzcore.git/
+git --bare init
+cd project
+git remote add origin /backup/emre/git/netzcore.git/
+git push origin master
 

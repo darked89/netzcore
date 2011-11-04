@@ -189,7 +189,7 @@ float ScoreNetwork::transferScore(float score, float a, float b) {
         return float(exp(0.75*score)/10); // 0.1 - 0.2 //float(1-exp(-0.75*score)); // 0.1 - 0.5
     default:
         //cout << "Warning: unidentified type" << endl;
-	throw new TypeException(); //typeEx;
+	throw TypeException(); //typeEx;
         return 0.0;
     }
 }
