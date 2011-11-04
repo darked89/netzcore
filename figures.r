@@ -815,7 +815,7 @@ manuscript_tests <- function() {
     d<-read.table(paste(dir.name, network, "/auc_ppis.dat", sep=""))
     e<-read.table(paste(dir.name, network, "/cov_ppis.dat", sep=""))
     d<-d[order(row.names(d)),]
-    e<-d[order(row.names(d)),]
+    e<-e[order(row.names(e)),]
     for(i in 1:length(scoring.methods)) {
 	for(j in 1:length(scoring.methods)) {
 		if(i<j) {

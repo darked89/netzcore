@@ -53,10 +53,13 @@ private:
     void createVertexMessageMap(Vertex const v) { messageMaps[v] = new UIntToMessage(); };
     float getVertexScoreInitial(Vertex const v) const { return mapScoreInitial.at(v); };
     void setVertexScoreInitial(Vertex const v, float vData) { mapScoreInitial[v] = vData; };
+    float getVertexScoreInitialOriginal(Vertex const v) const { return mapScoreInitialOriginal.at(v); };
+    void setVertexScoreInitialOriginal(Vertex const v, float vData) { mapScoreInitialOriginal[v] = vData; };
 
     // MEMBERS
     VertexToMessageMap messageMaps;
     VertexToFloat mapScoreInitial;
+    VertexToFloat mapScoreInitialOriginal;
 };
 
 #endif // NETSCORE_HPP_

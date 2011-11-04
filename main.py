@@ -108,7 +108,11 @@ def decide_association_data(ASSOCIATION, PPI):
 	association_scores_file_identifier_type = "genesymbol"
     elif ASSOCIATION.startswith("omim_"):
 	association_dir = data_dir + "omim" + os.sep
-	association_scores_file = association_dir + ASSOCIATION + ".txt"
+	association_scores_file = association_dir + "2009_Aug_27" + os.sep + ASSOCIATION + ".txt"
+	association_scores_file_identifier_type = "genesymbol"
+    elif ASSOCIATION.startswith("new_omim_"):
+	association_dir = data_dir + "omim" + os.sep
+	association_scores_file = association_dir + "2011_Nov_2" + os.sep + ASSOCIATION + ".txt"
 	association_scores_file_identifier_type = "genesymbol"
     elif ASSOCIATION.startswith("chen_"):
 	association_dir = data_dir + "chen_disease_data" + os.sep
@@ -120,9 +124,10 @@ def decide_association_data(ASSOCIATION, PPI):
 	candidates_file = association_dir + "candidates" + os.sep + ASSOCIATION + ".txt"
 	association_scores_file_identifier_type = "genesymbol"
     elif ASSOCIATION.startswith("hsdl_"):
-	association_dir = data_dir + "tf_lineage" + os.sep + "hsdl_classification" + os.sep 
+	association_dir = data_dir + "tf_lineage" + os.sep #+ "hsdl_classification" + os.sep 
 	#association_scores_file = association_dir + "AbundanceTest_" + ASSOCIATION[5:] + ".txt"
-	association_scores_file = association_dir + "WelchsTest_" + ASSOCIATION[5:] + ".txt"
+	#association_scores_file = association_dir + "WelchsTest_" + ASSOCIATION[5:] + ".txt"
+	association_scores_file = association_dir + "Borda_" + ASSOCIATION[5:] + ".txt"
 	association_scores_file_identifier_type = "genesymbol"
     elif ASSOCIATION.startswith("rob_"):
 	association_dir = data_dir + "rob" + os.sep + "gene_sets" + os.sep 
@@ -316,11 +321,13 @@ def decide_interaction_data(PPI, ASSOCIATION, association_scores_file):
 	network_file_filtered = network_file[:-4] + "_degree_filtered.sif"
 	node_file = association_scores_file
     # Rivasi ppi
-    elif PPI == "rivasi":
-	node_description_file = gene_info_file 
-	network_file_identifier_type = "geneid"
-	network_file = data_dir + "tf_lineage" + os.sep + "ppi.sif"
+    elif PPI == "ravasi":
+	node_description_file = None #gene_info_file 
+	network_file_identifier_type = "genesymbol" #"geneid"
+	network_file = data_dir + "tf_lineage" + os.sep + "ppi_genesymbol.sif"
 	network_file_filtered = network_file
+	node_file = association_scores_file
+	DEFAULT_NON_SEED_SCORE = 0.00001 
     # Rhodes ppi
     elif PPI == "rhodes":
 	network_dir = rhodes_network_dir
@@ -604,8 +611,8 @@ def decide_score_commands(node_scores_file, edge_scores_file, output_scores_file
 			    "nb": Template(src_dir + "./netscore -c %s.$fold -i %s -o %s.$fold -t 0 -z 0 -nr 100 -r 1 -zp 0 -n %d -nd 2 -mx 1 -ms 3 -mn 0 -dn 2 -de 2 -mxe 0 -mne 0.00000001 -mnd 0.0000001 -mnde 0.0000001 -mnst 20 -mnste 20 -dxi 1 -dxn 0 -dxe 0 -e 0.0000001 &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, score_log_file)),
 			    "ff": Template(src_dir + "./fFlow %s.$fold %s %s.$fold %d %f &> %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, DEFAULT_NON_SEED_SCORE, score_log_file)),
 			    #"rw": Template("/sbi/users/emre/bin/R --slave --args %s.$fold %s %s.$fold < %sscoreNetwork/random_walk.r > %s.$fold" % (node_scores_file, edge_scores_file, output_scores_file, src_dir, score_log_file)),
-			    "rw": Template("/sbi/users/emre/bin/R -f %sscoreNetwork/random_walk.r --args %s.$fold %s %s.$fold > %s.$fold" % (src_dir, node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
-			    "np": Template("/sbi/users/emre/bin/R -f %sscoreNetwork/random_walk.r --args %s.$fold %s %s.$fold 1 > %s.$fold" % (src_dir, node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
+			    "rw": Template("~/bin/R -f %sscoreNetwork/random_walk.r --args %s.$fold %s %s.$fold > %s.$fold" % (src_dir, node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
+			    "np": Template("~/bin/R -f %sscoreNetwork/random_walk.r --args %s.$fold %s %s.$fold 1 > %s.$fold" % (src_dir, node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
 			  }
 
     score_commands = { "ns": src_dir + "scoreNetwork/scoreN -s s -n %s -e %s -o %s -r %d -i %d &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, score_log_file),
@@ -619,8 +626,8 @@ def decide_score_commands(node_scores_file, edge_scores_file, output_scores_file
 		       "nx": src_dir + "scoreNetwork/scoreN -s x -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, score_log_file),
 		       "nb": src_dir + "./netscore -c %s -i %s -o %s -t 0 -z 0 -nr 100 -r 1 -zp 0 -n %d -nd 2 -mx 1 -ms 3 -mn 0 -dn 2 -de 2 -mxe 0 -mne 0.00000001 -mnd 0.0000001 -mnde 0.0000001 -mnst 20 -mnste 20 -dxi 1 -dxn 0 -dxe 0 -e 0.0000001 &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, score_log_file),
 		       "ff": src_dir + "./fFlow %s %s %s %d %f &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, DEFAULT_NON_SEED_SCORE, score_log_file),
-		       "rw": "/sbi/users/emre/bin/R -f %sscoreNetwork/random_walk.r --args %s %s %s > %s" % (src_dir, node_scores_file, edge_scores_file, output_scores_file, score_log_file),
-		       "np": "/sbi/users/emre/bin/R -f %sscoreNetwork/random_walk.r --args %s %s %s 1 > %s" % (src_dir, node_scores_file, edge_scores_file, output_scores_file, score_log_file),
+		       "rw": "~/bin/R -f %sscoreNetwork/random_walk.r --args %s %s %s > %s" % (src_dir, node_scores_file, edge_scores_file, output_scores_file, score_log_file),
+		       "np": "~/bin/R -f %sscoreNetwork/random_walk.r --args %s %s %s 1 > %s" % (src_dir, node_scores_file, edge_scores_file, output_scores_file, score_log_file),
 		     }
     return score_xval_commands, score_commands
 

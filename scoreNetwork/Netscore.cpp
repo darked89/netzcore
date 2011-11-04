@@ -61,6 +61,7 @@ void Netscore::initializeScoring() {
 	// Moved below to initializeRepetition
 	//setVertexScoreInitial(*it, getNetwork().getVertexScore(*it)); // storing scaled (between 0 and 1) initial scores
 	//getNetwork().setVertexScore(*it, 0.0);
+	setVertexScoreInitialOriginal(*it, getNetwork().getVertexScore(*it)); // storing scaled (between 0 and 1) initial scores
     }
 }
 
@@ -72,7 +73,7 @@ void Netscore::finalizeScoring()
     {
 	for(boost::tie(it, itEnd) = getNetwork().getVertexIterator(); it != itEnd; ++it) 
 	{
-	    getNetwork().setVertexScore(*it, getNetwork().getVertexScore(*it) + getVertexScoreInitial(*it));
+	    getNetwork().setVertexScore(*it, getNetwork().getVertexScore(*it) + getVertexScoreInitialOriginal(*it)); // before was adding only initial scores from the last repetition
 	}
     }
     scaleNodeScores(SCALE_BETWEEN_INITIAL_MIN_AND_MAX_SCORE);

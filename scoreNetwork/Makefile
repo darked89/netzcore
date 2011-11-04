@@ -1,4 +1,5 @@
-BGL_INCLUDE_DIR=$(BGL_PATH) #/usr/local/include/boost-1_38/ #$(HOME)/lib/boost_1_38_0/
+#BGL_INCLUDE_DIR=../boost_1_41_0/ #/usr/local/include/boost-1_38/ #$(HOME)/lib/boost_1_38_0/
+BGL_INCLUDE_DIR=$(BGL_PATH) 
 
 CC=g++
 CFLAGS=-I $(BGL_INCLUDE_DIR) -O3 -Wall #-g
@@ -46,7 +47,7 @@ OBJFFLOW=$(patsubst %.cpp, %.o, $(SRCFFLOW))
 OBJ=$(OBJGRAPH) $(OBJSNETWORK) $(OBJNETSCORE) $(OBJNETSHORT) $(OBJNETRANK) $(OBJNETZCORE) $(OBJNETRANDOM) $(OBJNETWEEN) $(OBJNETLINK) $(OBJGRAPHFFLOW) $(OBJEDGEFFLOW) $(OBJVERTEXFFLOW) $(OBJFFLOW) #$(OBJNETSCORE2) $(OBJNETZSCORE) 
 SRCMAIN=main.cpp
 #SRCMAINNETSCORE=main_netscore.cpp
-EXEMAIN=guild # scoreN
+EXEMAIN=guild #scoreN
 
 HEADERTEST=$(wildcard test/test*.hpp)
 SRCTEST=main_test.cpp
