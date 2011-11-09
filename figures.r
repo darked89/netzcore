@@ -961,8 +961,9 @@ navlakha_figures <- function() {
     postscript(paste(dir.name, "results.eps", sep=""), width = 6, height = 6, horizontal = FALSE, onefile = FALSE, paper = "special")
     d <- read.table(paste(dir.name, "results.dat", sep=""))
     par(mar=c(6,6,0.2,0))
-    scoring.methods <- c("ns", "nz", "nd", "ff", "nr", "mcl")
+    #scoring.methods <- c("ns", "nz", "nd", "ff", "nr", "mcl")
     #scoring.methods <- c("mcl")
+    scoring.methods <- c("ns", 'np')
     colors <- c(2,6,4,5,3,8)
     chars <- c(21:25,12)
     for(i in 1:length(scoring.methods)) {

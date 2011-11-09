@@ -4,7 +4,7 @@ import os
 only_print_command = False
 use_cluster = False #!
 leave_one_out_xval = False #!
-score_with_all_seeds = False #!
+score_with_all_seeds = True #False #!
 only_auc = False # In the analysis_xval if True auc.txt created only, other graphs are not drawn
 navlakha_data = False #!
 
@@ -29,8 +29,8 @@ tex_format = True #False
 functional_enrichment = False
 
 MODE = "analyze" # prepare, score, analyze, compare, summary, module
-user_friendly_id = "test" #"biana_no_tap-omim" #"all7_vs_all5-top5" # "navlakha" #"biana_no_tap" # a.k.a. emre friendly id for compare and summary
-summary_seed_cutoff = 1 #None #2 #20 # Seed cutoff considered for inclusion of an experiment in sum_up_experiments, if None seed.dat is not created. Also used in compare_experiments if analysis_type is user
+user_friendly_id = "angels" #"biana_no_tap-omim" #"all7_vs_all5-top5" # "navlakha" #"biana_no_tap" # a.k.a. emre friendly id for compare and summary
+summary_seed_cutoff = None #2 #20 # Seed cutoff considered for inclusion of an experiment in sum_up_experiments, if None seed.dat is not created. Also used in compare_experiments if analysis_type is user
 prepare_mutated = None #"perturbed" # Creates permutad/pruned networks 
 analyze_network = False #True
 exclude_seeds_in_comparison = True
@@ -73,7 +73,7 @@ ppis = []
 #ppis += ["biana_no_reliability"]
 ppis += ["biana_no_tap_no_reliability"] 
 #ppis += ["biana_no_tap_relevance"]
-ppis += ["biana_no_tap_coexpression_no_weight", "biana_no_tap_coexpression", "biana_no_tap_coexpression_differential", "biana_no_tap_coexpression_no_weight_localization", "biana_no_tap_coexpression_localization", "biana_no_tap_coexpression_differential_localization"]
+#ppis += ["biana_no_tap_coexpression_no_weight", "biana_no_tap_coexpression", "biana_no_tap_coexpression_differential", "biana_no_tap_coexpression_no_weight_localization", "biana_no_tap_coexpression_localization", "biana_no_tap_coexpression_differential_localization"]
 #ppis += ["biana_no_tap_no_reliability_permuted_p10_71"] 
 #ppis += ["biana_no_tap_no_reliability_permuted_p%s_%s" % (p, i) for p in xrange(10,110,10) for i in xrange(1,101) ] 
 #ppis += ["biana_no_tap_no_reliability_permuted_p%s_%s" % (p, i) for p in xrange(10,110,10) for i in xrange(1,11) ] 
@@ -88,6 +88,7 @@ ppis += ["biana_no_tap_coexpression_no_weight", "biana_no_tap_coexpression", "bi
 
 phenotypes = []
 #phenotypes += ["baldo_synthetic"]
+phenotypes += ["angels"]
 #phenotypes += rob_phenotypes 
 #phenotypes += ["navlakha_abdominal"]
 #phenotypes += navlakha_phenotypes
@@ -95,6 +96,7 @@ phenotypes = []
 #phenotypes += navlakha_phenotypes # Now located at the bottom of the page
 #phenotypes += hsdl_phenotypes
 #phenotypes += omim_phenotypes 
+#phenotypes += new_omim_phenotypes 
 #phenotypes += [ "perturbed_%s_p%i_%i" % (d, p, i) for d in omim_phenotypes for p in xrange(10,100,10) for i in xrange(1,101) ]
 #phenotypes += goh_phenotypes 
 #phenotypes += chen_phenotypes 
@@ -105,7 +107,7 @@ phenotypes = []
 #phenotypes += ["omim_leukemia"]
 #phenotypes += ["omim_hypertension"]
 #phenotypes += ["omim_alzheimer"] 
-phenotypes += ["new_omim_alzheimer"] 
+#phenotypes += ["new_omim_alzheimer"] 
 #phenotypes += ["omim_hypertension"] 
 #phenotypes += ["omim_insulin"] 
 #phenotypes += ["omim_diabetes"]
@@ -113,7 +115,7 @@ phenotypes += ["new_omim_alzheimer"]
 #phenotypes += ["perturbed_omim_mental_retardation_p10_11"]
 #phenotypes += ["apoptosis_joan"]
 #phenotypes += ["custom"] #["aneurysm"] #["apoptosis_joan"] #["alzheimer_david_CpOGU", "alzheimer_david_CpOIN", "alzheimer_david_RpOGU", "alzheimer_david_RpOIN"] #["aneurysm", "breast_cancer"]
-phenotypes += ["aneurysm"]
+#phenotypes += ["aneurysm"]
 
 scoring_parameters = []
 #scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)] 
@@ -123,8 +125,9 @@ scoring_parameters = []
 #scoring_parameters += [("nr", 1, 1)]
 #scoring_parameters += [("np", 1, 1)]
 #scoring_parameters += [("mcl", 1, 1)]
+scoring_parameters += [("nc", 1, 1)]
 #scoring_parameters += [("nz", 1, 5)]
-scoring_parameters += [("ns", 3, 2)]
+#scoring_parameters += [("ns", 3, 2)]
 #scoring_parameters += [("ff", 1, 5)]
 #scoring_parameters += [("ns", 2, 3), ("ns", 2, 2)]
 #scoring_parameters += [("nw",1, 1)]
@@ -168,7 +171,7 @@ COMPARISON_GOLD_STANDARD_FILE = data_dir + "alzheimer_gold" + os.sep + "gene_lis
 #COMPARISON_GOLD_STANDARD_FILE = data_dir + "uwaging" + os.sep + "mutex_uwaging_genage_netage.txt" # 99 intersection of uwaging - genage & uwaging - netage & genage - netage
 #COMPARISON_GOLD_STANDARD_FILE = data_dir + "netage" + os.sep + "longetivity.txt" # 456, 8 from uwaging, 91 from genage
 
-scoring_methods = ["nd", "nz", "ns", "ff", "nr", "nw", "nl", "nx", "nh", "n1", "nb", "rw", "np"]
+scoring_methods = ["nd", "nz", "ns", "ff", "nr", "nw", "nl", "nx", "nh", "n1", "nb", "rw", "np", "mcl", "nc"]
 
 THRESHOLDS = { "nr": [ 4e-6, 2e-5, 5e-5, 1e-4, 2e-4, 3e-4, 4e-4, 5e-4, 1e-3, 0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9 ],
 		"ff": [ 1e-3, 1e-2, 2e-2, 5e-2, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3 ], 
@@ -182,6 +185,15 @@ THRESHOLDS = { "nr": [ j*10**-i for i in xrange(2,7) for j in xrange(1,10) ] + [
 		"nz": [ 0.01*i for i in xrange(1,101) ],
 		"ns": [ 0.01*i for i in xrange(1,101) ],
 		"mcl": [ 0.01*i for i in xrange(1,101) ] } 
+
+THRESHOLDS = { "nr": [ i*10**-5 for i in xrange(1,11) ] + [ 0.005, 0.01, 0.05, 0.1 ],
+		"ff": [ 0.05*i for i in xrange(1,11) ] + [ 1, 2.5, 5, 8 ], 
+		"nd": [ 0.03*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ],  
+		"nz": [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ],
+		"ns": [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ],
+		"rw": [ i*10**-5 for i in xrange(1,11) ] + [ 0.005, 0.01, 0.05, 0.1 ],
+		"np": [ i*10**-5 for i in xrange(1,11) ] + [ 0.005, 0.01, 0.05, 0.1 ],
+		"mcl": [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ] } 
 
 
 # Scoring related parameters 

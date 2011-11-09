@@ -7,6 +7,31 @@
 from biana.utilities import graph_utilities as network_utilities
 from funcassociate import client
 from biana.utilities import TsvReader
+import calculate_mean_and_sigma
+
+
+def score_combined(scores_file_list, output_scores_file):
+    node_to_scores = {}
+    for scores_file in scores_file_list:
+	node_to_score_inner = {}
+	for line in open(scores_file):
+	    node, score = line.strip().split() 
+	    node_to_score_inner[node] = float(score)
+	mean, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(node_to_score_inner.values())
+	for node, score in node_to_score_inner.iteritems():
+	    node_to_scores.setdefault(node, []).append((score-mean)/sigma)
+    values = []
+    for node, scores in node_to_scores.iteritems():
+	score = sum(scores) / len(scores)
+	values.append((score, node))
+    values.sort()
+    min_v, max_v = min(values)[0], max(values)[0]
+    f = open(output_scores_file, 'w')
+    for score, node in values:
+	score = (score-min_v) / (max_v-min_v)
+	f.write("%s\t%f\n" % (node, score))
+    f.close()
+    return
 
 
 def score_mcl(node_scores_file, network_file, output_scores_file, module_file, default_non_seed_score):
@@ -471,6 +496,42 @@ def get_id_to_mapped_id_mapping(node_mapping_file):
 	id_to_mapped_ids_formatted[node] = vals
 
     return id_to_mapped_ids_formatted
+
+
+def output_mapped_node_id_scores(output_scores_file, node_mapping_file, one_gene_per_node=True, output_file=None):
+    """
+	Output mapped ids of nodes 
+    """
+    dummy, dummy, node_to_score, dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = output_scores_file, store_edge_type = False)
+
+    id_to_mapped_ids = get_id_to_mapped_id_mapping(node_mapping_file)
+
+    values = []
+    for node, score in node_to_score.iteritems():
+	if node not in id_to_mapped_ids:
+	    continue
+	if one_gene_per_node:
+	    genes = [ id_to_mapped_ids[node][0] ]
+	else:
+	    genes = id_to_mapped_ids[node]
+	for gene in genes:
+	    values.append((score, gene))
+	    
+    values.sort()
+    values.reverse()
+    i = 1
+    if output_file is not None:
+	f = open(output_file, 'w')
+	f2 = open(output_file + ".ranks", 'w')
+	for score, gene in values:
+	    f.write("%s\t%s\n" % (gene, str(score)))
+	    f2.write("%s\t%d\n" % (gene, i))
+	    i += 1
+	f.close()
+    else:
+	print "%s\t%f" % (gene, score)
+
+    return 
 
 
 def get_top_scoring_node_ids_at_given_cutoff(output_scores_file, node_scores_file, node_mapping_file, cutoff, id_type, default_non_seed_score=0, exclude_seeds=False, one_gene_per_node=True):
