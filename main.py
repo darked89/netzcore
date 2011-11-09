@@ -108,13 +108,14 @@ def decide_association_data(ASSOCIATION, PPI):
 	association_scores_file = association_dir + ASSOCIATION + ".txt"
 	association_scores_file_identifier_type = "genesymbol"
     elif ASSOCIATION.startswith("omim_"):
-	association_dir = data_dir + "omim" + os.sep
-	association_scores_file = association_dir + "2009_Aug_27" + os.sep + ASSOCIATION + ".txt"
+	association_dir = data_dir + "omim" + os.sep + "2009_Aug_27" + os.sep
+	association_scores_file = association_dir + ASSOCIATION + ".txt"
 	association_scores_file_identifier_type = "genesymbol"
     elif ASSOCIATION.startswith("new_omim_"):
-	association_dir = data_dir + "omim" + os.sep
-	association_scores_file = association_dir + "2011_Nov_2" + os.sep + ASSOCIATION + ".txt"
+	association_dir = data_dir + "omim" + os.sep + "2011_Nov_2" + os.sep
+	association_scores_file = association_dir + ASSOCIATION + ".txt"
 	association_scores_file_identifier_type = "genesymbol"
+	candidates_file = association_dir + "candidates" + os.sep + ASSOCIATION[4:] + ".txt"
     elif ASSOCIATION.startswith("chen_"):
 	association_dir = data_dir + "chen_disease_data" + os.sep
 	association_scores_file = association_dir + ASSOCIATION + ".txt"
@@ -138,6 +139,10 @@ def decide_association_data(ASSOCIATION, PPI):
 	association_dir = data_dir + "baldo_synthetic" + os.sep 
 	association_scores_file = association_dir + "seeds.csv"
 	association_scores_file_identifier_type = None
+    elif ASSOCIATION == "angels":
+	association_dir = data_dir + "angels" + os.sep 
+	association_scores_file = association_dir + "seeds.txt"
+	association_scores_file_identifier_type = "genesymbol"
     elif ASSOCIATION.startswith("phenoscore_"):
 	association_dir = data_dir + "netzcorexpress" + os.sep 
 	association_scores_file = association_dir + "Phenoscore_" + ASSOCIATION[11:] + ".tab"
@@ -694,7 +699,9 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, f
 	N_SEED, n_linker, n_path = prepare_data.get_number_of_mapped_seeds(input_log_file)
 	if leave_one_out_xval:
 	    N_X_VAL = N_SEED
-	if SCORING == "mcl": # MCL
+	if SCORING == "nc": # Combined scoring
+	    score_combined(output_base_dir_association, output_scores_file, log_file)
+	elif SCORING == "mcl": # MCL
 	    score_mcl(node_scores_file, edge_scores_file, output_scores_file, module_file, log_file)
 	else:
 	    score(SCORING, score_commands, score_xval_commands, output_scores_file, log_file, job_file)
@@ -1312,6 +1319,37 @@ def score(SCORING, score_commands, score_xval_commands, output_scores_file, log_
 	score_xval(SCORING, score_xval_commands, output_scores_file, log_file, job_file) 
     return
 
+
+def score_combined(output_base_dir_association, output_scores_file, log_file):
+    """
+	Applys combined scoring over given scoring methods for each phenotype in the experiments
+    """
+    scoring_parameters = [("ns", "r3i2"), ("nz", "i5"), ("nd",), ("np",)]
+    f = open(log_file, "a")
+    if score_with_all_seeds:
+	scores_file_list = []
+	for scoring_dir in map(lambda x: os.sep.join(x) + os.sep, scoring_parameters):
+	    scores_file_list.append(output_base_dir_association+scoring_dir+output_scores_file.rsplit(os.sep)[-1])
+	f.write("scoring based on combined methods using %s %s\n" % (" ".join(scores_file_list), output_scores_file))
+	analyze_results.score_combined(scores_file_list, output_scores_file)
+    else:
+	for k in range(1, N_X_VAL+1):
+	    if not os.path.exists(output_scores_file + ".%d" % k): 
+		if only_print_command:
+		    raise ValueError("No external commands exist for combined scoring!")
+		else:
+		    scores_file_list = []
+		    for scoring_dir in map(lambda x: os.sep.join(x) + os.sep, scoring_parameters):
+			scores_file_list.append(output_base_dir_association+scoring_dir+output_scores_file.rsplit(os.sep)[-1]+".%d"%k)
+		    f.write("scoring based on combined methods using %s %s\n" % (" ".join(scores_file_list), output_scores_file+".%d"%k))
+		    if use_cluster:
+			raise ValueError("Can not use cluster for combined scoring!")
+		    else:
+			analyze_results.score_combined(scores_file_list, output_scores_file+".%d"%k)
+    f.close()
+    return
+
+
 def score_mcl(node_scores_file, edge_scores_file, output_scores_file, module_file, log_file):
     if N_SEED == 1:
 	return
@@ -1342,11 +1380,12 @@ def analyze(PPI, SCORING, output_scores_file, log_file, node_scores_file, associ
 	#	return
 	analyze_navlakha(SCORING, r_script_file, output_scores_file, node_scores_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, log_file, candidates_file)
     else:
-	analyzed = analyze_xval(SCORING, r_script_file, output_scores_file, node_scores_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, log_file, candidates_file, analysis_type = "auc") # user - for cutoff analysis, was used before for navlakha data 
-	if analyzed:
-	    analyze_xval_percentage(log_file, output_scores_file, node_scores_file, output_log_file)
-	    # No need to analyze original by default, do it explicitly if need be
-	    #analyze_original(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, specie, network_file, functional_enrichment)
+	if score_with_all_seeds:
+	    analyze_original(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, specie, network_file, functional_enrichment)
+	else:
+	    analyzed = analyze_xval(SCORING, r_script_file, output_scores_file, node_scores_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, log_file, candidates_file, analysis_type = "auc") # user - for cutoff analysis, was used before for navlakha data 
+	    if analyzed:
+		analyze_xval_percentage(log_file, output_scores_file, node_scores_file, output_log_file)
     return
 
 
@@ -1425,21 +1464,32 @@ def analyze_navlakha(SCORING, r_script_file, output_scores_file, node_scores_fil
     counts_at_thresholds = [ [0.0] * 4 for tScore in thresholds] #nTP_sum, nFP_sum, nFN_sum, nTN_sum = 0.0, 0.0, 0.0, 0.0
     threshold_to_ppv = {}
     threshold_to_sens = {}
+
     for k in range(1, N_X_VAL+1):
 	dictNodeResult, setNodeTest, non_seeds = analyze_results.get_values_from_files_for_performance_metric_counts(file_result = output_scores_file+".%d" % k, file_seed_test_scores = node_scores_file+".%d.test"%k, file_node_scores = node_scores_file, default_score = DEFAULT_NON_SEED_SCORE, candidates_file = None)
 	#print setNodeTest
 	nFP, nTN = (0.0, 0.0)
 	for i, tScore in enumerate(thresholds):
 	    nTP, nFN = analyze_results.calculate_performance_metric_counts_using_navlakha(dictNodeResult, setNodeTest, score_threshold = tScore, non_seeds = None)
-	    #if i == 10:
-	    #	print tScore, nTP, nFN
 	    for j, v in enumerate([nTP, nFP, nFN, nTN]):
 	    	counts_at_thresholds[i][j] += v
-	    #if nTP == 0.0:
-	    #	threshold_to_ppv.setdefault(tScore, []).append(0.0)
-	    #else:
-	    #	threshold_to_ppv.setdefault(tScore, []).append(nTP/(nTP+nFP))
-	    #threshold_to_sens.setdefault(tScore, []).append(nTP/(nTP+nFN))
+	dictNodeResult, setNodeTest, non_seeds = analyze_results.get_values_from_files_for_performance_metric_counts(file_result = output_scores_file+".%d" % k, file_seed_test_scores = candidates_file, file_node_scores = node_scores_file, default_score = DEFAULT_NON_SEED_SCORE, candidates_file = None)
+	# Modified navlakha analysis
+	nTP, nFN = (0.0, 0.0)
+	for i, tScore in enumerate(thresholds):
+	    nFP, nTN = analyze_results.calculate_performance_metric_counts_using_navlakha(dictNodeResult, setNodeTest, score_threshold = tScore, non_seeds = non_seeds)
+	    for j, v in enumerate([nTP, nFP, nFN, nTN]):
+		counts_at_thresholds[i][j] += v
+
+    for i, tScore in enumerate(thresholds):
+    	nTP, nFP, nFN, nTN = counts_at_thresholds[i]
+    	(acc, sens, spec, ppv) = analyze_results.calculatePerformance(nTP, nFP, nFN, nTN)
+	if ppv is None:
+	    ppv = "NA"
+    	f.write("%f %s %s\n" % (tScore, ppv, sens))
+    f.close()
+
+    return False
     dictNodeResult, setNodeTest, non_seeds = analyze_results.get_values_from_files_for_performance_metric_counts(file_result = output_scores_file, file_seed_test_scores = candidates_file, file_node_scores = node_scores_file, default_score = DEFAULT_NON_SEED_SCORE, candidates_file = None)
     #print setNodeTest
     nTP, nFN = (0.0, 0.0)
@@ -1447,15 +1497,11 @@ def analyze_navlakha(SCORING, r_script_file, output_scores_file, node_scores_fil
     	nFP, nTN = analyze_results.calculate_performance_metric_counts_using_navlakha(dictNodeResult, setNodeTest, score_threshold = tScore, non_seeds = non_seeds)
     	for j, v in enumerate([nTP, nFP, nFN, nTN]):
     	    counts_at_thresholds[i][j] += v
-    	#threshold_to_ppv.setdefault(tScore, []).append(nTP/(nTP+nFP))
-    	#threshold_to_sens.setdefault(tScore, []).append(nTP/(nTP+nFN))
     for i, tScore in enumerate(thresholds):
     	nTP, nFP, nFN, nTN = counts_at_thresholds[i]
     	(acc, sens, spec, ppv) = analyze_results.calculatePerformance(nTP, nFP, nFN, nTN)
 	if ppv is None:
 	    ppv = "NA"
-    #	ppv = sum(threshold_to_ppv[tScore])/len(threshold_to_ppv[tScore])
-    #	sens = sum(threshold_to_sens[tScore])/len(threshold_to_sens[tScore])
     	f.write("%f %s %s\n" % (tScore, ppv, sens))
     f.close()
     return False
@@ -1549,7 +1595,7 @@ def analyze_xval_percentage(log_file, output_scores_file, node_scores_file, outp
     f = open(log_file, "a")
     coverages = []
     f.write("\nXVAL SEED COVERAGE ANALYSIS\n")
-    for percentage in (5, 10, 25): #(10, 25, 50): # (1, 5, 20):
+    for percentage in (1, 5, 10): #(5, 10, 25): #(10, 25, 50):
 	percentage = "%f%%" % percentage
 	f.write("---- %s:\n" % percentage)
 	n_seed_sum = 0.0
@@ -1587,7 +1633,7 @@ def analyze_original(PPI, output_scores_file, log_file, node_scores_file, associ
     #	    prepare_data.convert_file_using_new_id_mapping(output_scores_file, node_description_file, network_file_identifier_type, association_scores_file_identifier_type, output_scores_file+"."+association_scores_file_identifier_type)
 
     f.write("\nSEED COVERAGE ANALYSIS\n")
-    for percentage in (5, 10, 25): #(10, 25, 50):
+    for percentage in (1, 5, 10): #(5, 10, 25): #(10, 25, 50):
 	percentage = "%f%%" % percentage
 	f.write("---- %s:\n" % percentage)
 	#f.write("%s\n" % output_scores_file)
@@ -1599,6 +1645,8 @@ def analyze_original(PPI, output_scores_file, log_file, node_scores_file, associ
 	#   pass
 	#    else:
 	#	f.write("%s\n" % str(analyze_results.calculate_seed_coverage_at_given_cutoff(output_scores_file+"."+association_scores_file_identifier_type, association_scores_validation_file, percentage, DEFAULT_NON_SEED_SCORE)))
+
+    analyze_results.output_mapped_node_id_scores(output_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, one_gene_per_node=True, output_file=output_scores_file+"."+association_scores_file_identifier_type)
 
     if functional_enrichment and association_scores_file_identifier_type is not None and os.path.exists(node_mapping_file+"."+association_scores_file_identifier_type):
     	f.write("\nFUNCTIONAL ENRICHMENT ANALYSIS (OVER TOP %s SCORING NODES)\n" % DEFAULT_TOP_SCORING_CUTOFF)

@@ -4,7 +4,7 @@ import os
 only_print_command = False
 use_cluster = True #!
 leave_one_out_xval = False #!
-score_with_all_seeds = False #!
+score_with_all_seeds = True #False #!
 only_auc = False # In the analysis_xval if True auc.txt created only, other graphs are not drawn
 navlakha_data = False #!
 
@@ -55,7 +55,7 @@ hsdl_phenotypes = [ "hsdl_" + p.replace(" ", "_").lower() for p in hsdl_phenotyp
 
 ppis = []
 #ppis += ["hprd"] #, "ophid"]
-ppis += ["goh", "entrez", "biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
+#ppis += ["goh", "entrez", "biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
 #ppis += ["biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
 #ppis += ["goh"] 
 #ppis += ["entrez"]
@@ -71,7 +71,7 @@ ppis += ["goh", "entrez", "biana_no_tap_no_reliability", "biana_no_tap_relevance
 #ppis += [ "yeastnet2" ]
 #ppis += ["ravasi"]
 #ppis += ["biana_no_reliability"]
-#ppis += ["biana_no_tap_no_reliability"] 
+ppis += ["biana_no_tap_no_reliability"] 
 #ppis += ["biana_no_tap_relevance"]
 #ppis += ["biana_no_tap_coexpression_no_weight", "biana_no_tap_coexpression", "biana_no_tap_coexpression_differential", "biana_no_tap_coexpression_no_weight_localization", "biana_no_tap_coexpression_localization", "biana_no_tap_coexpression_differential_localization"]
 #ppis += ["biana_no_tap_no_reliability_permuted_p10_71"] 
@@ -88,6 +88,7 @@ ppis += ["goh", "entrez", "biana_no_tap_no_reliability", "biana_no_tap_relevance
 
 phenotypes = []
 #phenotypes += ["baldo_synthetic"]
+#phenotypes += ["angels"]
 #phenotypes += rob_phenotypes 
 #phenotypes += ["navlakha_abdominal"]
 #phenotypes += navlakha_phenotypes
@@ -124,6 +125,7 @@ scoring_parameters += [("rw", 1, 1), ("np", 1, 1)]
 #scoring_parameters += [("nr", 1, 1)]
 #scoring_parameters += [("np", 1, 1)]
 #scoring_parameters += [("mcl", 1, 1)]
+scoring_parameters += [("nc", 1, 1)]
 #scoring_parameters += [("nz", 1, 5)]
 #scoring_parameters += [("ns", 3, 2)]
 #scoring_parameters += [("ff", 1, 5)]
@@ -169,7 +171,7 @@ COMPARISON_GOLD_STANDARD_FILE = data_dir + "alzheimer_gold" + os.sep + "gene_lis
 #COMPARISON_GOLD_STANDARD_FILE = data_dir + "uwaging" + os.sep + "mutex_uwaging_genage_netage.txt" # 99 intersection of uwaging - genage & uwaging - netage & genage - netage
 #COMPARISON_GOLD_STANDARD_FILE = data_dir + "netage" + os.sep + "longetivity.txt" # 456, 8 from uwaging, 91 from genage
 
-scoring_methods = ["nd", "nz", "ns", "ff", "nr", "nw", "nl", "nx", "nh", "n1", "nb", "rw", "np"]
+scoring_methods = ["nd", "nz", "ns", "ff", "nr", "nw", "nl", "nx", "nh", "n1", "nb", "rw", "np", "mcl", "nc"]
 
 THRESHOLDS = { "nr": [ 4e-6, 2e-5, 5e-5, 1e-4, 2e-4, 3e-4, 4e-4, 5e-4, 1e-3, 0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9 ],
 		"ff": [ 1e-3, 1e-2, 2e-2, 5e-2, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3 ], 
@@ -183,6 +185,15 @@ THRESHOLDS = { "nr": [ j*10**-i for i in xrange(2,7) for j in xrange(1,10) ] + [
 		"nz": [ 0.01*i for i in xrange(1,101) ],
 		"ns": [ 0.01*i for i in xrange(1,101) ],
 		"mcl": [ 0.01*i for i in xrange(1,101) ] } 
+
+THRESHOLDS = { "nr": [ i*10**-5 for i in xrange(1,11) ] + [ 0.005, 0.01, 0.05, 0.1 ],
+		"ff": [ 0.05*i for i in xrange(1,11) ] + [ 1, 2.5, 5, 8 ], 
+		"nd": [ 0.03*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ],  
+		"nz": [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ],
+		"ns": [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ],
+		"rw": [ i*10**-5 for i in xrange(1,11) ] + [ 0.005, 0.01, 0.05, 0.1 ],
+		"np": [ i*10**-5 for i in xrange(1,11) ] + [ 0.005, 0.01, 0.05, 0.1 ],
+		"mcl": [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ] } 
 
 
 # Scoring related parameters 
