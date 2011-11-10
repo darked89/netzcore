@@ -6,7 +6,7 @@ use_cluster = False #!
 leave_one_out_xval = False #!
 score_with_all_seeds = True #False #!
 only_auc = False # In the analysis_xval if True auc.txt created only, other graphs are not drawn
-navlakha_data = False #!
+navlakha_data = True #False #!
 
 DEFAULT_TOP_SCORING_CUTOFF = "5%" #"10%" #"1%" #"5%" # If ends with "%" taken as percentage otherwise as score - At the time of analysis it was "10%"
 N_LINKER_THRESHOLD = 2 # For Netlink method
@@ -88,7 +88,7 @@ ppis += ["biana_no_tap_no_reliability"]
 
 phenotypes = []
 #phenotypes += ["baldo_synthetic"]
-phenotypes += ["angels"]
+#phenotypes += ["angels"]
 #phenotypes += rob_phenotypes 
 #phenotypes += ["navlakha_abdominal"]
 #phenotypes += navlakha_phenotypes
@@ -108,6 +108,7 @@ phenotypes += ["angels"]
 #phenotypes += ["omim_hypertension"]
 #phenotypes += ["omim_alzheimer"] 
 #phenotypes += ["new_omim_alzheimer"] 
+phenotypes += ["new_omim_adrenoleukodystrophy"] 
 #phenotypes += ["omim_hypertension"] 
 #phenotypes += ["omim_insulin"] 
 #phenotypes += ["omim_diabetes"]
@@ -125,9 +126,9 @@ scoring_parameters = []
 #scoring_parameters += [("nr", 1, 1)]
 #scoring_parameters += [("np", 1, 1)]
 #scoring_parameters += [("mcl", 1, 1)]
-scoring_parameters += [("nc", 1, 1)]
+#scoring_parameters += [("nc", 1, 1)]
 #scoring_parameters += [("nz", 1, 5)]
-#scoring_parameters += [("ns", 3, 2)]
+scoring_parameters += [("ns", 3, 2)]
 #scoring_parameters += [("ff", 1, 5)]
 #scoring_parameters += [("ns", 2, 3), ("ns", 2, 2)]
 #scoring_parameters += [("nw",1, 1)]
@@ -191,6 +192,7 @@ THRESHOLDS = { "nr": [ i*10**-5 for i in xrange(1,11) ] + [ 0.005, 0.01, 0.05, 0
 		"nd": [ 0.03*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ],  
 		"nz": [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ],
 		"ns": [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ],
+		"nc": [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ],
 		"rw": [ i*10**-5 for i in xrange(1,11) ] + [ 0.005, 0.01, 0.05, 0.1 ],
 		"np": [ i*10**-5 for i in xrange(1,11) ] + [ 0.005, 0.01, 0.05, 0.1 ],
 		"mcl": [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ] } 
