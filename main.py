@@ -115,7 +115,7 @@ def decide_association_data(ASSOCIATION, PPI):
 	association_dir = data_dir + "omim" + os.sep + "2011_Nov_2" + os.sep
 	association_scores_file = association_dir + ASSOCIATION + ".txt"
 	association_scores_file_identifier_type = "genesymbol"
-	candidates_file = association_dir + "candidates" + os.sep + ASSOCIATION[4:] + ".txt"
+	#candidates_file = association_dir + "candidates" + os.sep + ASSOCIATION[4:] + ".txt" #!
     elif ASSOCIATION.startswith("chen_"):
 	association_dir = data_dir + "chen_disease_data" + os.sep
 	association_scores_file = association_dir + ASSOCIATION + ".txt"
@@ -699,8 +699,8 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, f
 	N_SEED, n_linker, n_path = prepare_data.get_number_of_mapped_seeds(input_log_file)
 	if leave_one_out_xval:
 	    N_X_VAL = N_SEED
-	if SCORING == "nc": # Combined scoring
-	    score_combined(output_base_dir_association, output_scores_file, log_file)
+	if SCORING.startswith("nc"): # Combined scoring
+	    score_combined(output_base_dir_association, output_scores_file, log_file, SCORING)
 	elif SCORING == "mcl": # MCL
 	    score_mcl(node_scores_file, edge_scores_file, output_scores_file, module_file, log_file)
 	else:
@@ -1320,11 +1320,18 @@ def score(SCORING, score_commands, score_xval_commands, output_scores_file, log_
     return
 
 
-def score_combined(output_base_dir_association, output_scores_file, log_file):
+def score_combined(output_base_dir_association, output_scores_file, log_file, scoring_type="nc"):
     """
 	Applys combined scoring over given scoring methods for each phenotype in the experiments
     """
-    scoring_parameters = [("ns", "r3i2"), ("nz", "i5"), ("nd",), ("np",)]
+    if scoring_type == "nc":
+	scoring_parameters = [("ns", "r3i2"), ("nz", "i5"), ("nd",), ("np",)]
+    elif scoring_type == "nc2":
+	scoring_parameters = [("ns", "r3i2"), ("np",)]
+    elif scoring_type == "nc3":
+	scoring_parameters = [("ns", "r3i2"), ("nz", "i5"), ("nd",)]
+    elif scoring_type == "nc7":
+	scoring_parameters = [("ns", "r3i2"), ("nz", "i5"), ("nd",), ("np",), ("ff", "i5"), ("nr",), ("rw",)]
     f = open(log_file, "a")
     if score_with_all_seeds:
 	scores_file_list = []

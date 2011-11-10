@@ -2,9 +2,9 @@ import os
 
 # GLOBAL VARIABLES
 only_print_command = False
-use_cluster = True #!
+use_cluster = False #True #!
 leave_one_out_xval = False #!
-score_with_all_seeds = True #False #!
+score_with_all_seeds = False #!
 only_auc = False # In the analysis_xval if True auc.txt created only, other graphs are not drawn
 navlakha_data = False #!
 
@@ -28,8 +28,8 @@ delay_experiment = True
 tex_format = True #False 
 functional_enrichment = False
 
-MODE = "score" # prepare, score, analyze, compare, summary, module
-user_friendly_id = "bppi-new_omim-ns_np" #"biana_no_tap-omim" #"all7_vs_all5-top5" # "navlakha" #"biana_no_tap" # a.k.a. emre friendly id for compare and summary
+MODE = "summary" # prepare, score, analyze, compare, summary, module
+user_friendly_id = "bppi-new_omim-top1" #"biana_no_tap-omim" #"all7_vs_all5-top5" # "navlakha" #"biana_no_tap" # a.k.a. emre friendly id for compare and summary
 summary_seed_cutoff = 1 #None #2 #20 # Seed cutoff considered for inclusion of an experiment in sum_up_experiments, if None seed.dat is not created. Also used in compare_experiments if analysis_type is user
 prepare_mutated = None #"perturbed" # Creates permutad/pruned networks 
 analyze_network = False #True
@@ -126,6 +126,9 @@ scoring_parameters += [("rw", 1, 1), ("np", 1, 1)]
 #scoring_parameters += [("np", 1, 1)]
 #scoring_parameters += [("mcl", 1, 1)]
 scoring_parameters += [("nc", 1, 1)]
+scoring_parameters += [("nc2", 1, 1)]
+scoring_parameters += [("nc3", 1, 1)]
+scoring_parameters += [("nc7", 1, 1)]
 #scoring_parameters += [("nz", 1, 5)]
 #scoring_parameters += [("ns", 3, 2)]
 #scoring_parameters += [("ff", 1, 5)]
@@ -171,7 +174,7 @@ COMPARISON_GOLD_STANDARD_FILE = data_dir + "alzheimer_gold" + os.sep + "gene_lis
 #COMPARISON_GOLD_STANDARD_FILE = data_dir + "uwaging" + os.sep + "mutex_uwaging_genage_netage.txt" # 99 intersection of uwaging - genage & uwaging - netage & genage - netage
 #COMPARISON_GOLD_STANDARD_FILE = data_dir + "netage" + os.sep + "longetivity.txt" # 456, 8 from uwaging, 91 from genage
 
-scoring_methods = ["nd", "nz", "ns", "ff", "nr", "nw", "nl", "nx", "nh", "n1", "nb", "rw", "np", "mcl", "nc"]
+scoring_methods = ["nd", "nz", "ns", "ff", "nr", "nw", "nl", "nx", "nh", "n1", "nb", "rw", "np", "mcl", "nc", "nc2", "nc3", "nc7"]
 
 THRESHOLDS = { "nr": [ 4e-6, 2e-5, 5e-5, 1e-4, 2e-4, 3e-4, 4e-4, 5e-4, 1e-3, 0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9 ],
 		"ff": [ 1e-3, 1e-2, 2e-2, 5e-2, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3 ], 
@@ -191,6 +194,10 @@ THRESHOLDS = { "nr": [ i*10**-5 for i in xrange(1,11) ] + [ 0.005, 0.01, 0.05, 0
 		"nd": [ 0.03*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ],  
 		"nz": [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ],
 		"ns": [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ],
+		"nc": [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ],
+		"nc2": [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ],
+		"nc3": [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ],
+		"nc7": [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ],
 		"rw": [ i*10**-5 for i in xrange(1,11) ] + [ 0.005, 0.01, 0.05, 0.1 ],
 		"np": [ i*10**-5 for i in xrange(1,11) ] + [ 0.005, 0.01, 0.05, 0.1 ],
 		"mcl": [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ] } 

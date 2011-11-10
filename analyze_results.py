@@ -12,11 +12,15 @@ import calculate_mean_and_sigma
 
 def score_combined(scores_file_list, output_scores_file):
     node_to_scores = {}
+    inf = float("Inf")
     for scores_file in scores_file_list:
 	node_to_score_inner = {}
 	for line in open(scores_file):
 	    node, score = line.strip().split() 
-	    node_to_score_inner[node] = float(score)
+	    score = float(score)
+	    if inf == score:
+		score = 999999 # hard coded score to correspond infinity in func. flow
+	    node_to_score_inner[node] = score
 	mean, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(node_to_score_inner.values())
 	for node, score in node_to_score_inner.iteritems():
 	    node_to_scores.setdefault(node, []).append((score-mean)/sigma)
