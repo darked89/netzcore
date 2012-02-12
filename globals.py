@@ -2,13 +2,13 @@ import os
 
 # GLOBAL VARIABLES
 only_print_command = False
-use_cluster = False #True #!
+use_cluster = True #!
 leave_one_out_xval = False #!
 score_with_all_seeds = False #!
-only_auc = False # In the analysis_xval if True auc.txt created only, other graphs are not drawn
-navlakha_data = True #False #!
+only_auc = True #! False # In the analysis_xval if True auc.txt created only, other graphs are not drawn
+navlakha_analysis = False #True #!
 
-DEFAULT_TOP_SCORING_CUTOFF = "5%" #"10%" #"1%" #"5%" # If ends with "%" taken as percentage otherwise as score - At the time of analysis it was "10%"
+DEFAULT_TOP_SCORING_CUTOFF = "1%" #"10%" #"1%" #"5%" # If ends with "%" taken as percentage otherwise as score - At the time of the first analysis it was "10%" then 5%
 N_LINKER_THRESHOLD = 2 # For Netlink method
 DEFAULT_SEED_SCORE = 1.0 # Default score for seed nodes, used when no score given in assoc file
 DEFAULT_NON_SEED_SCORE = 0.01 # Default score for non-seed nodes
@@ -16,7 +16,7 @@ ALLOWED_MAX_DEGREE = 100000 #175 #90 # Max degree allowed in the graph filtering
 N_SAMPLE_GRAPH = 100 # Number of random graphs to be generated
 N_X_VAL = 5 #! #None # Number of cross validation folds, readjusted if leave_one_out_xval is True
 N_SEED = None #Will be set during run
-N_RANDOM_NEGATIVE_FOLDS = None #10 # Number of non-seed scores to be averaged for negative score calculation, 
+N_RANDOM_NEGATIVE_FOLDS = 0 #! None #10 # Number of non-seed scores to be averaged for negative score calculation, 
 			    # If 0 all non seeds are included as they are, If None all non seeds are included averaged to scale with the size of test seeds
 REPLICABLE = 123 #63826 #9871354 #123 #None # Assign a predefined seed in randomization for initial test folds creation and N_RANDOM_NEGATIVE_FOLD generation
 ONLY_LARGEST_COMPONENT = True 
@@ -28,11 +28,11 @@ delay_experiment = True
 tex_format = True #False 
 functional_enrichment = False
 
-MODE = "summary" # prepare, score, analyze, compare, summary, module
-user_friendly_id = "bppi-new_omim-top1" #"biana_no_tap-omim" #"all7_vs_all5-top5" # "navlakha" #"biana_no_tap" # a.k.a. emre friendly id for compare and summary
+MODE = "analyze" # prepare, score, analyze, compare, summary, module
+user_friendly_id = "goh_new_negative_vs_omim_LI" #goh-omim_w_LI" #"biana_no_tap-omim" #"all7_vs_all5-top5" # "navlakha" #"biana_no_tap" # a.k.a. emre friendly id for compare and summary
 summary_seed_cutoff = 1 #None #2 #20 # Seed cutoff considered for inclusion of an experiment in sum_up_experiments, if None seed.dat is not created. Also used in compare_experiments if analysis_type is user
 prepare_mutated = None #"perturbed" # Creates permutad/pruned networks 
-analyze_network = False #True
+analyze_network = False #!
 exclude_seeds_in_comparison = True
 
 new_omim_phenotypes = ['adrenoleukodystrophy', 'aids', 'alzheimer', 'amyloidosis', 'amyotrophic', 'anemia', 'arrhythmogenic', 'asthma', 'atrial', 'autism', 'autoimmune', 'bardet_biedl', 'blood', 'brachydactyly', 'breast', 'cardiomyopathy', 'cataract', 'cerebral', 'charcot_marie_tooth', 'colon', 'colorectal', 'combined', 'cone_rod', 'congenital', 'coronary', 'deafness', 'dementia', 'diabetes', 'diamond_blackfan', 'dystonia', 'ectodermal', 'epidermolysis', 'epilepsy', 'epileptic', 'epiphyseal', 'esophageal', 'factor', 'fanconi', 'gastric', 'glomerulosclerosis', 'glycogen', 'hemolytic', 'hemophagocytic', 'hepatocellular', 'high', 'hypercholesterolemia', 'hypertension', 'ichthyosis', 'immunodeficiency', 'keratosis', 'leigh', 'leukemia', 'long', 'lung', 'lymphoma', 'macular', 'malaria', 'melanoma', 'mental', 'microcephaly', 'microphthalmia', 'microvascular', 'mitochondrial', 'multiple', 'muscular', 'myasthenic', 'myocardial', 'myopathy', 'neuropathy', 'noonan', 'obesity', 'osteopetrosis', 'ovarian', 'pancreatic', 'parkinson', 'pituitary', 'prostate', 'pulmonary', 'renal', 'retinitis', 'rheumatoid', 'schizophrenia', 'severe', 'short', 'spastic', 'spinocerebellar', 'systemic', 'thrombophilia', 'thyroid', 'usher', 'xeroderma', 'zellweger']
@@ -56,9 +56,9 @@ hsdl_phenotypes = [ "hsdl_" + p.replace(" ", "_").lower() for p in hsdl_phenotyp
 ppis = []
 #ppis += ["hprd"] #, "ophid"]
 #ppis += ["goh", "entrez", "biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
-#ppis += ["biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
+ppis += ["biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
 #ppis += ["goh"] 
-#ppis += ["entrez"]
+ppis += ["entrez"]
 #ppis += ["baldo_synthetic"]
 #ppis += ["rh_human_gi"]
 #ppis += ["humannet"]
@@ -71,7 +71,7 @@ ppis = []
 #ppis += [ "yeastnet2" ]
 #ppis += ["ravasi"]
 #ppis += ["biana_no_reliability"]
-ppis += ["biana_no_tap_no_reliability"] 
+#ppis += ["biana_no_tap_no_reliability"] 
 #ppis += ["biana_no_tap_relevance"]
 #ppis += ["biana_no_tap_coexpression_no_weight", "biana_no_tap_coexpression", "biana_no_tap_coexpression_differential", "biana_no_tap_coexpression_no_weight_localization", "biana_no_tap_coexpression_localization", "biana_no_tap_coexpression_differential_localization"]
 #ppis += ["biana_no_tap_no_reliability_permuted_p10_71"] 
@@ -92,14 +92,15 @@ phenotypes = []
 #phenotypes += rob_phenotypes 
 #phenotypes += ["navlakha_abdominal"]
 #phenotypes += navlakha_phenotypes
-#phenotypes += chen_phenotypes + omim_phenotypes + goh_phenotypes 
+#phenotypes += chen_phenotypes + goh_phenotypes + new_omim_phenotypes
+#phenotypes += chen_phenotypes + goh_phenotypes 
 #phenotypes += navlakha_phenotypes # Now located at the bottom of the page
 #phenotypes += hsdl_phenotypes
 #phenotypes += omim_phenotypes 
 phenotypes += new_omim_phenotypes 
-#phenotypes += [ "perturbed_%s_p%i_%i" % (d, p, i) for d in omim_phenotypes for p in xrange(10,100,10) for i in xrange(1,101) ]
 #phenotypes += goh_phenotypes 
 #phenotypes += chen_phenotypes 
+#phenotypes += [ "perturbed_%s_p%i_%i" % (d, p, i) for d in omim_phenotypes for p in xrange(10,100,10) for i in xrange(1,101) ]
 #phenotypes += ["chen_autism"]
 #phenotypes += ["omim_aneurysm", "omim_autism"]
 #phenotypes += ["omim_prostate_cancer"]
@@ -108,10 +109,10 @@ phenotypes += new_omim_phenotypes
 #phenotypes += ["omim_hypertension"]
 #phenotypes += ["omim_alzheimer"] 
 #phenotypes += ["new_omim_alzheimer"] 
-phenotypes += ["new_omim_adrenoleukodystrophy"] 
+#phenotypes += ["new_omim_diabetes_type_2"]
+#phenotypes += ["new_omim_insulin"] 
+#phenotypes += ["new_omim_adrenoleukodystrophy"] 
 #phenotypes += ["omim_hypertension"] 
-#phenotypes += ["omim_insulin"] 
-#phenotypes += ["omim_diabetes"]
 #phenotypes += ["omim_parkinson_disease"]
 #phenotypes += ["perturbed_omim_mental_retardation_p10_11"]
 #phenotypes += ["apoptosis_joan"]
@@ -124,15 +125,16 @@ scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)]
 scoring_parameters += [("nd", 1, 1)] 
 scoring_parameters += [("rw", 1, 1), ("np", 1, 1)] 
 #scoring_parameters += [("nr", 1, 1)]
+#scoring_parameters += [("rw", 1, 1)]
 #scoring_parameters += [("np", 1, 1)]
 #scoring_parameters += [("mcl", 1, 1)]
 scoring_parameters += [("nc", 1, 1)]
-#scoring_parameters += [("nc2", 1, 1)]
+scoring_parameters += [("nc2", 1, 1)]
 scoring_parameters += [("nc3", 1, 1)]
-#scoring_parameters += [("nc7", 1, 1)]
+scoring_parameters += [("nc7", 1, 1)]
 #scoring_parameters += [("nz", 1, 5)]
 #scoring_parameters += [("ns", 3, 2)]
-#scoring_parameters += [("ff", 1, 5)]
+#scoring_parameters += [("ff", 1, 5)] 
 #scoring_parameters += [("ns", 2, 3), ("ns", 2, 2)]
 #scoring_parameters += [("nw",1, 1)]
 #scoring_parameters += [("nx", 1, 1)]
@@ -190,18 +192,18 @@ THRESHOLDS = { "nr": [ j*10**-i for i in xrange(2,7) for j in xrange(1,10) ] + [
 		"ns": [ 0.01*i for i in xrange(1,101) ],
 		"mcl": [ 0.01*i for i in xrange(1,101) ] } 
 
-THRESHOLDS = { "nr": [ i*10**-5 for i in xrange(1,11) ] + [ 0.005, 0.01, 0.05, 0.1 ],
-		"ff": [ 0.05*i for i in xrange(1,11) ] + [ 1, 2.5, 5, 8 ], 
-		"nd": [ 0.03*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ],  
-		"nz": [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ],
-		"ns": [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ],
-		"nc": [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ],
-		"nc2": [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ],
-		"nc3": [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ],
-		"nc7": [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ],
-		"rw": [ i*10**-5 for i in xrange(1,11) ] + [ 0.005, 0.01, 0.05, 0.1 ],
-		"np": [ i*10**-5 for i in xrange(1,11) ] + [ 0.005, 0.01, 0.05, 0.1 ],
-		"mcl": [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9 ] } 
+THRESHOLDS = { "nr": [ 0.0, 1e-6 ] + [ i*10**-5 for i in xrange(1,11) ] + [ 0.005, 0.01, 0.05, 0.1, 0.95 ],
+		"ff": [ 0.0, 1e-6 ] + [ 0.05*i for i in xrange(1,11) ] + [ 1, 2.5, 5, 8, 0.95 ], 
+		"nd": [ 0.0, 1e-6 ] + [ 0.03*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9, 0.95 ],  
+		"nz": [ 0.0, 1e-6 ] + [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9, 0.95 ],
+		"ns": [ 0.0, 1e-6 ] + [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9, 0.95 ],
+		"nc": [ 0.0, 1e-6 ] + [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9, 0.95 ],
+		"nc2": [ 0.0, 1e-6 ] + [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9, 0.95 ],
+		"nc3": [ 0.0, 1e-6 ] + [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9, 0.95 ],
+		"nc7": [ 0.0, 1e-6 ] + [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9, 0.95 ],
+		"rw": [ 0.0, 1e-6 ] + [ i*10**-5 for i in xrange(1,11) ] + [ 0.005, 0.01, 0.05, 0.1, 0.95 ],
+		"np": [ 0.0, 1e-6 ] + [ i*10**-5 for i in xrange(1,11) ] + [ 0.005, 0.01, 0.05, 0.1, 0.95 ],
+		"mcl": [ 0.0, 1e-6 ] + [ 0.01*i for i in xrange(1,11) ] + [ 0.25, 0.5, 0.75, 0.9, 0.95 ] } 
 
 
 # Scoring related parameters 
@@ -238,5 +240,5 @@ navlakha_phenotypes = ['abacavir', 'abdominal', 'acampomelic', 'acromesomelic', 
 
 navlakha_phenotypes = [ "navlakha_" + p.replace(" ", "_").lower() for p in navlakha_phenotypes ] 
 
-#phenotypes += navlakha_phenotypes #!
+#phenotypes += navlakha_phenotypes 
 
