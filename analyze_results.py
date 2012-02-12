@@ -15,11 +15,15 @@ def score_combined(scores_file_list, output_scores_file):
 	Calculates a combined score based on normalized scores of each scoring method
     """
     node_to_scores = {}
+    inf = float("Inf")
     for scores_file in scores_file_list:
 	node_to_score_inner = {}
 	for line in open(scores_file):
 	    node, score = line.strip().split() 
-	    node_to_score_inner[node] = float(score)
+	    score = float(score)
+	    if inf == score:
+		score = 999999 # hard coded score to correspond infinity in func. flow
+	    node_to_score_inner[node] = score
 	mean, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(node_to_score_inner.values())
 	for node, score in node_to_score_inner.iteritems():
 	    node_to_scores.setdefault(node, []).append((score-mean)/sigma)
@@ -685,7 +689,9 @@ def check_functional_enrichment(subset_gene_ids, gene_ids, id_type, output_metho
 def record_performance_AUC_in_log_file(absolute_dir, log_file, title):
     f = open(absolute_dir + "auc.txt")
     line = f.readline()
-    words = line.strip().split()
+    while line:
+	words = line.strip().split()
+	line = f.readline()
     mean, sigma = words[1].strip("\""), words[2].strip("\"")
     f.close()
     f = open(log_file, "a")
@@ -815,11 +821,12 @@ def get_validation_node_scores_and_labels(file_result, file_seed_test_scores, fi
 	default_score: All nodes that have a higher score than this score in file_node_scores will be considered as seeds
     """
     dictNodeResult, setNodeTest, non_seeds = get_values_from_files_for_performance_metric_counts(file_result, file_seed_test_scores, file_node_scores, default_score, candidates_file=None)
-    node_validation_data = [ (dictNodeResult[id], 1) for id in setNodeTest ]
+    node_validation_data = [ (dictNodeResult[id], 1) for id in setNodeTest ] 
 
     if candidates_file is not None:
 	setCandidates, setDummy, dictCandidates, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = candidates_file, store_edge_type = False)
-	dictNodeResult = dictNodeResult.fromkeys(setCandidates)
+	dictNodeResult = dict([ (node, dictNodeResult[node]) for node in setCandidates ])
+	non_seeds = list(set(non_seeds) & setCandidates)
 
     if n_random_negative_folds == 0:
 	negative_sample_size = None
@@ -1021,7 +1028,7 @@ def get_top_scoring_nodes_at_given_cutoff(node_to_score, cutoff):
     return ids, n, i
 
 
-def calculate_seed_coverage_at_given_cutoff(file_result, file_seed_scores, cutoff, default_score=0):
+def calculate_seed_coverage_at_given_cutoff(file_result, file_seed_scores, cutoff, candidates_file=None, default_score=0):
     """
 	Calculates number of seed nodes included in the given cutoff of high ranking nodes in result file 
 	Returns a tuple containing number of seed nodes and all nodes at that cutoff (if ends with % taken as percentage, otherwise taken as score cutoff)
@@ -1034,6 +1041,11 @@ def calculate_seed_coverage_at_given_cutoff(file_result, file_seed_scores, cutof
     seeds = set([ id for id, score in node_to_score_initial.iteritems() if score > default_score ])
 
     dummy, dummy, node_to_score, dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = file_result, store_edge_type = False)
+
+    if candidates_file is not None:
+	setCandidates, setDummy, dictCandidates, dictDummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = candidates_file, store_edge_type = False)
+	node_to_score = dict([ (node, node_to_score[node]) for node in setCandidates ])
+
     ids, n, i = get_top_scoring_nodes_at_given_cutoff(node_to_score, cutoff)
     for id in ids:
 	if id in seeds:

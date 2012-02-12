@@ -1,10 +1,11 @@
 import os
 
-DATA_DIR = "/home/emre/arastirma/netzcore/data/"
+#DATA_DIR = "/home/emre/arastirma/netzcore/data/"
+DATA_DIR = "../data/"
 
 def main():
     #convert_ids_for_netscore_alzheimer_analysis()
-    #get_seed_gene_counts(DATA_DIR + "input_runs_for_draft/biana_no_tap_no_reliability/")
+    get_seed_gene_counts(DATA_DIR + "input/biana_no_tap_no_reliability/")#"input_runs_for_draft/biana_no_tap_no_reliability/")
 
     #file_name = DATA_DIR + "omim/alzheimer.txt"
     #out_file_name = "test.txt"
