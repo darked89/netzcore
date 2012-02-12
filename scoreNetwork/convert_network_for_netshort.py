@@ -22,11 +22,11 @@
 import sys
 
 def main():
-    create_edge_scores_as_node_scores_file("../data/test_proteins.txt", "../data/test_interactions.txt", "../data/test_interactions_for_netshort.txt")
-    #node_file = sys.argv[1]
-    #network_file = sys.argv[2]
-    #output_file = sys.argv[3]
-    #create_edge_scores_as_node_scores_file(node_file, network_file, output_file)
+    #create_edge_scores_as_node_scores_file("../data/test_proteins.txt", "../data/test_interactions.txt", "../data/test_interactions_for_netshort.txt")
+    node_file = sys.argv[1]
+    network_file = sys.argv[2]
+    output_file = sys.argv[3]
+    create_edge_scores_as_node_scores_file(node_file, network_file, output_file)
 
 def create_edge_scores_as_node_scores_file(node_scores_file, edge_scores_file, output_file):
     """

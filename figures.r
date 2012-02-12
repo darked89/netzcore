@@ -2,12 +2,14 @@ dir.name<-"../data/summary/"
 cols<-c(2,7,3,4,6,5,8) #rainbow(7) #2:8 #heat.colors(7)
 color5<-cols[1:5]
 color2<-c(3,4)
-#scoring.methods<-c("N.Score", "N.Zcore", "N.Short", "F.Flow", "P.Rank", "R.Walk", "N.Prop")
-scoring.methods<-c("N.Score", "N.Zcore", "N.Short", "F.Flow", "P.Rank")
+scoring.methods<-c("N.Score", "N.Zcore", "N.Short", "N.Combo", "F.Flow", "P.Rank", "R.Walk", "N.Prop")
+scoring.methods.full<-c("NetScore", "NetZcore", "NetShort", "NetCombo", "Functional\nFlow", "Page\nRank", "Random\nWalk", "Network\n Propagation")
+#scoring.methods<-c("N.Score", "N.Zcore", "N.Short", "F.Flow", "P.Rank")
+scoring.method.ids<-c("ns", "nz", "nd", "nc3", "ff", "nr", "rw", "np")
 
 main <- function() {
-    #manuscript()
-    manuscript2()
+    manuscript()
+    #manuscript2()
 
     #case_study_figures()
     #navlakha_figures()
@@ -524,7 +526,7 @@ disease_category_figures<-function() {
     return()
 
     library(gplots)
-    library(brewer)
+    library(RColorBrewer)
     cols<-c(rep("red", length(common.up)), rep("grey", length(non.common)), rep("green", length(common.down)))
     #cols<-c(rep("blue", length(common.up)), rep("grey", length(non.common)), rep("orange", length(common.down)))
     val.cols <- brewer.pal(9,"Blues") #greenred
@@ -703,36 +705,22 @@ manuscript2_tests<-function() {
 ###### MANUSCRIPT FIGURES ######
 manuscript_figures <- function() {
 
-    # Average AUC (%) over all diseases and networks
-    #postscript(paste(dir.name, "Figure 2a.eps", sep=""), width = 6, height = 6, horizontal = FALSE, onefile = FALSE, paper = "special", family="arial", bg="white")
-    #svg(paste(dir.name, "Figure 2a.svg", sep=""), width = 6, height = 6, onefile = TRUE)
-    cairo_ps(paste(dir.name, "Figure S1a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
-    par(family = "Arial") 
-    d<-read.table(paste(dir.name, 'all7_vs_all5-top5/auc_phenotypes.dat', sep=""))
-    boxplot(d, xlab="Prediction method", ylab="AUC(%)", names=scoring.methods, col=8, notch=FALSE, varwidth=FALSE, ylim=c(0,80))
-    dev.off()
-
-    # Ratio of correctly predicted proteins (%) among top 10% predictions over all diseases and networks
-    #postscript(paste(dir.name, "Figure 2b.eps", sep=""), width = 6, height = 6, horizontal = FALSE, onefile = FALSE, paper = "special")
-    cairo_ps(paste(dir.name, "Figure S1b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
-    par(family = "Arial") 
-    d<-read.table(paste(dir.name, 'all7_vs_all5-top5/cov_phenotypes.dat', sep=""))
-    boxplot(d, xlab="Prediction method", ylab="Seeds covered at top 5% (%)", names=scoring.methods, col=8, notch=FALSE, varwidth=FALSE, ylim=c(0,80))
-    dev.off()
-
     #par(mar=c(5, 4, 4, 2) + 0.1) # to reset margins
 
     # Average AUC (%) over all diseases for each network
-    cairo_ps(paste(dir.name, "Figure 1a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
-    par(family = "Arial") 
-    par(xpd=T, mar=par()$mar+c(-1,0,1,0))
+    #cairo_ps(paste(dir.name, "Figure 1.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    #par(family = "Arial") 
+    tiff(paste(dir.name, "Figure 1.tif", sep=""), width=2000, height=2000, res=300)
+    #par(xpd=T, mar=par()$mar+c(0,0,0,0))
     #coords <- seq(0.4,4.8,by=1.1)
-    coords <- seq(0,7.8,by=1.3)
+    #coords <- seq(0,7.8,by=1.3)
+    coords <- seq(0.05,7.75,by=1.1)
     i = 1
     for(ppi in c("goh", "entrez", "biana", "biana_no_tap", "biana_no_tap_relevance")) {
-	d<-read.table(paste(dir.name, ppi, '7_vs_all5-top5/auc_ppis.dat', sep=""))
+	d<-read.table(paste(dir.name, ppi, '_vs_all-wo_LI/auc_ppis.dat', sep=""))
+	d<-d[,scoring.method.ids]
 	if(i == 1) {
-	    boxplot(d,col=cols[i],at=coords, boxwex=0.2, pars=list(xaxt="n"), xlab="Prediction method", ylab="AUC(%)", ylim=c(0,100), xlim=c(0.18,8.42))
+	    boxplot(d,col=cols[i],at=coords, boxwex=0.2, pars=list(xaxt="n"), xlab="Prediction method", ylab="AUC (%)", ylim=c(0,100), xlim=c(0.18,8.42))
 	} 
 	else {
 	    boxplot(d,col=cols[i],at=coords, boxwex=0.2, pars=list(xaxt="n"), names=F, add=T)
@@ -744,21 +732,24 @@ manuscript_figures <- function() {
 	coords <- coords + 0.2
 	i = i + 1
     }
-    legend(0.5, 119, c("GOH", "ENTREZ", "PPI", "bPPI", "bPPI weighted"), fill=color5, bty="n", ncol=3, cex=0.9) #horiz=T, x.intersp=0.5)
-    text(text.coords+0.35, par("usr")[3]-4, srt=0, adj=1, labels=scoring.methods, xpd=T, cex=0.9)
+    legend(0.5, 119, c("Goh", "Entrez", "PPI", "bPPI", "weighted bPPI"), fill=color5, bty="n", ncol=3, cex=0.9) #horiz=T, x.intersp=0.5)
+    text(text.coords+0.15, par("usr")[3]-3, srt=40, adj=1, labels=scoring.methods.full, xpd=T, cex=0.9)
     dev.off()
 
     # Ratio of correctly predicted proteins (%) among top 10% predictions over all diseases for each network
-    cairo_ps(paste(dir.name, "Figure 1b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
-    par(family = "Arial") 
-    par(xpd=T, mar=par()$mar+c(-1,0,1,0))
+    #cairo_ps(paste(dir.name, "Supplementary Figure 2.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    #par(family = "Arial") 
+    tiff(paste(dir.name, "Supplementary Figure 2.tif", sep=""), width=2000, height=2000, res=300)
+    par(xpd=T, mar=par()$mar+c(0,0,0,0))
     #coords <- seq(0.4,4.8,by=1.1)
-    coords <- seq(0,7.8,by=1.3)
+    #coords <- seq(0,7.8,by=1.3)
+    coords <- seq(0.05,7.75,by=1.1)
     i = 1
     for(ppi in c("goh", "entrez", "biana", "biana_no_tap", "biana_no_tap_relevance")) {
-	d<-read.table(paste(dir.name, ppi, '7_vs_all5-top5/cov_ppis.dat', sep=""))
+	d<-read.table(paste(dir.name, ppi, '_vs_all-wo_LI/cov_ppis.dat', sep=""))
+	d<-d[,scoring.method.ids]
 	if(i == 1) {
-	    boxplot(d,col=cols[i],at=coords, boxwex=0.2, pars=list(xaxt="n"), xlab="Prediction method", ylab="Seeds covered at top 5% (%)", ylim=c(0,100), xlim=c(0.18,8.42))
+	    boxplot(d,col=cols[i],at=coords, boxwex=0.2, pars=list(xaxt="n"), xlab="Prediction method", ylab="Sensitivity at top 1% (%)", ylim=c(0,100), xlim=c(0.18,8.42))
 	} 
 	else {
 	    boxplot(d,col=cols[i],at=coords, boxwex=0.2, pars=list(xaxt="n"), names=F, add=T)
@@ -770,32 +761,76 @@ manuscript_figures <- function() {
 	coords <- coords + 0.2
 	i = i + 1
     }
-    legend(0.5, 119, c("GOH", "ENTREZ", "PPI", "bPPI", "bPPI weighted"), fill=color5, bty="n", ncol=3, cex=0.9) 
-    text(text.coords+0.35, par("usr")[3]-4, srt=0, adj=1, labels=scoring.methods, xpd=T, cex=0.9)
+    legend(0.5, 119, c("Goh", "Entrez", "PPI", "bPPI", "weighted bPPI"), fill=color5, bty="n", ncol=3, cex=0.9) 
+    text(text.coords+0.15, par("usr")[3]-4, srt=40, adj=1, labels=scoring.methods.full, xpd=T, cex=0.9)
     dev.off()
 
     # Average AUC (%) for two groups of OMIM disorders based on number of seeds on bPPI network
     dir.name<-"../data/summary/"
     #postscript(paste(dir.name, "Figure 4a.eps", sep=""), width = 6, height = 6, horizontal = FALSE, onefile = FALSE, paper = "special")
-    cairo_ps(paste(dir.name, "Figure 2.eps", sep=""), width = 6, height = 6, onefile = TRUE)
-    par(family = "Arial") 
+    #cairo_ps(paste(dir.name, "Figure 2.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    #par(family = "Arial") 
+    tiff(paste(dir.name, "Figure 2.tif", sep=""), width=2000, height=2000, res=300)
+    #par(xpd=T, mar=par()$mar+c(0,0,0,0))
 
-    s<-read.table(paste(dir.name, 'biana_no_tap7_vs_all5-top5/seeds.dat', sep=""))
-    d<-read.table(paste(dir.name, 'biana_no_tap7_vs_all5-top5/auc_ppis.dat', sep=""))
+    #prefix<-"biana_no_tap_vs_omim-wo_LI"
+    prefix<-"biana_no_tap_vs_all-wo_LI"
+    s<-read.table(paste(dir.name, prefix, '/seeds.dat', sep=""))
+    d<-read.table(paste(dir.name, prefix, '/auc_ppis.dat', sep=""))
 
-    cutoff<-40 #median(s$n_seed)
+    d<-d[,scoring.method.ids]
+
+    cutoff<-median(s$n_seed)
     x<-d[rownames(s[s$n_seed<cutoff,]),]
     y<-d[rownames(s[s$n_seed>=cutoff,]),]
 
     #coords <- seq(0.6, 5.0, by=1.1)
-    coords <- seq(0.6, 7.2, by=1.1)
-    boxplot(x,col="lightgray", at=coords, boxwex=0.4, pars=list(xaxt="n"), xlab="Prediction method", ylab="AUC(%)", ylim=c(0,100), xlim=c(0.5,7.7))
+    #coords <- seq(0.6, 7.2, by=1.1)
+    coords <- seq(0.6, 8.3, by=1.1)
+    boxplot(x,col="lightgray", at=coords, boxwex=0.4, pars=list(xaxt="n"), xlab="Prediction method", ylab="AUC(%)", ylim=c(0,100), xlim=c(0.6,8.7))
     #axis(1,tick=F,labels=scoring.methods,at=coords+0.2)
-    text(coords+0.6, par("usr")[3]-4, srt=0, adj=1, labels=scoring.methods, xpd=T, cex=0.9)
+    text(coords+0.55, par("usr")[3]-3, srt=40, adj=1, labels=scoring.methods.full, xpd=T, cex=0.9)
     coords <- coords + 0.4
     boxplot(y,col="darkgray", at=coords, boxwex=0.4, pars=list(xaxt="n"), names=F, add=T)
-    legend(1.5, 5, c("# of seeds < 40", "# of seeds >= 40"), fill=c("lightgray","darkgray"), bty="n", horiz=T, cex=0.9)
+    legend(1.5, 5, c(paste("# of seeds < ", cutoff, sep=""), paste("# of seeds >= ", cutoff, sep="")), fill=c("lightgray","darkgray"), bty="n", horiz=T, cex=0.9)
     dev.off()
+
+    #cairo_ps(paste(dir.name, "Supplementary Figure 3.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    tiff(paste(dir.name, "Supplementary Figure 3.tif", sep=""), width=2000, height=2000, res=300)
+    prefix<-"all_new_vs_all_new"
+    # Significance of AUC & COV difference between methods on bPPI
+    n<-length(scoring.method.ids)
+    pvals<-matrix(1, n, n)
+    print("AUC & COV differences between methods on bPPI")
+    d<-read.table(paste(dir.name, prefix, "/auc_ppis.dat", sep=""))
+    e<-read.table(paste(dir.name, prefix, "/cov_ppis.dat", sep=""))
+    d<-d[order(row.names(d)),scoring.method.ids]
+    e<-e[order(row.names(e)),scoring.method.ids]
+    for(i in 1:length(scoring.method.ids)) {
+	for(j in 1:length(scoring.method.ids)) {
+		if(i<j) {
+		    a<-wilcox.test(d[,i], d[,j], alternative="greater", paired=T)
+		    b<-wilcox.test(e[,i], e[,j], alternative="greater", paired=T)
+		    if(a$p.value <= 0.05 || b$p.value <= 0.05) {
+			print(c(scoring.method.ids[i], scoring.method.ids[j], a$p.value, b$p.value))
+		    }
+		}
+		if(i==j) {
+		    val<-1
+		} else {
+		    val<-wilcox.test(d[,i], d[,j], alternative="greater", paired=T)$p.value
+		}
+		pvals[i,j]<-val 
+	}
+    }
+    library(gplots)
+    library(RColorBrewer)
+    pvals<-ifelse((pvals<=0.05) == TRUE, 1, 0)
+    val.cols <- brewer.pal(9,"Blues") 
+    #heatmap.2(as.matrix(pvals), revC=F, trace="none", dendrogram="none", col=val.cols, density.info="none", margins=c(9,9), Rowv=NA, Colv=NA, labRow=scoring.methods.full, labCol=scoring.methods.full, key=F) #keysize=0.1) #, key=F)
+    heatmap(as.matrix(pvals), revC=T, col=val.cols, margins=c(9,9), Rowv=NA, Colv=NA, labRow=scoring.methods.full, labCol=scoring.methods.full, scale="none") 
+    dev.off()
+
 }
 
 
@@ -805,51 +840,104 @@ manuscript_figures <- function() {
 manuscript_tests <- function() {
     dir.name<-"../data/summary/"
 
-    #networks<-c("biana-all", "biana_no_tap-all", "biana_no_tap_relevance-all", "goh-all", "entrez-all")
-    #networks<-c("biana7_vs_all5-top5", "biana_no_tap7_vs_all5-top5", "biana_no_tap_relevance7_vs_all5-top5", "goh7_vs_all5-top5", "entrez7_vs_all5-top5")
-
-    scoring.methods<-c("ns", "nz", "nd", "ff", "nr", "rw", "np")
-    network<-"biana_no_tap7_vs_all5-top5"
+    #prefix<-"all_new_vs_omim-w_LI"
+    #prefix<-"all_new_vs_omim-wo_LI"
+    #prefix<-"all_new_vs_goh-wo_LI"
+    #prefix<-"all_new_vs_chen-wo_LI"
+    prefix<-"biana_no_tap_vs_all-wo_LI"
 
     # Significance of AUC & COV difference between methods on bPPI
-    d<-read.table(paste(dir.name, network, "/auc_ppis.dat", sep=""))
-    e<-read.table(paste(dir.name, network, "/cov_ppis.dat", sep=""))
-    d<-d[order(row.names(d)),]
-    e<-e[order(row.names(e)),]
-    for(i in 1:length(scoring.methods)) {
-	for(j in 1:length(scoring.methods)) {
+    n<-length(scoring.method.ids)
+    print("AUC & COV differences between methods on bPPI")
+    d<-read.table(paste(dir.name, prefix, "/auc_ppis.dat", sep=""))
+    e<-read.table(paste(dir.name, prefix, "/cov_ppis.dat", sep=""))
+    d<-d[order(row.names(d)),scoring.method.ids]
+    e<-e[order(row.names(e)),scoring.method.ids]
+    for(i in 1:length(scoring.method.ids)) {
+	for(j in 1:length(scoring.method.ids)) {
 		if(i<j) {
-		    print(c("---", scoring.methods[i], scoring.methods[j], "---"))
 		    a<-wilcox.test(d[,i], d[,j], alternative="greater", paired=T)
-		    print(a$p.value)
-		    a<-wilcox.test(e[,i], e[,j], alternative="greater", paired=T)
-		    print(a$p.value)
+		    b<-wilcox.test(e[,i], e[,j], alternative="greater", paired=T)
+		    if(a$p.value <= 0.05 || b$p.value <= 0.05) {
+			print(c(scoring.method.ids[i], scoring.method.ids[j], a$p.value, b$p.value))
 		    }
+		}
 	}
     }
 
-    # Correlation between seed connectivity measures and AUC on bPPI
-    d<-read.table(paste(dir.name, network, "/auc_ppis.dat", sep=""))
-    d<-d[order(rownames(d)),]
-    s<-read.table(paste(dir.name, network, "/seeds.dat", sep=""))
-    s<-s[order(rownames(s)),]
-    print(cor(d,s))
+    prefices<-c("biana_vs_all-wo_LI", "biana_no_tap_vs_all-wo_LI", "biana_no_tap_relevance_vs_all-wo_LI", "goh_vs_all-wo_LI", "entrez_vs_all-wo_LI")
+    #prefices<-c("biana_vs_omim-wo_LI", "biana_no_tap_vs_omim-wo_LI", "biana_no_tap_relevance_vs_omim-wo_LI", "goh_vs_omim-wo_LI", "entrez_vs_omim-wo_LI")
+    #prefices<-c("all_new_vs_omim-w_LI", "all_new_vs_omim-wo_LI", "all_new_vs_goh-wo_LI", "all_new_vs_chen-wo_LI")
+    for(prefix in prefices) {
+	# Correlation between seed connectivity measures and AUC on bPPI
+	print(c("Correlations on ", prefix))
+	d<-read.table(paste(dir.name, prefix, "/auc_ppis.dat", sep=""))
+	d<-d[order(rownames(d)),]
+	s<-read.table(paste(dir.name, prefix, "/seeds.dat", sep=""))
+	s<-s[order(rownames(s)),]
+	print(cor(d,s)) 
+    }
 
-    # Significance of AUC change between bPPI n_seed <= 40 and > 40
-    d<-read.table(paste(dir.name, network, "/auc_ppis.dat", sep=""))
-    s<-read.table(paste(dir.name, network, "/seeds.dat", sep=""))
+    prefix<-"biana_no_tap_vs_all-wo_LI"
+    # Significance of AUC change between bPPI n_seed < cutoff and >= cutoff
+    d<-read.table(paste(dir.name, prefix, "/auc_ppis.dat", sep=""))
+    s<-read.table(paste(dir.name, prefix, "/seeds.dat", sep=""))
 
-    cutoff<-40
-    x<-d[rownames(d) %in% rownames(s)[s$n_seed<cutoff],]
-    y<-d[rownames(d) %in% rownames(s)[s$n_seed>=cutoff],]
+    cutoff<-median(s$n_seed)
+    x<-d[rownames(d) %in% rownames(s)[s$n_seed<cutoff],scoring.method.ids]
+    y<-d[rownames(d) %in% rownames(s)[s$n_seed>=cutoff],scoring.method.ids]
+    print(c(dim(x), dim(y)))
 
+    print("AUC difference between two groups based on n_seed using bPPI")
     #wilcox.test(x$ns, x$nd, alternative="less", paired=T)
     #wilcox.test(x$nd, y$nd, alternative="greater", paired=F)
     #wilcox.test(x$np, y$np, alternative="greater", paired=F)
-    for(i in 1:length(scoring.methods)) {
+    for(i in 1:length(scoring.method.ids)) {
 	a<-wilcox.test(x[,i], y[,i], alternative="greater", paired=F)
-	print(c(scoring.methods[i], a$p.value))
+	print(c(scoring.method.ids[i], a$p.value))
     }
+
+    prefix<-"biana_no_tap_vs_all-wo_LI"
+    prefix2<-"biana_no_tap_relevance_vs_all-wo_LI"
+    # Significance between bPPI and weighted bPPI
+    print("AUC difference between bPPI and weighted bPPI")
+    d<-read.table(paste(dir.name, prefix, "/auc_ppis.dat", sep=""))
+    e<-read.table(paste(dir.name, prefix2, "/auc_ppis.dat", sep=""))
+    d<-d[order(row.names(d)),scoring.method.ids]
+    e<-e[order(row.names(e)),scoring.method.ids]
+    for(i in 1:length(scoring.method.ids)) {
+	a<-wilcox.test(e[,i], d[,i], alternative="greater", paired=T)
+	print(c(scoring.method.ids[i], a$p.value))
+    }
+
+    prefix<-"all_new_vs_omim-w_LI"
+    prefix2<-"all_new_vs_omim-wo_LI"
+    # Significance between bPPI and weighted bPPI
+    print("AUC difference between OMIM-LI and OMIM")
+    d<-read.table(paste(dir.name, prefix, "/auc_ppis.dat", sep=""))
+    e<-read.table(paste(dir.name, prefix2, "/auc_ppis.dat", sep=""))
+    d<-d[order(row.names(d)),scoring.method.ids]
+    e<-e[order(row.names(e)),scoring.method.ids]
+    for(i in 1:length(scoring.method.ids)) {
+	a<-wilcox.test(e[,i], d[,i], alternative="greater", paired=T)
+	print(c(scoring.method.ids[i], a$p.value))
+    }
+
+
+    prefix<-"goh_vs_all-wo_LI"
+    prefix2<-"biana_no_tap_vs_all-wo_LI"
+    # Significance between Goh and bPPI 
+    print("AUC difference between Goh and bPPI")
+    d<-read.table(paste(dir.name, prefix, "/auc_ppis.dat", sep=""))
+    e<-read.table(paste(dir.name, prefix2, "/auc_ppis.dat", sep=""))
+    d<-d[order(row.names(d)),scoring.method.ids]
+    e<-e[order(row.names(e)),scoring.method.ids]
+    for(i in 1:length(scoring.method.ids)) {
+	a<-wilcox.test(e[,i], d[,i], alternative="greater", paired=T)
+	print(c(scoring.method.ids[i], a$p.value))
+    }
+
+
 }
 
 
@@ -957,29 +1045,44 @@ case_study_figures <- function() {
 
 ###### NAVLAKHA ######
 navlakha_figures <- function() {
+    library(RColorBrewer)
     dir.name<-"../data/compare/navlakha/"
     postscript(paste(dir.name, "results.eps", sep=""), width = 6, height = 6, horizontal = FALSE, onefile = FALSE, paper = "special")
     d <- read.table(paste(dir.name, "results.dat", sep=""))
     par(mar=c(6,6,0.2,0))
     #scoring.methods <- c("ns", "nz", "nd", "ff", "nr", "mcl")
     #scoring.methods <- c("mcl")
-    scoring.methods <- c("ns", 'np')
-    colors <- c(2,6,4,5,3,8)
-    chars <- c(21:25,12)
+    #scoring.methods <- c("ns", 'np')
+    scoring.methods <- c("ns", "nz", "nd", "ff", "nr", "rw", "np", "nc", "nc3")
+    #colors <- c(2,6,4,5,3,8,1,7,9)
+    colors<-c(brewer.pal(9, "Set1"), brewer.pal(8, "Accent"))
+    chars <- c(0:2,5:6,9:14)
     for(i in 1:length(scoring.methods)) {
-	if(scoring.methods[i] == "mcl") {
+	if(scoring.methods[i] %in% c("mcl", "nc3")) {
 	    e<-subset(d, substr(rownames(d),1,3)==scoring.methods[i])
 	}
 	else {
 	    e<-subset(d, substr(rownames(d),1,2)==scoring.methods[i])
 	}
+	e<-e[order(e$sens),]
+	n<-dim(e)[1]
+	x<-c(e$sens[1])
+	y<-c(e$ppv[1])
+	for(j in seq(i+1, n, by=5)) {
+	    x<-c(x, e$sens[j])
+	    y<-c(y, e$ppv[j])
+	}
+	x<-c(x, e$sens[n])
+	y<-c(y, e$ppv[n])
 	if(i == 1) {
-	    plot(e$sens, e$ppv, col=colors[i], pch=chars[i], cex=3, xlim=c(0,1), ylim=c(0,1))
+	    plot(e$sens, e$ppv, col=colors[i], type="l", xlim=c(0,1), ylim=c(0,1))
+	    points(x, y, col=colors[i], pch=chars[i], cex=2)
 	} else {
-	    points(e$sens, e$ppv, col=colors[i], pch=chars[i], cex=3)
+	    lines(e$sens, e$ppv, col=colors[i], lwd=1)
+	    points(x, y, col=colors[i], pch=chars[i], cex=2)
 	}   
 	#lines(e$sens, e$ppv, col=colors[i])
-	text(e$sens[length(e$ppv)], e$ppv[length(e$ppv)]-0.05, col=colors[i], toupper(scoring.methods[i]))
+	text(e$sens[1], e$ppv[1]+0.05, col=colors[i], toupper(scoring.methods[i]))
     }
     legend("topright", scoring.methods, col=colors, pch=chars)
     dev.off()
@@ -1009,6 +1112,27 @@ aneurysm_figures <- function() {
 
 ###### OBSOLETE FIGURES ######
 old_figures <- function() { 
+
+    # Average AUC (%) over all diseases and networks
+    #postscript(paste(dir.name, "Figure 2a.eps", sep=""), width = 6, height = 6, horizontal = FALSE, onefile = FALSE, paper = "special", family="arial", bg="white")
+    #svg(paste(dir.name, "Figure 2a.svg", sep=""), width = 6, height = 6, onefile = TRUE)
+    cairo_ps(paste(dir.name, "Figure S1a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    par(family = "Arial") 
+    d<-read.table(paste(dir.name, 'all_new_vs_all_new-wo_LI/auc_phenotypes.dat', sep=""))
+    d<-d[,scoring.method.ids]
+    boxplot(d, xlab="Prediction method", ylab="AUC(%)", names=scoring.methods, col=8, notch=FALSE, varwidth=FALSE, ylim=c(0,80))
+    dev.off()
+
+    # Ratio of correctly predicted proteins (%) among top 10% predictions over all diseases and networks
+    #postscript(paste(dir.name, "Figure 2b.eps", sep=""), width = 6, height = 6, horizontal = FALSE, onefile = FALSE, paper = "special")
+    cairo_ps(paste(dir.name, "Figure S1b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    par(family = "Arial") 
+    d<-read.table(paste(dir.name, 'all_new_vs_all_new-wo_LI/cov_phenotypes.dat', sep=""))
+    d<-d[,scoring.method.ids]
+    boxplot(d, xlab="Prediction method", ylab="Seeds covered at top 1% (%)", names=scoring.methods, col=8, notch=FALSE, varwidth=FALSE, ylim=c(0,80))
+    dev.off()
+
+
     postscript(paste(dir.name, "3a.eps", sep=""), width = 6, height = 6, horizontal = FALSE, onefile = FALSE, paper = "special")
     d<-read.table(paste(dir.name, 'biana_no_tap-omim/auc_ppis.dat', sep=""))
     e<-data.frame(d[,1],d[,2],d[,3])

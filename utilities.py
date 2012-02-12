@@ -21,7 +21,100 @@ def main():
 
     #case_study_neighborhood()
 
-    get_go_terms()
+    #case_study_high_scoring()
+
+    #get_go_terms()
+
+    # DATA_DIR + output/biana_no_tap_relevance/new_omim_diabetes/nc3/node_scores.sif
+    convert_ueid_scores_to_gene_scores("node_scores.sif", "output.txt")
+
+    return
+
+def convert_ueid_scores_to_gene_scores(node_scores_file, output_scores_file):
+    node_mapping_file = DATA_DIR + "input/biana_no_tap_relevance/node_mapping.tsv.genesymbol.single"
+    from analyze_results import get_id_to_mapped_id_mapping
+    id_to_mapped_ids = get_id_to_mapped_id_mapping(node_mapping_file)
+    node_to_score = {}
+    for line in open(node_scores_file):
+	ueid, score = line.strip().split()
+	node_to_score[ueid] = score
+    gene_to_score = {}
+    for node, score in node_to_score.iteritems():
+	if node not in id_to_mapped_ids: # ueid to "-" mapping
+	    continue
+	gene = id_to_mapped_ids[node][0]
+	if len(id_to_mapped_ids[node])>1:
+	    print id_to_mapped_ids[node]
+	if gene in gene_to_score:
+	    if score > gene_to_score[gene]:
+		gene_to_score[gene] = score
+	else:
+	    gene_to_score[gene] = score
+    f = open(output_scores_file, 'w')
+    for gene, score in gene_to_score.iteritems():
+	f.write("%s\t%s\n" % (gene, score))
+    f.close()
+    values = gene_to_score.items()
+    values.sort(lambda x,y: cmp(y[1],x[1]))
+    f = open(output_scores_file+".ranked", 'w')
+    for i, val in enumerate(values):
+	f.write("%s\t%s\n" % (val[0], i+1))
+    f.close()
+    return
+
+def case_study_high_scoring():
+    base_dir = "/home/emre/arastirma/netzcore/doc/draft/alzheimer_case_study/"
+    network_file = DATA_DIR + "input/biana_no_tap_relevance/edge_scores.sif"
+    node_mapping_file = DATA_DIR + "input/biana_no_tap_relevance/node_mapping.tsv.genesymbol.single"
+    seeds_file = DATA_DIR + "input/biana_no_tap_relevance/new_omim_alzheimer/seed_scores.sif" 
+    candidates_file = DATA_DIR + "input/biana_no_tap_relevance/new_omim_alzheimer/candidates.txt" 
+    ad_omim_file = DATA_DIR + "omim/2011_Nov_2/new_omim_alzheimer.txt" 
+    aging_file = DATA_DIR + "uwaging/mutex_uwaging_genage_netage.txt"
+    ad_file = DATA_DIR + "alzheimer_gold/gene_list.txt"
+
+    f = open(base_dir + "weighted_bPPI.eda", 'w')
+    f.write("weight\n")
+    nodes_in_network = set()
+    for line in open(network_file):
+	words = line.strip().split()
+	f.write("%s (%s) %s = %s\n" % (words[0], words[1], words[2], words[1]))
+	nodes_in_network.add(words[0])
+	nodes_in_network.add(words[2])
+    f.close()
+
+    f = open(base_dir + "seeds_in_network.txt", 'w')
+    for line in open(seeds_file):
+	f.write("%s\n" % line.strip().split()[0])
+    f.close()
+
+    convert_genesymbol_to_user_entity_id(node_mapping_file + ".reversed", ad_omim_file, base_dir + "seed_nodes.txt")
+    convert_genesymbol_to_user_entity_id(node_mapping_file + ".reversed", aging_file, base_dir + "aging_nodes.txt")
+    convert_genesymbol_to_user_entity_id(node_mapping_file + ".reversed", ad_file, base_dir + "ad_gold_nodes.txt")
+    seed_nodes = set([gene.strip() for gene in open(base_dir + "seed_nodes.txt")]) & nodes_in_network
+    aging_nodes = set([gene.strip() for gene in open(base_dir + "aging_nodes.txt")]) & nodes_in_network
+    ad_nodes = set([gene.strip() for gene in open(base_dir + "ad_gold_nodes.txt")]) & nodes_in_network
+    candidate_nodes = set([gene.strip() for gene in open(candidates_file)]) & nodes_in_network
+    
+    f = open(base_dir + "node_phenotypes.noa", 'w')
+    f.write("phenotype\n")
+    common = seed_nodes & aging_nodes & ad_nodes
+    for node in common:
+	f.write("%s = %s\n" % (node, "seed-ad-aging"))
+    for node in (seed_nodes & ad_nodes)-common:
+	f.write("%s = %s\n" % (node, "seed-ad"))
+    for node in (seed_nodes & aging_nodes)-common:
+	f.write("%s = %s\n" % (node, "seed-aging"))
+    for node in (ad_nodes & aging_nodes)-common:
+	f.write("%s = %s\n" % (node, "ad-aging"))
+    for node in (seed_nodes - ad_nodes) - aging_nodes:
+	f.write("%s = %s\n" % (node, "seed"))
+    for node in (ad_nodes - seed_nodes) - aging_nodes:
+	f.write("%s = %s\n" % (node, "ad"))
+    for node in (aging_nodes - seed_nodes) - ad_nodes:
+	f.write("%s = %s\n" % (node, "aging"))
+    for node in candidate_nodes - (seed_nodes | ad_nodes | aging_nodes):
+	f.write("%s = %s\n" % (node, "candidate"))
+    f.close()
 
     return
 
@@ -275,8 +368,8 @@ def convert_sif_file_to_R_matrix(file_name, out_file_name):
 
 def check_pearson_correlation_between_seed_connectivity_and_performance():
     from scipy import stats
-    method_to_values = read_R_data_file(DATA_DIR + "summary/biana_no_tap7_vs_all5-top5/auc_ppis.dat")
-    metric_to_values = read_R_data_file(DATA_DIR + "summary/biana_no_tap7_vs_all5-top5/seeds.dat")
+    method_to_values = read_R_data_file(DATA_DIR + "summary/biana_no_tap_vs_all-wo_LI/auc_ppis.dat")
+    metric_to_values = read_R_data_file(DATA_DIR + "summary/biana_no_tap_vs_all-wo_LI/seeds.dat")
     for method, values1 in method_to_values.iteritems():
 	values1.sort()
 	for metric, values2 in metric_to_values.iteritems():
@@ -303,19 +396,27 @@ def read_R_data_file(file_name, seperator="\t"):
 
 def get_unique_ids_for_biana_ids(file_name, attribute, out_file):
         biana_ids = [ line.rstrip() for line in open(file_name) ]
-        fetch_unique_ids(biana_ids, attribute, out_file)
+        fetch_attributes_for_biana_ids(biana_ids, attribute, out_file, unique=True)
 
-def fetch_unique_ids(biana_ids, attribute, out_file):
+def fetch_attributes_for_biana_ids(biana_ids, attribute, out_file, unique=False):
         import MySQLdb
+        #db = MySQLdb.connect("localhost", "jgarcia", "", "biana_server_release4")
         db = MySQLdb.connect("localhost", "", "", "test_biana")
         c=db.cursor()
-        #c.execute("SELECT U.userEntityID, E.value FROM userEntityUnification_protocol_12 U, externalEntity%s E where U.externalEntityID=E.externalEntityID AND E.type='unique' AND U.userEntityID IN (%s)" % (attribute, ",".join(biana_ids)))
-        c.execute("SELECT U.userEntityID, E.value FROM userEntityUnification_protocol_12 U, externalEntity%s E where U.externalEntityID=E.externalEntityID AND E.type='cross-reference' AND U.userEntityID IN (%s)" % (attribute, ",".join(biana_ids)))
-        f = open(out_file, 'w')
+        if unique:
+                query = "SELECT U.userEntityID, E.value FROM userEntityUnification_protocol_12 U, externalEntity%s E where U.externalEntityID=E.externalEntityID AND E.type='unique' AND U.userEntityID IN (%s)" % (attribute, ",".join(biana_ids))
+        else:
+                query = "SELECT U.userEntityID, E.value FROM userEntityUnification_protocol_12 U, externalEntity%s E where U.externalEntityID=E.externalEntityID AND U.userEntityID IN (%s)" % (attribute, ",".join(biana_ids))
+        c.execute(query)
+        biana_id_to_values = {}
         for row in c.fetchall():
-                f.write("%s\n" % "\t".join(map(str, row)))
+                biana_id_to_values.setdefault(row[0], set()).add(row[1])
+        f = open(out_file, 'w')
+        for biana_id, values in biana_id_to_values.iteritems():
+                f.write("%s\t%s\n" % (biana_id, "|".join(map(str, values))))
         f.close()
         return
+
 
 
 def get_common_non_empty_navlakha_files():
@@ -369,13 +470,13 @@ def convert_ids_for_netscore_alzheimer_analysis():
     #node_association_file = DATA_DIR + "uwaging/mutex_uwaging_genage_netage.txt"
     node_association_file1 = DATA_DIR + "uwaging/uwaging_genage_netage.txt"
     for node_association_file in [ node_association_file1 ]: #, node_association_file2, node_association_file3 ]:
-    	convert_genesymbol_to_user_entity_id(node_mapping_file + ".single.reversed", node_association_file)
+    	convert_genesymbol_to_user_entity_id(node_mapping_file + ".single.reversed", node_association_file, node_association_file + ".user_entity_id")
 
 
-def convert_genesymbol_to_user_entity_id(node_mapping_file, node_association_file):
+def convert_genesymbol_to_user_entity_id(node_mapping_file, node_association_file, out_file):
     from analyze_results import get_id_to_mapped_id_mapping
     id_to_mapped_ids = get_id_to_mapped_id_mapping(node_mapping_file)
-    f = open(node_association_file + ".user_entity_id", 'w')
+    f = open(out_file, 'w')
     for line in open(node_association_file):
 	gene = line.strip()
 	if gene in id_to_mapped_ids:

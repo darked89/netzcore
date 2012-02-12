@@ -24,7 +24,7 @@ SRCVERTEXFFLOW=$(DIRGRAPHFFLOW)/Vertex.cpp
 SRCEDGEFFLOW=$(DIRGRAPHFFLOW)/Edge.cpp
 SRCFFLOW=$(DIRFFLOW)/FunctionalFlow.cpp
 
-DIRRELEASE=guild
+DIRRELEASE=guild/src
 
 HEADERGRAPHEXTRA=graph/page_rank_with_initial_ranks.hpp graph/clustering_coefficient.hpp
 OBJGRAPH=$(patsubst %.cpp, %.o, $(SRCGRAPH))
@@ -121,12 +121,13 @@ release:
 	mkdir $(DIRRELEASE)/$(DIRFFLOW)
 	cp -r $(DIRGRAPHFFLOW) $(DIRRELEASE)/$(DIRFFLOW)
 	cp $(SRCFFLOW) $(patsubst %.cpp, %.h, $(SRCFFLOW)) $(DIRRELEASE)/$(DIRFFLOW)
-	cp -r graph guild/
-	rm -f guild/graph/*.o
-	cp $(SRCSNETWORK) $(SRCNETSCORE) $(SRCNETSHORT) $(SRCNETRANK) $(SRCNETZCORE) $(SRCNETRANDOM) $(SRCNETWEEN) $(SRCNETLINK) $(SRCMAIN) guild/
-	cp *.hpp guild/
-	rm guild/Netscore2.hpp guild/Netzscore.hpp
-	cp Makefile guild/
+	cp -r graph $(DIRRELEASE)
+	rm -f $(DIRRELEASE)/graph/*.o
+	cp $(SRCSNETWORK) $(SRCNETSCORE) $(SRCNETSHORT) $(SRCNETRANK) $(SRCNETZCORE) $(SRCNETRANDOM) $(SRCNETWEEN) $(SRCNETLINK) $(SRCMAIN) $(DIRRELEASE)/
+	cp *.hpp $(DIRRELEASE)/
+	rm $(DIRRELEASE)/Netscore2.hpp $(DIRRELEASE)/Netzscore.hpp
+	cp Makefile.release $(DIRRELEASE)/Makefile
+	cp *.py *.r LICENSE.txt $(DIRRELEASE)/
 	tar cvfz guild.tar.gz guild
 
 clean:

@@ -115,7 +115,7 @@ def decide_association_data(ASSOCIATION, PPI):
 	association_dir = data_dir + "omim" + os.sep + "2011_Nov_2" + os.sep
 	association_scores_file = association_dir + ASSOCIATION + ".txt"
 	association_scores_file_identifier_type = "genesymbol"
-	candidates_file = association_dir + "candidates" + os.sep + ASSOCIATION[4:] + ".txt"
+	#candidates_file = association_dir + "candidates" + os.sep + ASSOCIATION[4:] + ".txt"
     elif ASSOCIATION.startswith("chen_"):
 	association_dir = data_dir + "chen_disease_data" + os.sep
 	association_scores_file = association_dir + ASSOCIATION + ".txt"
@@ -1467,7 +1467,11 @@ def score_original(SCORING, score_commands, output_scores_file, log_file, job_fi
 		#os.system("qsub -cwd -o out -e err -l hostname=node34 -N %s -b y %s" % (SCORING, score_commands[SCORING]))
 		os.system("qsub -cwd -o out -e err -q %s -N %s -b y %s" % (qname, SCORING, score_commands[SCORING]))
 	    else:
+		import time
+		t1 = time.clock()
 		os.system(score_commands[SCORING])
+		t2 = time.clock()
+		print t2-t1
 	f.close()
     return
 

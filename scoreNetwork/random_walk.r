@@ -61,8 +61,8 @@ get_adjacency_matrix<-function(edge_file) {
     rownames(A)<-ids
     colnames(A)<-ids
     for (i in 1:nrow(d)) {
-	A[as.character(d[i,"id1"]), as.character(d[i,"id2"])] = 1
-	A[as.character(d[i,"id2"]), as.character(d[i,"id1"])] = 1
+	A[as.character(d[i,"id1"]), as.character(d[i,"id2"])] = d[i,"score"]
+	A[as.character(d[i,"id2"]), as.character(d[i,"id1"])] = d[i,"score"]
     }
     return(A)
 }
