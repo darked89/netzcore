@@ -5,7 +5,7 @@ DATA_DIR = "../data/"
 
 def main():
     #convert_ids_for_netscore_alzheimer_analysis()
-    get_seed_gene_counts(DATA_DIR + "input/biana_no_tap_no_reliability/")#"input_runs_for_draft/biana_no_tap_no_reliability/")
+    #get_seed_gene_counts(DATA_DIR + "input/biana_no_tap_no_reliability/")#"input_runs_for_draft/biana_no_tap_no_reliability/")
 
     #file_name = DATA_DIR + "omim/alzheimer.txt"
     #out_file_name = "test.txt"
@@ -27,8 +27,87 @@ def main():
     #get_go_terms()
 
     # DATA_DIR + output/biana_no_tap_relevance/new_omim_diabetes/nc3/node_scores.sif
-    convert_ueid_scores_to_gene_scores("node_scores.sif", "output.txt")
+    #convert_ueid_scores_to_gene_scores("node_scores.sif", "output.txt")
 
+    #get_omim_disease_similarity()
+    #get_omim_disease_similarity_in_network()
+    #get_omim_disease_similarity_in_network_extended()
+
+    get_drugs_by_targets()
+
+    return
+
+def get_drugs_by_targets():
+    from parse_drugbank import get_drug_targets
+    drugbank_file = "/home/emre/arastirma/data/disease/drugbank/drugbank.xml" 
+    drug_to_targets, drug_to_description, drug_to_indication = get_drug_targets(drugbank_file)
+
+    def output_drugs_by_targets(disease_to_genes, output_file):
+	f = open(output_file, 'w')
+	f.write("Drug\tDescription\tIndication\tTargets\tRepurposes\tAffected target ratio for repurposes\n")
+	for drug, targets in drug_to_targets.iteritems():
+	    description = drug_to_description[drug]
+	    if description is not None:
+		description = description.encode('ascii', 'replace').replace("\n", " ").replace("\r", "")
+	    else: 
+		description = ""
+	    indication = drug_to_indication[drug]
+	    if indication is not None:
+		indication = indication.encode('ascii', 'replace').replace("\n", " ").replace("\r", "")
+	    else: 
+		indication = ""
+	    diseases = []
+	    for disease, genes in disease_to_genes.iteritems():
+		ratio = len(targets & genes) / float(len(targets))
+		if len(targets) > 1 and ratio > 0.65:
+		    diseases.append((ratio, disease))
+	    if len(diseases) == 0:
+		continue
+	    diseases.sort()
+	    diseases.reverse()
+	    #f.write("%s\t%s\t%s\t%s\t%s\n" % (drug, description, indication, " | ".join(targets), " | ".join(diseases)))
+	    f.write("%s\t%s\t" % (drug, description))
+	    f.write("%s\t%s\t" % (indication, " | ".join(targets)))
+	    f.write("%s\t%s\n" % (" | ".join(zip(*diseases)[1]), " | ".join(map(str, zip(*diseases)[0]))))
+	f.close()
+	return
+
+    from parse_omim import get_disease_genes
+    dir_name = DATA_DIR + "omim/2009_Aug_27/" 
+    disease_to_genes = get_disease_genes(dir_name) 
+    output_file = "drug_to_repurpose.txt" 
+    output_drugs_by_targets(disease_to_genes, output_file)
+
+    dir_name = DATA_DIR + "omim/2009_Aug_27/extended/"
+    disease_to_genes = get_disease_genes(dir_name, top_percentage=1)
+    output_file = "drug_to_repurpose_extended.txt"
+    output_drugs_by_targets(disease_to_genes, output_file)
+    return
+
+    
+
+def get_omim_disease_similarity():
+    from parse_omim import get_disease_similarity_matrix
+    dir_name = DATA_DIR + "omim/2009_Aug_27/"
+    get_disease_similarity_matrix(dir_name, dir_name + "similarity.dat")
+    return
+
+def get_omim_disease_similarity_in_network():
+    from parse_omim import get_disease_similarity_matrix
+    dir_name = DATA_DIR + "omim/2009_Aug_27/"
+    network_file = DATA_DIR + "input/biana_no_tap_no_reliability/edge_scores.sif"
+    node_mapping_file = DATA_DIR + "input/biana_no_tap_no_reliability/node_mapping.tsv.genesymbol"
+    convert_multiple_entry_to_single(node_mapping_file)
+    genes_in_network = get_corresponding_genes_of_ues(network_file, node_mapping_file + ".single")
+    get_disease_similarity_matrix(dir_name, dir_name + "similarity_in_ppi.dat", genes_to_be_considered = genes_in_network)
+    return
+
+def get_omim_disease_similarity_in_network_extended():
+    # Prerequist: run analyze for this phenotypes in score_with_original_seeds mode
+    # That will convert and copy output files under the directory with proper names: extended/omim_xxx.txt
+    from parse_omim import get_disease_similarity_matrix
+    dir_name = DATA_DIR + "omim/2009_Aug_27/extended/"
+    get_disease_similarity_matrix(dir_name, dir_name + "similarity_top5.dat", top_percentage=5)
     return
 
 def convert_ueid_scores_to_gene_scores(node_scores_file, output_scores_file):
@@ -324,6 +403,8 @@ def get_corresponding_genes_of_ues(network_file, mapping_file, network_file_deli
 	    id1 = words[0]
 	    id2 = id1
 	for ueid in [id1, id2]:
+	    if ueid not in ueid_to_gene:
+		continue 
 	    gene = ueid_to_gene[ueid]
 	    if gene != "-":
 		comparison.add(gene)

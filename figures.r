@@ -28,13 +28,13 @@ manuscript2<-function() {
 }
 
 
-
 ###### MANUSCRIPT2 FIGURES ######
 manuscript2_figures<-function() {
     neighborhood_figures()
     robustness_figures()
     disease_category_figures()
     module_figures()
+    omim_similarity_figures()
 }
 
 lambda<-function(x) { x<-substring(x, 6); words<-unlist(strsplit(x, "_")); x<-paste(words, collapse=" "); return(x) }
@@ -657,7 +657,23 @@ module_figures<-function() {
     dev.off()
 }
 
-
+###### OMIM DISEASE SIMILARITY FIGURES #####
+omim_similarity_figures<-function() {
+    library(RColorBrewer)
+    val.cols <- brewer.pal(9,"Blues") 
+    tiff("omim.tif", width=2000, height=2000, res=300)
+    d<-read.table("../data/omim/2009_Aug_27/similarity.dat")
+    heatmap(as.matrix(d), revC=T, col=val.cols, margins=c(9,9), Rowv=NA, Colv=NA, scale="none") # labRow=scoring.methods.full, labCol=scoring.methods.full) 
+    dev.off()
+    tiff("omim_in_ppi.tif", width=2000, height=2000, res=300)
+    d<-read.table("../data/omim/2009_Aug_27/similarity_in_ppi.dat")
+    heatmap(as.matrix(d), revC=T, col=val.cols, margins=c(9,9), Rowv=NA, Colv=NA, scale="none") 
+    dev.off()
+    tiff("omim_extended.tif", width=2000, height=2000, res=300)
+    d<-read.table("../data/omim/2009_Aug_27/extended/similarity.dat")
+    heatmap(as.matrix(d), revC=T, col=val.cols, margins=c(9,9), Rowv=NA, Colv=NA, scale="none") 
+    dev.off()
+}
 
 
 
