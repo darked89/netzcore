@@ -24,7 +24,7 @@ def main():
 
     #case_study_high_scoring()
 
-    #get_go_terms()
+    #get_similarity_of_go_terms_for_omim_diseases()
 
     # DATA_DIR + output/biana_no_tap_relevance/new_omim_diabetes/nc3/node_scores.sif
     #convert_ueid_scores_to_gene_scores("node_scores.sif", "output.txt")
@@ -33,8 +33,61 @@ def main():
     #get_omim_disease_similarity_in_network()
     #get_omim_disease_similarity_in_network_extended()
 
-    get_drugs_by_targets()
+    #get_drugs_by_targets()
 
+    get_average_age_of_disease_genes_in_network_extended()
+
+    return
+
+def get_average_age_of_disease_genes_in_network_extended():
+    # Prerequist: run analyze for this phenotypes in score_with_original_seeds mode
+    # That will convert and copy output files under the directory with proper names: extended/omim_xxx.txt
+    from parse_omim import get_disease_genes
+    dir_name = DATA_DIR + "omim/2009_Aug_27/extended/"
+    protein_age_file = "/home/emre/arastirma/data/collaboration/macarena/edat_humanprots_ev62.sort"
+    gene_to_ensembl_file = "/home/emre/arastirma/data/collaboration/macarena/mart_export.txt"
+    age_category = [ "Eukarya", "Metazoans", "Vertebrates", "Mammals"] #, "Human-specific" ]
+    output_file = DATA_DIR + "omim/2009_Aug_27/extended/age_category.dat"
+    
+    ensembl_to_category = dict([ line.strip().split("\t") for line in open(protein_age_file) ])
+    gene_to_category = {}
+    f = open(gene_to_ensembl_file)
+    f.readline()
+    for line in f:
+	gene, ensembl = line.strip().split("\t")
+	if ensembl not in ensembl_to_category:
+	    continue
+	category = ensembl_to_category[ensembl]
+	if category == "Human-specific": 
+	    category = "Mammals"
+	if gene in gene_to_category and category != gene_to_category[gene]:
+	    print "Warning: inconsistent category for", gene, category
+	gene_to_category[gene] = category
+    f.close()
+
+    f = open(output_file, 'w')
+    f.write("%s\n" % " ".join(age_category))
+    disease_to_genes = get_disease_genes(dir_name, top_percentage=5) 
+    diseases = disease_to_genes.keys()
+    diseases.sort()
+    for disease in diseases:
+	i = 0.0 
+	category_to_count = dict([(category, 0) for category in age_category ])
+	genes = disease_to_genes[disease]
+	for gene in genes:
+	    if gene in gene_to_category:
+		i += 1
+		category_to_count[gene_to_category[gene]] += 1
+	f.write("omim_%s" % disease)
+	category_counts = []
+	for category, count in category_to_count.iteritems():
+	    category_counts.append((count, category))
+	category_counts.sort()
+	category_counts.reverse()
+	for count, category in category_counts:
+	    f.write(" %f" % (count/i))
+	f.write("\n")
+    f.close()
     return
 
 def get_drugs_by_targets():
@@ -198,7 +251,7 @@ def case_study_high_scoring():
 
     return
 
-def get_go_terms():
+def get_similarity_of_go_terms_for_omim_diseases():
     base_dir = "/home/emre/arastirma/netzcore/data/module/biana_no_tap-omim/"
     f = open(base_dir + "modules.txt")
     phenotype_to_functions = {}
