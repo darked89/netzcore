@@ -11,7 +11,8 @@ main <- function() {
     #manuscript()
     #manuscript2()
 
-    disease_category_figures()
+    #disease_category_figures()
+    case_study_score_distributions()
 
     #case_study_figures()
     #navlakha_figures()
@@ -530,15 +531,23 @@ disease_category_figures<-function() {
     cairo_ps(paste(dir.name, "Figure P5g.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     par(family = "Arial") 
     #boxplot(e$n_seed_go_in_modules, g$n_seed_go_in_modules, f$n_seed_go_in_modules, col=8, names=labels, xlab="Disease category", ylab="Number of seed GO terms in the modules", ylim=c(0,100))
-    boxplot(e$n_seed_go_in_modules, f$n_seed_go_in_modules, col=8, names=labels, xlab="Disease category", ylab="Number of seed GO terms in the modules", ylim=c(0,150))
+    boxplot(e$n_seed_go_in_modules, f$n_seed_go_in_modules, col=8, names=labels, xlab="Disease category", ylab="Number of seed GO terms in the modules", ylim=c(0,100))
     dev.off()
     a<-wilcox.test(e$n_seed_go_in_modules, f$n_seed_go_in_modules)
     print(c("seed go in modules: ", a$p.value)) 
 
+    s<-read.table(paste(dir.name, 'biana_no_tap-omim/seeds.dat', sep=""))
+    a<-merge(e, s, by.x="phenotype", by.y="row.names")
+    b<-merge(f, s, by.x="phenotype", by.y="row.names")
+    cairo_ps(paste(dir.name, "Figure P5h.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    par(family = "Arial") 
+    boxplot(a$n_seed_go/a$n_seed, b$n_seed_go/b$n_seed, col=8, names=labels, xlab="Disease category", ylab="Number of seed GO terms per seed", ylim=c(0,5))
+    dev.off()
+    a<-wilcox.test(a$n_seed_go/a$n_seed, b$n_seed_go/b$n_seed)
+    print(c("seed go per seed: ", a$p.value)) 
 
     # n_seed and n_path in robust vs non-robust diseases
-    dir.name<-dir.summary
-    s<-read.table(paste(dir.name, 'biana_no_tap-omim/seeds.dat', sep=""))
+    #dir.name<-dir.summary
     cairo_ps(paste(dir.name, "Figure PS3a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     par(family = "Arial") 
     #boxplot(s[common.up,"n_seed"], s[non.common,"n_seed"], s[common.down,"n_seed"], col=8, names=labels, xlab="Disease category", ylab="Number of seeds", ylim=c(0,120))
@@ -953,9 +962,109 @@ manuscript_figures <- function() {
     heatmap(as.matrix(pvals), revC=T, col=val.cols, margins=c(9,9), Rowv=NA, Colv=NA, labRow=scoring.methods.full, labCol=scoring.methods.full, scale="none") 
     dev.off()
 
+    case_study_score_distributions()
 }
 
+case_study_score_distributions <- function() {
 
+    ctd.dir.name<-"../data/ctd/"
+    compare.dir.name<-"../data/compare/"
+
+    labels<-c("AD", "Diabetes", "AIDS")
+    i = 1
+
+    tiff(paste(dir.name, "Figure 4.tif", sep=""), width=2000, height=2000, res=300)
+    par(mfrow=c(3,1))
+    for(p in c("alzheimer", "diabetes", "aids")) {
+	print(p)
+	e<-read.table(paste(ctd.dir.name, p, "_nc.dat", sep=""), row.names=1, header=T)
+	seeds<-read.table(paste(compare.dir.name, "biana_no_tap_relevance-new_omim_", p, "-gad/seeds.txt", sep=""))
+
+	# direct vs rest
+	print("#direct vs rest")
+	d<-e[!rownames(e) %in% seeds$V1,]
+	x<-d[which(d$is_direct==1), "nc_score"]
+	y<-d[which(d$is_direct==0), "nc_score"]
+	a<-t.test(x, y, alternative="greater")
+	#print(c(a$p.value, format(mean(x), 2), format(mean(y), 2)))
+	print(a$p.value)
+	print(c(format(mean(x), 2), format(sd(x), 2)))
+	print(c(format(mean(y), 2), format(sd(y), 2)))
+
+	direct<-x
+	rest<-y
+
+	# direct vs non-ctd
+	print("# direct vs non-ctd")
+	d<-e[!rownames(e) %in% seeds$V1,]
+	x<-d[which(d$is_direct==1), "nc_score"]
+	y<-d[which(d$in_ctd==0), "nc_score"]
+	a<-t.test(x, y, alternative="greater")
+	print(a$p.value)
+	print(c(format(mean(x), 2), format(sd(x), 2)))
+	print(c(format(mean(y), 2), format(sd(y), 2)))
+
+	# ctd vs rest
+	print("# ctd vs rest")
+	d<-e[!rownames(e) %in% seeds$V1,]
+	x<-d[which(d$in_ctd==1), "nc_score"]
+	y<-d[which(d$in_ctd==0), "nc_score"]
+	a<-t.test(x, y, alternative="greater")
+	print(a$p.value)
+	print(c(format(mean(x), 2), format(sd(x), 2)))
+	print(c(format(mean(y), 2), format(sd(y), 2)))
+
+	# direct vs indirect
+	print("# direct vs indirect")
+	d<-e[!rownames(e) %in% seeds$V1,]
+	x<-d[which(d$is_direct==1), "nc_score"]
+	y<-d[which(d$is_direct==0 & d$in_ctd==1), "nc_score"]
+	a<-t.test(x, y, alternative="greater")
+	print(a$p.value)
+	print(c(format(mean(x), 2), format(sd(x), 2)))
+	print(c(format(mean(y), 2), format(sd(y), 2)))
+
+	indirect<-y
+
+	print("")
+
+	#f<-density(direct)
+	#f<-cumsum(f$y*c(0,diff(f$x)))
+	#f<-cumsum(f$y*c(0,diff(f$x)))
+
+	breaks = seq(0, 0.4, by=0.1) 
+	k = length(breaks) - 1
+
+	d.cut = cut(direct, breaks, right=FALSE) 
+	d.freq = table(d.cut) 
+	d.cumfreq = cumsum(rev(d.freq))
+	f = 100*d.cumfreq/cumsum(d.freq)[k]
+	#f = spline(f)
+	plot(c(1,k), c(0, 100), type='n', xaxt="n", xlim=c(0.99,k+0.001), axes=F, xlab=paste("NetCombo score - ", labels[i], sep=""), ylab="Cumulative % of nodes") # , xlog=T, alpha = 0.5
+	axis(1, 1:k, labels=c(">0.3", ">0.2", ">0.1", ">0.0"))
+	axis(1, col = "white", tcl = 0, labels=F)
+	axis(2)
+	axis(2, seq(0,100,by=10), col = "white", tcl = 0)
+	lines(f, col="darkgrey") # spline(f)
+	polygon(c(0, 1:k, k+0.001), c(0, f, 0), col="darkgrey", border=1)
+	#polygon(c(f$x,max(f$x)+0.001), c(f$y, 0), col="darkgrey", border=1)
+
+	d.cut = cut(rest, breaks, right=FALSE) 
+	d.freq = table(d.cut) 
+	d.cumfreq = cumsum(rev(d.freq))
+	f = 100*d.cumfreq/cumsum(d.freq)[k]
+	#f = spline(f)
+	lines(f, col="lightgrey") 
+	polygon(c(0, 1:k, k+0.001), c(0, f, 0), col="lightgrey", border=1)
+	#polygon(c(f$x,max(f$x)+0.001), c(f$y, 0), col="lightgrey", border=1)
+
+	i = i+1
+    }
+    dev.off()
+
+    #require(splines)
+    #yy <-predict(interpSpline(x, y))
+}
 
 
 ###### MANUSCRIPT TESTS ######

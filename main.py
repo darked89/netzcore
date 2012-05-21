@@ -27,7 +27,7 @@ def main(ppis, phenotypes, scoring_parameters, user_friendly_id=user_friendly_id
 		experiments.append((ppi, phenotype, parameters[0], parameters[1], parameters[2]))
 
     if MODE == "compare":
-	if navlakha_data:
+	if navlakha_analysis:
 	    compare_experiments(experiments, COMPARISON_GOLD_STANDARD_FILE, tex_format, functional_enrichment, user_friendly_id, exclude_seeds_in_comparison, summary_seed_cutoff, analysis_type = "user") # for cutoff analysis
 	else:
 	    compare_experiments(experiments, COMPARISON_GOLD_STANDARD_FILE, tex_format, functional_enrichment, user_friendly_id, exclude_seeds_in_comparison, summary_seed_cutoff, analysis_type = "common_intersection") 
@@ -847,7 +847,11 @@ def compare_experiments(experiments, gold_standard_file=None, tex_format=False, 
 	    # Get high scoring node ids
 	    selected_ids, all_ids, seed_ids, selected_node_ids = analyze_results.get_top_scoring_node_ids_at_given_cutoff(output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_CUTOFF, association_scores_file_identifier_type, default_non_seed_score = DEFAULT_NON_SEED_SCORE, exclude_seeds = exclude_seeds, one_gene_per_node=True) 
 	    selected_ids2, all_ids2, seed_ids2, selected_node_ids2 = analyze_results.get_top_scoring_node_ids_at_given_cutoff(output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_CUTOFF, association_scores_file_identifier_type, default_non_seed_score = DEFAULT_NON_SEED_SCORE, exclude_seeds = exclude_seeds, one_gene_per_node=False)
-	    #print len(selected_ids), len(all_ids)
+	    if len(experiments) == 1:
+		selected_ids_with_seeds, all_ids3, seed_ids3, selected_node_ids_with_seeds = analyze_results.get_top_scoring_node_ids_at_given_cutoff(output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_CUTOFF, association_scores_file_identifier_type, default_non_seed_score = DEFAULT_NON_SEED_SCORE, exclude_seeds = False, one_gene_per_node=True) 
+		#print len(selected_ids), len(seed_ids), len(selected_ids3), len(seed_ids3), len(all_ids)
+		#print set(selected_ids3)-set(selected_ids)
+		#print set(seed_ids) & set(selected_ids3)
 	    if top_scoring_ids is None:
 		top_scoring_ids = set(selected_ids)
 		top_scoring_node_ids = set(selected_node_ids)
@@ -943,16 +947,40 @@ def compare_experiments(experiments, gold_standard_file=None, tex_format=False, 
     for id in seed_scoring_ids: 
 	out_file_seed.write("%s\n" % id)
     out_file_seed.close()
+    if len(experiments) == 1:
+	out_file_seed = open(compare_dir + "seeds_at_top.txt", "w")
+	for id in seed_scoring_ids & set(selected_ids_with_seeds): 
+	    out_file_seed.write("%s\n" % id)
+	out_file_seed.close()
+
 
     f = open(compare_dir + "README", "a")
 
     gold_ids = set([ line.strip() for line in open(gold_standard_file) ])
     matched_ids = gold_ids & top_scoring_ids
 
-    f.write("%s\n" % zip(["gold & seed", "gold & top", "gold & all"], map(lambda x: len(gold_ids & x), [ seed_scoring_ids, top_scoring_ids, all_scoring_ids ])))
-    f.write("seed-free: %s\n" % zip(["gold", "top", "all"], map(len, [ gold_ids-seed_scoring_ids, top_scoring_ids, all_scoring_ids-seed_scoring_ids ])))
-    f.write("matched ids: %s\n" % str(matched_ids))
-    f.write("ids to be modified in mapping files: %s" % str((gold_ids & all_scoring_ids2) - (gold_ids & all_scoring_ids)))
+    if len(experiments) == 1:
+	n_top = len(set(selected_ids_with_seeds))
+	n_top_seed = len(set(seed_ids) & set(selected_ids_with_seeds))
+	n_top_gold = len(set(gold_ids) & set(selected_ids_with_seeds))
+	n_top_gold_seed = len(set(gold_ids) & set(seed_ids) & set(selected_ids_with_seeds))
+	n_all = len(set(all_ids))
+	n_all_seed = len(set(seed_ids) & set(all_ids))
+	n_all_gold = len(set(gold_ids) & set(all_ids))
+	n_all_gold_seed = len(set(gold_ids) & set(seed_ids) & set(all_ids))
+
+	f.write("\ntop\nall %d\nseed %d\ngold %d\ngold&seed %d\n" % (n_top, n_top_seed, n_top_gold, n_top_gold_seed))
+	f.write("\nnetwork\nall %d\nseed %d\ngold %d\ngold&seed %d\n" % (n_all, n_all_seed, n_all_gold, n_all_gold_seed))
+	f.write("\nsum(dhyper(%d:%d, %d, %d, %d))\n" % (n_top_gold - n_top_gold_seed, min(n_all_gold - n_all_gold_seed, n_top - n_top_seed), n_all_gold - n_all_gold_seed, n_all - n_all_seed - n_all_gold + n_all_gold_seed, n_top - n_top_seed))
+	from scipy.stats import hypergeom
+	#print n_top_gold - n_top_gold_seed, ":", min(n_all_gold - n_all_gold_seed, n_top), n_all - n_all_seed, n_all_gold - n_all_gold_seed, n_top - n_top_seed
+	val = sum(hypergeom.pmf(range(n_top_gold - n_top_gold_seed, min(n_all_gold - n_all_gold_seed, n_top)), n_all - n_all_seed, n_all_gold - n_all_gold_seed, n_top - n_top_seed))
+	f.write("\n%e -> %f\n" % (val, val))
+
+    #f.write("%s\n" % zip(["gold & seed", "gold & top", "gold & all"], map(lambda x: len(gold_ids & x), [ seed_scoring_ids, top_scoring_ids, all_scoring_ids ])))
+    #f.write("seed-free: %s\n" % zip(["gold", "top", "all"], map(len, [ gold_ids-seed_scoring_ids, top_scoring_ids, all_scoring_ids-seed_scoring_ids ])))
+    f.write("\nmatched ids: %s\n" % str(matched_ids))
+    f.write("\nids to be modified in mapping files: %s\n" % str((gold_ids & all_scoring_ids2) - (gold_ids & all_scoring_ids)))
 
     out_file_matched = open(compare_dir + "matched.txt", "w")
     for id in matched_ids: 
@@ -962,9 +990,9 @@ def compare_experiments(experiments, gold_standard_file=None, tex_format=False, 
     non_seed_all_ids = all_scoring_ids - seed_scoring_ids
     x = len(gold_ids & top_scoring_ids)
     m = len(gold_ids & non_seed_all_ids)
-    n = len(non_seed_all_ids)
+    n = len(non_seed_all_ids-gold_ids)
     k = len(top_scoring_ids)
-    f.write("\nsum(dhyper(%d:%d, %d, %d, %d))\n" % (x, min(m, len(top_scoring_ids)), m, n, k))
+    f.write("\nsum(dhyper(%d:%d, %d, %d, %d))\n\n" % (x, min(m, len(top_scoring_ids)), m, n, k))
     f.close()
 
 
@@ -1103,7 +1131,7 @@ def sum_up_experiments(ppis, phenotypes, analysis_type="auc", tex_format=False, 
 		for phenotype, method_to_auc in phenotype_container.iteritems():
 		    auc_list.append(method_to_auc[scoring][0])
 		mean, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(auc_list)
-		out_file.write("%s:\t%f\t+/- %f\n" % (ppi, mean, sigma))
+		out_file.write("%s:\t%f\t%f\n" % (ppi, mean, sigma))
     out_file.close()
 
     # for perturbed seeds
@@ -1164,7 +1192,7 @@ def sum_up_experiments(ppis, phenotypes, analysis_type="auc", tex_format=False, 
 		for ppi, phenotype_container in ppi_phenotype_auc_container.iteritems():
 		    auc_list.append(phenotype_container[phenotype][scoring][0])
 		mean, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(auc_list)
-		out_file.write("%s:\t%f\t+/- %f\n" % (phenotype, mean, sigma))
+		out_file.write("%s:\t%f\t%f\n" % (phenotype, mean, sigma))
     out_file.close()
 
     if seed_cutoff is not None:
