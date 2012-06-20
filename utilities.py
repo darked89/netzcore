@@ -48,6 +48,9 @@ def get_average_age_of_disease_genes_in_network_extended():
     gene_to_ensembl_file = "/home/emre/arastirma/data/collaboration/macarena/mart_export.txt"
     age_category = [ "Eukarya", "Metazoans", "Vertebrates", "Mammals"] #, "Human-specific" ]
     output_file = DATA_DIR + "omim/2009_Aug_27/extended/age_category.dat"
+
+    node_scores_file = "/home/emre/arastirma/data/collaboration/arcadi/uncommon-max/node_scores.sif.genesymbol.single"
+    output_file = "/home/emre/arastirma/data/collaboration/arcadi/uncommon-max/age_category.dat"
     
     ensembl_to_category = dict([ line.strip().split("\t") for line in open(protein_age_file) ])
     gene_to_category = {}
@@ -64,6 +67,19 @@ def get_average_age_of_disease_genes_in_network_extended():
 	    print "Warning: inconsistent category for", gene, category
 	gene_to_category[gene] = category
     f.close()
+
+    if node_scores_file is not None:
+	f = open(output_file, 'w')
+	f.write("gene score category\n")
+	for line in open(node_scores_file):
+	    gene, score = line.split()
+	    if gene in gene_to_category:
+		category = gene_to_category[gene]
+	    else:
+		category = "NA"
+	    f.write("%s %s %s\n" % (gene, score, category))
+	f.close()
+	return
 
     f = open(output_file, 'w')
     f.write("%s\n" % " ".join(age_category))

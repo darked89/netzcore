@@ -144,6 +144,21 @@ def decide_association_data(ASSOCIATION, PPI):
 	association_dir = data_dir + "angels" + os.sep 
 	association_scores_file = association_dir + "seeds.txt"
 	association_scores_file_identifier_type = "genesymbol"
+    elif ASSOCIATION == "santana":
+	association_dir = data_dir + "angels" + os.sep + "santana_paper" + os.sep
+	association_scores_file = association_dir + "seeds_geneid.txt"
+	association_scores_file_identifier_type = "geneid" # "uniprotaccession" need to create network accordingly
+    elif ASSOCIATION.startswith("mestres"):
+	association_dir = data_dir + "mestres" + os.sep
+	association_scores_file_identifier_type = "geneid" 
+	if ASSOCIATION == "mestres_tumor":
+	    association_scores_file = association_dir + "tumor_only.txt.geneid"
+	if ASSOCIATION == "mestres_normal":
+	    association_scores_file = association_dir + "normal.txt.geneid"
+    elif ASSOCIATION.startswith("arcadi_"):
+	association_dir = data_dir + "arcadi" + os.sep + "associations" + os.sep 
+	association_scores_file = association_dir + ASSOCIATION[7:] + ".txt.geneid"
+	association_scores_file_identifier_type = "geneid"
     elif ASSOCIATION.startswith("bc_metastasis"):
 	association_dir = data_dir + "bc_metastasis" + os.sep 
 	association_scores_file_identifier_type = "genesymbol"
@@ -1732,6 +1747,7 @@ def analyze_original(PPI, ASSOCIATION, output_scores_file, log_file, node_scores
 	#	f.write("%s\n" % str(analyze_results.calculate_seed_coverage_at_given_cutoff(output_scores_file+"."+association_scores_file_identifier_type, association_scores_validation_file, percentage, None, DEFAULT_NON_SEED_SCORE)))
 
     analyze_results.output_mapped_node_id_scores(output_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, one_gene_per_node=True, output_file=output_scores_file+"."+association_scores_file_identifier_type)
+    #analyze_results.output_mapped_node_id_scores(output_scores_file, node_mapping_file+".genesymbol", one_gene_per_node=True, output_file=output_scores_file+".genesymbol")
     #os.system("cp %s %s" % (output_scores_file+"."+association_scores_file_identifier_type, "./extended/"+ASSOCIATION+".txt")) # for the analysis of extended omim disease similarity based on common genes
 
     if functional_enrichment and association_scores_file_identifier_type is not None and os.path.exists(node_mapping_file+"."+association_scores_file_identifier_type):

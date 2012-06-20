@@ -918,12 +918,12 @@ manuscript_figures <- function() {
     #coords <- seq(0.6, 5.0, by=1.1)
     #coords <- seq(0.6, 7.2, by=1.1)
     coords <- seq(0.6, 8.3, by=1.1)
-    boxplot(x,col="lightgray", at=coords, boxwex=0.4, pars=list(xaxt="n"), xlab="Prediction method", ylab="AUC(%)", ylim=c(0,100), xlim=c(0.6,8.7))
+    boxplot(x,col="lightgrey", at=coords, boxwex=0.4, pars=list(xaxt="n"), xlab="Prediction method", ylab="AUC(%)", ylim=c(0,100), xlim=c(0.6,8.7))
     #axis(1,tick=F,labels=scoring.methods,at=coords+0.2)
     text(coords+0.55, par("usr")[3]-3, srt=40, adj=1, labels=scoring.methods.full, xpd=T, cex=0.9)
     coords <- coords + 0.4
-    boxplot(y,col="darkgray", at=coords, boxwex=0.4, pars=list(xaxt="n"), names=F, add=T)
-    legend(1.5, 5, c(paste("# of seeds < ", cutoff, sep=""), paste("# of seeds >= ", cutoff, sep="")), fill=c("lightgray","darkgray"), bty="n", horiz=T, cex=0.9)
+    boxplot(y,col="darkgrey", at=coords, boxwex=0.4, pars=list(xaxt="n"), names=F, add=T)
+    legend(1.5, 5, c(paste("# of seeds < ", cutoff, sep=""), paste("# of seeds >= ", cutoff, sep="")), fill=c("lightgrey","darkgrey"), bty="n", horiz=T, cex=0.9)
     dev.off()
 
     #cairo_ps(paste(dir.name, "Supplementary Figure 3.eps", sep=""), width = 6, height = 6, onefile = TRUE)
@@ -970,10 +970,13 @@ case_study_score_distributions <- function() {
     ctd.dir.name<-"../data/ctd/"
     compare.dir.name<-"../data/compare/"
 
-    labels<-c("AD", "Diabetes", "AIDS")
+    #labels<-c("Alzheimer's Disease", "Diabetes", "AIDS")
     i = 1
 
-    tiff(paste(dir.name, "Figure 4.tif", sep=""), width=2000, height=2000, res=300)
+    is.wholenumber <-function(x, tol = .Machine$double.eps^0.5)  { abs(x - round(x)) < tol }
+
+    tiff(paste(dir.name, "Figure 3.tif", sep=""), width=2000, height=2000, res=300, compression="lzw")
+    op<-par()
     par(mfrow=c(3,1))
     for(p in c("alzheimer", "diabetes", "aids")) {
 	print(p)
@@ -1003,6 +1006,8 @@ case_study_score_distributions <- function() {
 	print(a$p.value)
 	print(c(format(mean(x), 2), format(sd(x), 2)))
 	print(c(format(mean(y), 2), format(sd(y), 2)))
+	
+	nonctd<-y
 
 	# ctd vs rest
 	print("# ctd vs rest")
@@ -1040,26 +1045,52 @@ case_study_score_distributions <- function() {
 	d.cumfreq = cumsum(rev(d.freq))
 	f = 100*d.cumfreq/cumsum(d.freq)[k]
 	#f = spline(f)
-	plot(c(1,k), c(0, 100), type='n', xaxt="n", xlim=c(0.99,k+0.001), axes=F, xlab=paste("NetCombo score - ", labels[i], sep=""), ylab="Cumulative % of nodes") # , xlog=T, alpha = 0.5
-	axis(1, 1:k, labels=c(">0.3", ">0.2", ">0.1", ">0.0"))
-	axis(1, col = "white", tcl = 0, labels=F)
-	axis(2)
-	axis(2, seq(0,100,by=10), col = "white", tcl = 0)
-	lines(f, col="darkgrey") # spline(f)
-	polygon(c(0, 1:k, k+0.001), c(0, f, 0), col="darkgrey", border=1)
-	#polygon(c(f$x,max(f$x)+0.001), c(f$y, 0), col="darkgrey", border=1)
+	print(cbind(d.freq))
+	print(cbind(f))
+	
+	plot(c(1,k), c(0, 100), type='n', xaxt="n", xlim=c(0.99,k+0.001), axes=F, xlab=paste("", "NetCombo score", sep=""), ylab="Cumulative % of genes") # , xlog=T, alpha = 0.5
+	axis(1, 1:k, labels=c(">0.3", ">0.2", ">0.1", ">0.0"), pos=0, tcl=-0.3)
+	#mtext(c(">0.3", ">0.2", ">0.1", ">0.0"), 1, at=1:k)
+	axis(2, seq(0,100,by=20), col = "grey30", tcl = -0.3)
+	axis(4, seq(0,100,by=20), col = "grey30", tcl = -0.3, pos=k)
+	polygon(c(0, 1:k, k+0.001), c(0, f, 0), col="grey30", border=1)
+	lines(f, col="black") # spline(f)
+	#polygon(c(f$x,max(f$x)+0.001), c(f$y, 0), col="grey30", border=1)
+	a<-f[3]
+	points(3, a, pch=21, bg="white")
+	rect(3+0.02, a+1, 3+0.13, a+11, col="white", border="grey")
+	b<-round(a, digits=1)
+	if(is.wholenumber(b)) # 50%
+	    b<-paste(b, ".0", sep="")
+	text(3+0.07, a+6, b, col="black")
 
-	d.cut = cut(rest, breaks, right=FALSE) 
+	#d.cut = cut(rest, breaks, right=FALSE) 
+	d.cut = cut(nonctd, breaks, right=FALSE) 
 	d.freq = table(d.cut) 
 	d.cumfreq = cumsum(rev(d.freq))
 	f = 100*d.cumfreq/cumsum(d.freq)[k]
 	#f = spline(f)
-	lines(f, col="lightgrey") 
-	polygon(c(0, 1:k, k+0.001), c(0, f, 0), col="lightgrey", border=1)
-	#polygon(c(f$x,max(f$x)+0.001), c(f$y, 0), col="lightgrey", border=1)
+	print(cbind(d.freq))
+	print(cbind(f))
+
+	polygon(c(0, 1:k, k+0.001), c(0, f, 0), col="grey70", border=1)
+	lines(f, col="black") 
+	#polygon(c(f$x,max(f$x)+0.001), c(f$y, 0), col="grey70", border=1)
+	a<-f[3]
+	points(3, a, pch=21, bg="white")
+	rect(3+0.02, a-2, 3+0.13, a+8, col="white", border="grey")
+	text(3+0.07, a+3, round(a, digits=1), col="black")
+
+	#rect(3+0.1, a-7, 3+0.3, a-1, col="white")
+	#text(3+0.2, a-0.2, round(a, digits=2))
+
+	#legend("topleft", c("direct CTD disease-gene associations", "rest (indirect or no association)"), fill=c("grey30", "grey70"), bty='n')
+	legend("topleft", c("direct CTD disease-gene associations", "no association"), fill=c("grey30", "grey70"), bty='n')
 
 	i = i+1
     }
+    par(op)
+    #box()
     dev.off()
 
     #require(splines)
@@ -1697,3 +1728,4 @@ old_figures <- function() {
 
 
 main()
+
