@@ -27,10 +27,7 @@ def main(ppis, phenotypes, scoring_parameters, user_friendly_id=user_friendly_id
 		experiments.append((ppi, phenotype, parameters[0], parameters[1], parameters[2]))
 
     if MODE == "compare":
-	if navlakha_data:
-	    compare_experiments(experiments, COMPARISON_GOLD_STANDARD_FILE, tex_format, functional_enrichment, user_friendly_id, exclude_seeds_in_comparison, summary_seed_cutoff, analysis_type = "user") # for cutoff analysis
-	else:
-	    compare_experiments(experiments, COMPARISON_GOLD_STANDARD_FILE, tex_format, functional_enrichment, user_friendly_id, exclude_seeds_in_comparison, summary_seed_cutoff, analysis_type = "common_intersection") 
+	compare_experiments(experiments, COMPARISON_GOLD_STANDARD_FILE, tex_format, functional_enrichment, user_friendly_id, exclude_seeds_in_comparison, summary_seed_cutoff, analysis_type = comparison_analysis_type) 
     elif MODE == "summary":
 	sum_up_experiments(ppis, phenotypes, "auc", tex_format, user_friendly_id, summary_seed_cutoff)
 	sum_up_experiments(ppis, phenotypes, "cov", tex_format, user_friendly_id, summary_seed_cutoff)
@@ -115,7 +112,7 @@ def decide_association_data(ASSOCIATION, PPI):
 	association_dir = data_dir + "omim" + os.sep + "2011_Nov_2" + os.sep
 	association_scores_file = association_dir + ASSOCIATION + ".txt"
 	association_scores_file_identifier_type = "genesymbol"
-	candidates_file = association_dir + "candidates" + os.sep + ASSOCIATION[4:] + ".txt" #!
+	#candidates_file = association_dir + "candidates" + os.sep + ASSOCIATION[4:] + ".txt" #!
     elif ASSOCIATION.startswith("chen_"):
 	association_dir = data_dir + "chen_disease_data" + os.sep
 	association_scores_file = association_dir + ASSOCIATION + ".txt"
@@ -143,6 +140,14 @@ def decide_association_data(ASSOCIATION, PPI):
 	association_dir = data_dir + "angels" + os.sep 
 	association_scores_file = association_dir + "seeds.txt"
 	association_scores_file_identifier_type = "genesymbol"
+    elif ASSOCIATION.startswith("arcadi_5e8_"):
+	association_dir = data_dir + "arcadi" + os.sep + "associations_5e8" + os.sep 
+	association_scores_file = association_dir + ASSOCIATION[11:] + ".txt"
+	association_scores_file_identifier_type = "geneid" 
+    elif ASSOCIATION.startswith("arcadi_1e7_"):
+	association_dir = data_dir + "arcadi" + os.sep + "associations_1e7" + os.sep 
+	association_scores_file = association_dir + ASSOCIATION[11:] + ".txt"
+	association_scores_file_identifier_type = "geneid" 
     elif ASSOCIATION.startswith("phenoscore_"):
 	association_dir = data_dir + "netzcorexpress" + os.sep 
 	association_scores_file = association_dir + "Phenoscore_" + ASSOCIATION[11:] + ".tab"
@@ -510,6 +515,12 @@ def decide_interaction_data(PPI, ASSOCIATION, association_scores_file):
         network_file = data_dir + "human_interactome_biana" + os.sep + "human_network_no_tap_only_with_geneids.sif"
         network_file_filtered = network_file
         node_file = association_scores_file
+    elif PPI == "bppi_new":
+        node_description_file = data_dir + "human_interactome_biana_new" + os.sep + "geneid_to_genesymbol.txt"
+        network_file_identifier_type = "geneid"
+        network_file = data_dir + "human_interactome_biana_new" + os.sep + "network_no_tap_geneid.sif"
+        network_file_filtered = network_file
+        node_file = association_scores_file
     else:
 	raise ValueError("Unrecognized ppi!")
 
@@ -815,6 +826,9 @@ def compare_experiments(experiments, gold_standard_file=None, tex_format=False, 
     prev_id_type = None
     scoring_to_values = {}
     scoring_to_ignored_thresholds = {}
+    scores_file_list = []
+    node_mapping_file = None
+    association_scores_file_identifier_type = None
     for experiment in experiments:
 	PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION = experiment
 	# Disease association files (Association data to be used)
@@ -878,6 +892,8 @@ def compare_experiments(experiments, gold_standard_file=None, tex_format=False, 
 		#threshold_to_values[tScore] = (ppv_sum + ppv, sens_sum + sens)
 		threshold_to_values.setdefault(tScore, []).append((ppv, sens))
 	    f.close()
+	elif analysis_type.startswith("uncommon"): 
+	    scores_file_list.append(output_scores_file)
 	else:
 	    raise ValueError("Unrecognized analysis_type")
 
@@ -903,6 +919,20 @@ def compare_experiments(experiments, gold_standard_file=None, tex_format=False, 
 		f.write("%s_%s %f %f\n" % (scoring, tScore, ppv_mean, sens_mean))
 	f.close()
 	return
+    elif analysis_type.startswith("uncommon"):
+	output_scores_file = compare_dir + "node_scores.sif"
+	analyze_results.score_combined(scores_file_list, output_scores_file, combination_type = analysis_type.split("_")[1], reverse_ranking=True)
+	analyze_results.output_mapped_node_id_scores(output_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, one_gene_per_node=True, output_file=output_scores_file+"."+association_scores_file_identifier_type)
+	f = open(output_scores_file+"."+association_scores_file_identifier_type+".single", 'w')
+	genes = set()
+	for line in open(output_scores_file+"."+association_scores_file_identifier_type):
+	    gene, score = line.split()
+	    if gene in genes:
+		continue
+	    genes.add(gene)
+	    f.write("%s %s\n" % (gene, score))
+	f.close()
+	return 
 
     f = open(compare_dir + "README", "a")
     f.write("%s\n" % (experiments))
