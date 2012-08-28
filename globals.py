@@ -29,12 +29,14 @@ tex_format = False
 functional_enrichment = False #!
 
 MODE = "score" # prepare, score, analyze, compare, summary, module
-user_friendly_id = "biana_no_tap_relevance-new_omim_aids-gad_function" #"bppi_relevance-new_omim-uncommon-max" #goh-omim_w_LI" #"biana_no_tap-omim" #"all7_vs_all5-top5" # "navlakha" #"biana_no_tap" # a.k.a. emre friendly id for compare and summary
+user_friendly_id = "biana_no_tap-omim-cfinder" #"biana_no_tap_relevance-new_omim_aids-gad_function" #"bppi_relevance-new_omim-uncommon-max" #goh-omim_w_LI" #"biana_no_tap-omim" #"all7_vs_all5-top5" # "navlakha" #"biana_no_tap" # a.k.a. emre friendly id for compare and summary
 summary_seed_cutoff = 1 #None #2 #20 # Seed cutoff considered for inclusion of an experiment in sum_up_experiments, if None seed.dat is not created. Also used in compare_experiments if analysis_type is user
 prepare_mutated = None #"perturbed" # Creates permutad/pruned networks 
 analyze_network = False #!
 exclude_seeds_in_comparison = True #!
 comparison_analysis_type = "common_intersection" # "user" for cutoff analysis (ppi/sens values similar to navlakha)
+
+module_detection_type = "mcl" # "cfinder" "mcl" "connected"
 
 new_omim_phenotypes = ['adrenoleukodystrophy', 'aids', 'alzheimer', 'amyloidosis', 'amyotrophic', 'anemia', 'arrhythmogenic', 'asthma', 'atrial', 'autism', 'autoimmune', 'bardet_biedl', 'blood', 'brachydactyly', 'breast', 'cardiomyopathy', 'cataract', 'cerebral', 'charcot_marie_tooth', 'colon', 'colorectal', 'combined', 'cone_rod', 'congenital', 'coronary', 'deafness', 'dementia', 'diabetes', 'diamond_blackfan', 'dystonia', 'ectodermal', 'epidermolysis', 'epilepsy', 'epileptic', 'epiphyseal', 'esophageal', 'factor', 'fanconi', 'gastric', 'glomerulosclerosis', 'glycogen', 'hemolytic', 'hemophagocytic', 'hepatocellular', 'high', 'hypercholesterolemia', 'hypertension', 'ichthyosis', 'immunodeficiency', 'keratosis', 'leigh', 'leukemia', 'long', 'lung', 'lymphoma', 'macular', 'malaria', 'melanoma', 'mental', 'microcephaly', 'microphthalmia', 'microvascular', 'mitochondrial', 'multiple', 'muscular', 'myasthenic', 'myocardial', 'myopathy', 'neuropathy', 'noonan', 'obesity', 'osteopetrosis', 'ovarian', 'pancreatic', 'parkinson', 'pituitary', 'prostate', 'pulmonary', 'renal', 'retinitis', 'rheumatoid', 'schizophrenia', 'severe', 'short', 'spastic', 'spinocerebellar', 'systemic', 'thrombophilia', 'thyroid', 'usher', 'xeroderma', 'zellweger']
 new_omim_phenotypes = [ "new_omim_" + p for p in new_omim_phenotypes ]
@@ -59,9 +61,6 @@ arcadi_phenotypes_5e8 = [ "arcadi_5e8_" + p for p in arcadi_phenotypes_5e8 ]
 
 arcadi_phenotypes_1e7 = [ "Age-related_macular_degeneration", "Alopecia_areata", "Alzheimers_disease", "Ankylosing_spondylitis", "Asthma", "Basal_cell_carcinoma_", "Bipolar_disorder", "Bipolar_disorder_and_schizophrenia", "Bladder_cancer", "Breast_cancer", "Celiac_disease", "Chronic_kidney_disease", "Chronic_lymphocytic_leukemia", "Chronic_obstructive_pulmonary_disease", "Colorectal_cancer", "Coronary_heart_disease", "Creutzfeldt-Jakob_disease", "Crohns_disease", "Dupuytrens_disease", "Esophageal_cancer", "Glaucoma", "Graves_disease", "HIV-1_control", "Hypertension", "IgA_nephropathy", "Inflammatory_bowel_disease", "Intracranial_aneurysm", "Kawasaki_disease", "Leprosy", "Lung_cancer", "Melanoma", "Multiple_sclerosis", "Myocardial_infarction", "Nasopharyngeal_carcinoma", "Pagets_disease", "Pancreatic_cancer", "Parkinsons_disease", "Primary_biliary_cirrhosis", "Progressive_supranuclear_palsy", "Prostate_cancer", "Psoriasis", "Renal_cell_carcinoma", "Restless_legs_syndrome", "Rheumatoid_arthritis", "Schizophrenia", "Sudden_cardiac_arrest", "Systemic_lupus_erythematosus", "Systemic_sclerosis", "Testicular_cancer", "Type_1_diabetes", "Type_2_diabetes", "Ulcerative_colitis", "Vitiligo" ]
 arcadi_phenotypes_1e7 = [ "arcadi_1e7_" + p for p in arcadi_phenotypes_1e7 ]
-
-#arcadi_phenotypes = ["AL_Leukemia", "AL_Sclerosis", "Abdominal_aortic_aneurysm", "Age-related_macular_degeneration", "Allergic_rhinitis", "Alzheimer", "Ankylosing_spondylitis", "Asthma", "Atopic_dermatitis", "Autism", "Basal_cell_carcinoma_", "Behcet_disease", "Beta_thalassemia-hemoglobin_E_disease", "Bipolar_disorder", "Bladder_cancer", "Breast_cancer", "Celiac_disease", "Chronic_Hepatitis_C_infection", "Chronic_kidney_disease", "Chronic_lymphocytic_leukemia", "Chronic_obstructive_pulmonary_disease", "Colorectal_cancer", "Corneal_astigmatism", "Coronary_heart_disease", "Crohn_disease", "Dupuytren_disease", "Endometrial_cancer", "Endometriosis", "Eosinophilic_esophagitis", "Esophageal_cancer", "Essential_tremor", "Ewing_sarcoma", "Follicular_lymphoma", "Fuchs_corneal_dystrophy", "Gallstones", "Gastric_cancer", "Glaucoma", "Glioma", "Glomerulosclerosis", "Graves_disease", "Heart_failure", "Hepatitis_B", "Hepatocellular_carcinoma", "Hirschsprung_disease", "Hodgkin_lymphoma", "Hypertension", "Hypothyroidism", "Idiopathic_pulmonary_fibrosis", "Infantile_hypertrophic_pyloric_stenosis", "Inflammatory_bowel_disease", "Intracranial_aneurysm", "Ischemic_stroke", "Kawasaki_disease", "Keloid", "Leprosy", "Lung_adenocarcinoma", "Lung_cancer", "Malaria", "Melanoma", "Meningioma_", "Meningococcal_disease", "Multiple_sclerosis", "Myeloproliferative_neoplasms", "Myocardial_infarction", "Nasopharyngeal_carcinoma", "Neonatal_lupus", "Nephrolithiasis", "Nephropathy", "Neuroblastoma", "Non-obstructive_azoospermia", "Nonsyndromic_cleft_lip_with_or_without_cleft_palate", "Osteoarthritis", "Osteoporosis", "Otosclerosis", "Ovarian_cancer", "Paget_disease", "Pancreatic_cancer", "Parkinson_disease", "Polycystic_ovary_syndrome", "Primary_biliary_cirrhosis", "Primary_sclerosing_cholangitis", "Progranulin_levels", "Progressive_supranuclear_palsy", "Prostate_cancer", "Psoriasis", "Psoriatic_arthritis", "Renal_cell_carcinoma", "Renal_function_and_chronic_kidney_disease", "Rheumatoid_arthritis", "Schizophrenia", "Stroke", "Sudden_cardiac_arrest", "Systemic_lupus_erythematosus", "Systemic_sclerosis", "Testicular_cancer", "Testicular_germ_cell_cancer", "Testicular_germ_cell_tumor", "Thyroid_cancer", "Tuberculosis", "Type_1_diabetes", "Type_2_diabetes", "Ulcerative_colitis", "Urinary_bladder_cancer", "Venous_thromboembolism", "Vitiligo"]
-#arcadi_phenotypes = [ "arcadi_" + p for p in arcadi_phenotypes ]
 
 ppis = []
 #ppis += ["hprd"] #, "ophid"]
@@ -140,9 +139,11 @@ phenotypes = []
 phenotypes += arcadi_phenotypes_5e8
 phenotypes += arcadi_phenotypes_1e7
 #phenotypes += ["bc_metastasis_brain", "bc_metastasis_lung"]
+phenotypes += ["bppi_new_background"]
 #phenotypes += ["santana"]
 #phenotypes += ["mestres_normal", "mestres_tumor"]
-#phenotypes += arcadi_phenotypes
+#phenotypes += arcadi_phenotypes_5e8
+#phenotypes += arcadi_phenotypes_1e7
 
 scoring_parameters = []
 #scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)] 
