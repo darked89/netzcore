@@ -35,7 +35,7 @@ def main(ppis, phenotypes, scoring_parameters, user_friendly_id=user_friendly_id
 	sum_up_experiments(ppis, phenotypes, "auc", tex_format, user_friendly_id, summary_seed_cutoff)
 	sum_up_experiments(ppis, phenotypes, "cov", tex_format, user_friendly_id, summary_seed_cutoff)
     elif MODE == "module":
-	analyze_modules(experiments, "mcl", "go", user_friendly_id) # connected
+	analyze_modules(experiments, module_detection_type, "go", user_friendly_id) # connected
     else:
 	#experiment_count = 0
 	for experiment in experiments:
@@ -155,17 +155,27 @@ def decide_association_data(ASSOCIATION, PPI):
 	    association_scores_file = association_dir + "tumor_only.txt.geneid"
 	if ASSOCIATION == "mestres_normal":
 	    association_scores_file = association_dir + "normal.txt.geneid"
-    elif ASSOCIATION.startswith("arcadi_"):
-	association_dir = data_dir + "arcadi" + os.sep + "associations" + os.sep 
-	association_scores_file = association_dir + ASSOCIATION[7:] + ".txt.geneid"
-	association_scores_file_identifier_type = "geneid"
+    elif ASSOCIATION.startswith("arcadi_5e8_"):
+	association_dir = data_dir + "arcadi" + os.sep + "associations_5e8" + os.sep 
+	association_scores_file = association_dir + ASSOCIATION[11:] + ".txt"
+	association_scores_file_identifier_type = "geneid" 
+    elif ASSOCIATION.startswith("arcadi_1e7_"):
+	association_dir = data_dir + "arcadi" + os.sep + "associations_1e7" + os.sep 
+	association_scores_file = association_dir + ASSOCIATION[11:] + ".txt"
+	association_scores_file_identifier_type = "geneid" 
     elif ASSOCIATION.startswith("bc_metastasis"):
 	association_dir = data_dir + "bc_metastasis" + os.sep 
-	association_scores_file_identifier_type = "genesymbol"
+	association_scores_file_identifier_type = "geneid" #"genesymbol"
 	if ASSOCIATION == "bc_metastasis_lung":
-	    association_scores_file = association_dir + os.sep + "minn2005_bc_to_lung" + os.sep + "genes.txt"
+	    association_scores_file = association_dir + os.sep + "lung_seeds_geneid.txt" #"minn2005_bc_to_lung" + os.sep + "genes.txt"
 	if ASSOCIATION == "bc_metastasis_brain":
-	    association_scores_file = association_dir + os.sep + "bos2009_bc_to_brain" + os.sep + "genes.txt"
+	    association_scores_file = association_dir + os.sep + "brain_seeds_geneid.txt" #"bos2009_bc_to_brain" + os.sep + "genes.txt"
+    elif ASSOCIATION == "bppi_new_background":
+	global DEFAULT_SEED_SCORE, DEFAULT_NON_SEED_SCORE
+	DEFAULT_SEED_SCORE = DEFAULT_NON_SEED_SCORE
+	association_dir = data_dir + "bc_metastasis" + os.sep 
+	association_scores_file_identifier_type = "geneid" 
+	association_scores_file = association_dir + os.sep + "brain_seeds_geneid.txt" 
     elif ASSOCIATION.startswith("phenoscore_"):
 	association_dir = data_dir + "netzcorexpress" + os.sep 
 	association_scores_file = association_dir + "Phenoscore_" + ASSOCIATION[11:] + ".tab"
@@ -238,6 +248,7 @@ def decide_interaction_data(PPI, ASSOCIATION, association_scores_file):
 	    biana_network_file_filtered_by_reliability = biana_network_file_filtered_by_method[:-4] + "_reliability_filtered.sif"
 	    if PPI == "biana_no_tap_no_reliability":
 		network_file = biana_network_file_filtered_by_method # Using only non-tap interactions
+		module_file = "../data/module/biana_no_tap-omim/cfinder/modules.txt"
 	    elif PPI == "biana_no_tap_no_reliability_1e-5":
 		network_file = biana_network_file_filtered_by_method # Using only non-tap interactions
 		DEFAULT_NON_SEED_SCORE = 0.00001 
@@ -514,9 +525,9 @@ def decide_interaction_data(PPI, ASSOCIATION, association_scores_file):
 	node_file = association_scores_file
     # HumanNet
     elif PPI == "humannet":
-	node_description_file = None 
-	network_file_identifier_type = "genesymbol"
-	network_file = data_dir + "humannet" + os.sep + "HumanNet.v1.join_evidence1_bPPI_genes.sif"
+	#node_description_file = None 
+	network_file_identifier_type = "geneid" #"genesymbol"
+	network_file = data_dir + "arcadi" + os.sep + "humannet_filtered.sif" #"HumanNet.v1.join_evidence1_bPPI_genes.sif"
 	network_file_filtered = network_file
 	node_file = association_scores_file
     # ENTREZ network with interactions for only genes in bPPI
@@ -683,8 +694,8 @@ def decide_score_commands(node_scores_file, edge_scores_file, output_scores_file
 			    "np": Template("~/bin/R -f %sscoreNetwork/random_walk.r --args %s.$fold %s %s.$fold 1 > %s.$fold" % (src_dir, node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
 			  }
 
-    score_commands = { "ns": src_dir + "scoreNetwork/scoreN -s s -n %s -e %s -o %s -r %d -i %d &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, score_log_file),
-		       "nz": src_dir + "scoreNetwork/scoreN -s z -n %s -e %s -o %s -i %d -x %d -d %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir + "sampled_graph.sif.", score_log_file), 
+    score_commands = { "ns": src_dir + "scoreNetwork/scoreN_ns_nz_noScale -s s -n %s -e %s -o %s -r %d -i %d &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, score_log_file),
+		       "nz": src_dir + "scoreNetwork/scoreN_ns_nz_noScale -s z -n %s -e %s -o %s -i %d -x %d -d %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir + "sampled_graph.sif.", score_log_file), 
 		       "nh": src_dir + "scoreNetwork/scoreN -s h -n %s -e %s -o %s -r %d -i %d -x %d -d %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir + "sampled_graph.sif.", score_log_file), 
 		       "n1": src_dir + "scoreNetwork/scoreN -s 1 -n %s -e %s -o %s -r %d -i %d -x %d -d %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir + "sampled_graph.sif.", score_log_file), 
 		       "nd": src_dir + "scoreNetwork/scoreN -s d -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_as_node_scores_file, output_scores_file, score_log_file),
@@ -753,7 +764,7 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, f
 	raise ValueError("Unrecognized mode!")
     return
 
-def analyze_modules(experiments, module_detection_type="connected", enrichment_type="go", user_friendly_id=None):
+def analyze_modules(experiments, module_detection_type, enrichment_type="go", user_friendly_id=None):
     prev_assoc = None 
     method_and_val = None
     #assoc_to_pvals = {}
@@ -806,22 +817,22 @@ def analyze_modules(experiments, module_detection_type="connected", enrichment_t
 		#assoc_to_pvals[prev_assoc] = method_and_val
 	    method_and_val = []
 	    file_module.write("%s %s no\n" % (PPI, ASSOCIATION))
-	    val = analyze_results.check_connected_seed_enrichment_in_network(edge_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, association_scores_file_identifier_type, file_module.write, DEFAULT_NON_SEED_SCORE, module_detection_type, go_ids, specie = specie, p_value_cutoff = GO_ENRICHMENT_P_VALUE_CUTOFF)
+	    val = analyze_results.check_connected_seed_enrichment_in_network(edge_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, association_scores_file_identifier_type, file_module.write, DEFAULT_NON_SEED_SCORE, module_detection_type, module_file, go_ids, specie = specie, p_value_cutoff = GO_ENRICHMENT_P_VALUE_CUTOFF)
 	    file_module_summary.write("%s %s %s %d %d %d %d %f\n" % (PPI, ASSOCIATION, "no", val[4], val[3], val[1], val[2], val[0]))
 	    method_and_val.append(("no", val))
 	    file_module.write("%s %s nn\n" % (PPI, ASSOCIATION))
-	    val = analyze_results.check_connected_seed_enrichment_of_neighbors_in_network(edge_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, association_scores_file_identifier_type, file_module.write, DEFAULT_NON_SEED_SCORE, module_detection_type, go_ids, specie = specie, p_value_cutoff = GO_ENRICHMENT_P_VALUE_CUTOFF)
+	    val = analyze_results.check_connected_seed_enrichment_of_neighbors_in_network(edge_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, association_scores_file_identifier_type, file_module.write, DEFAULT_NON_SEED_SCORE, module_detection_type, module_file, go_ids, specie = specie, p_value_cutoff = GO_ENRICHMENT_P_VALUE_CUTOFF)
 	    file_module_summary.write("%s %s %s %d %d %d %d %f\n" % (PPI, ASSOCIATION, "nn", val[4], val[3], val[1], val[2], val[0]))
 	    method_and_val.append(("nn", val))
 	    #scoring_parameters = [("nz", 1, 5), ("ns", 3, 2), ("nd", 1, 1)] 
 	    nodes = compare_experiments([ (PPI, ASSOCIATION) + parameters for parameters in scoring_parameters], None, False, False, "test", False, 1, "common_intersection_return") 
 	    file_module.write("%s %s nc\n" % (PPI, ASSOCIATION))
-	    val = analyze_results.check_connected_seed_enrichment_of_modules_of_given_nodes(nodes, edge_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, association_scores_file_identifier_type, file_module.write, DEFAULT_NON_SEED_SCORE, module_detection_type, go_ids, specie = specie, p_value_cutoff = GO_ENRICHMENT_P_VALUE_CUTOFF)
+	    val = analyze_results.check_connected_seed_enrichment_of_modules_of_given_nodes(nodes, edge_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, association_scores_file_identifier_type, file_module.write, DEFAULT_NON_SEED_SCORE, module_detection_type, module_file, go_ids, specie = specie, p_value_cutoff = GO_ENRICHMENT_P_VALUE_CUTOFF)
 	    file_module_summary.write("%s %s %s %d %d %d %d %f\n" % (PPI, ASSOCIATION, "nc", val[4], val[3], val[1], val[2], val[0]))
 	    method_and_val.append(("nc", val))
 	prev_assoc = ASSOCIATION
 	file_module.write("%s %s %s\n" % (PPI, ASSOCIATION, SCORING))
-	val = analyze_results.check_connected_seed_enrichment_of_high_scoring_modules(edge_scores_file, output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_CUTOFF, association_scores_file_identifier_type, file_module.write, DEFAULT_NON_SEED_SCORE, module_detection_type, go_ids, specie = specie, p_value_cutoff = GO_ENRICHMENT_P_VALUE_CUTOFF)
+	val = analyze_results.check_connected_seed_enrichment_of_high_scoring_modules(edge_scores_file, output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_CUTOFF, association_scores_file_identifier_type, file_module.write, DEFAULT_NON_SEED_SCORE, module_detection_type, module_file, go_ids, specie = specie, p_value_cutoff = GO_ENRICHMENT_P_VALUE_CUTOFF)
 	file_module_summary.write("%s %s %s %d %d %d %d %f\n" % (PPI, ASSOCIATION, SCORING, val[4], val[3], val[1], val[2], val[0]))
 	method_and_val.append((SCORING, val))
 	file_module.close()
@@ -1246,10 +1257,7 @@ def prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix,
 	if analyze_network:
 	    prepare_data.analyze_network(network_file)
 	prepare_data.create_degree_filtered_network_file(network_file, network_file_filtered, ALLOWED_MAX_DEGREE, ONLY_LARGEST_COMPONENT)
-	g = prepare_data.get_network_as_graph(network_file_filtered, use_edge_data=True)
-	analyze_results.get_modules_of_graph(g, "mcl", output_file=module_file, inflation=2)
     #prepare_data.analyze_network(network_file_filtered, out_file = input_log_file) 
-
 
     seed_to_score = None
     # Get node to association mapping
@@ -1327,6 +1335,11 @@ def prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix,
     # Prepare scoring files
     prepare_scoring_files(PPI, seed_scores_file, network_file_filtered, seed_to_score, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, edge_scores_file, interaction_relevance_file, interaction_relevance_file2, edge_scores_as_node_scores_file, sampled_file_prefix)
 
+    # Create modules file
+    #g = prepare_data.get_network_as_graph(edge_scores_file, use_edge_data=True)
+    #print map(lambda x: len(x), analyze_results.get_modules_of_graph(g, "mcl", output_file=module_file, inflation=2))
+    #print map(lambda x: len(x), analyze_results.get_modules_of_graph(g, "cfinder", output_file=None))
+
     # Creating mutated (permuted/pruned) networks for further significance assessment runs
     if prepare_mutated is not None:
 	g = prepare_data.get_network_as_graph(edge_scores_file, use_edge_data = True)
@@ -1401,7 +1414,7 @@ def score(SCORING, score_commands, score_xval_commands, output_scores_file, log_
 	Runs or prints commands to run scoring method on the input files
     """
     if N_SEED == 1:
-	return
+    	return
     if score_with_all_seeds:
     	score_original(SCORING, score_commands, output_scores_file, log_file, job_file)
     else:
@@ -1747,8 +1760,10 @@ def analyze_original(PPI, ASSOCIATION, output_scores_file, log_file, node_scores
 	#	f.write("%s\n" % str(analyze_results.calculate_seed_coverage_at_given_cutoff(output_scores_file+"."+association_scores_file_identifier_type, association_scores_validation_file, percentage, None, DEFAULT_NON_SEED_SCORE)))
 
     analyze_results.output_mapped_node_id_scores(output_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, one_gene_per_node=True, output_file=output_scores_file+"."+association_scores_file_identifier_type)
-    #analyze_results.output_mapped_node_id_scores(output_scores_file, node_mapping_file+".genesymbol", one_gene_per_node=True, output_file=output_scores_file+".genesymbol")
-    #os.system("cp %s %s" % (output_scores_file+"."+association_scores_file_identifier_type, "./extended/"+ASSOCIATION+".txt")) # for the analysis of extended omim disease similarity based on common genes
+    if association_scores_file_identifier_type != "genesymbol" and os.path.exists(node_mapping_file+".genesymbol"):
+	analyze_results.output_mapped_node_id_scores(output_scores_file, node_mapping_file+".genesymbol", one_gene_per_node=True, output_file=output_scores_file+".genesymbol")
+    #os.system("cp %s %s" % (output_scores_file+".genesymbol.unique", "./scores/"+ASSOCIATION+".txt")) # for the analysis of extended omim disease similarity based on common genes
+    #os.system("cp %s %s" % (output_scores_file, "/home/emre/arastirma/data/collaboration/arcadi/guild_scores_" + ASSOCIATION[7:10] + "/"+ASSOCIATION[11:]+".txt")) # for the files of arcadi
 
     if functional_enrichment and association_scores_file_identifier_type is not None and os.path.exists(node_mapping_file+"."+association_scores_file_identifier_type):
     	f.write("\nFUNCTIONAL ENRICHMENT ANALYSIS (OVER TOP %s SCORING NODES)\n" % DEFAULT_TOP_SCORING_CUTOFF)

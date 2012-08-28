@@ -11,9 +11,6 @@ main <- function() {
     #manuscript()
     #manuscript2()
 
-    #disease_category_figures()
-    case_study_score_distributions()
-
     #case_study_figures()
     #navlakha_figures()
     #aneurysm_figures()
@@ -22,12 +19,13 @@ main <- function() {
 
 manuscript<-function() {
     manuscript_figures()
+    #case_study_score_distributions()
     manuscript_tests()
 }
 
 manuscript2<-function() {
     manuscript2_figures()
-    #manuscript2_tests()
+    manuscript2_tests()
 }
 
 
@@ -46,16 +44,25 @@ lambda<-function(x) { x<-substring(x, 6); words<-unlist(strsplit(x, "_")); x<-pa
 ###### NEIGHBORHOOD FIGURES ######
 neighborhood_figures <- function() {
 
+    dir.name<-"../data/summary_draft_before_revision/"
     # Number of genes in neighborhood of alzheimer over randomly permuted bPPI network 
     cairo_ps(paste(dir.name, "Figure P1a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     par(family = "Arial") 
     par(mar=c(5, 4, 4, 5) + 0.1)
     d<-read.table(paste(dir.name, '../compare/biana_no_tap-omim_alzheimer-nn/permuted/results.dat', sep=""))
-    a<-barplot(rbind(d$picked, d$picked_good),beside=T,xlab="Percentage of permuted interactions (%)",ylab="Number of genes", legend.text=c("All genes in n.hood", "AD genes in n.hood"),names.arg=seq(0,80,by=10),ylim=c(0,300))
+    a<-barplot(rbind(d$picked, d$picked_good),beside=T,xlab="Percentage of permuted interactions (%)",ylab="Number of genes", names.arg=seq(0,80,by=10),ylim=c(0,300)) # legend.text=c("All genes in n.hood", "AD genes in n.hood"),
     par(new=T)
     plot(colMeans(a),100*d$picked_good/d$picked,col=2,xaxt="n",yaxt="n",xlab="",ylab="",type='l',bty="n",ylim=c(0,10))
     axis(4, xpd=T, col=2, col.axis=2)
     mtext("Ratio (%)", side=4, line=3, col=2)
+    d<-read.table(paste(dir.name, '../compare/biana_no_tap-omim_alzheimer-nn/permuted/results_random.dat', sep=""))
+    ycoords<-c()
+    for(i in seq(0, 80, by=10)) {
+	e<-d[d$percentage==i,]
+	ycoords<-c(ycoords, mean(100*e$picked_good/e$picked))
+    }
+    lines(colMeans(a), ycoords, lty=2, col=2)
+    legend("topright", c("All genes in n.hood", "AD genes in n.hood", "Ratio (observed)", "Ratio (random)"), pch=c(15,15, NA, NA), pt.cex=2, col=c("grey30", "grey70",2,2), lty=c(0,0,1,2), bty="n")
     dev.off()
 
     # Number of genes in neighborhood of alzheimer over randomly pruned bPPI network 
@@ -63,11 +70,19 @@ neighborhood_figures <- function() {
     par(family = "Arial") 
     par(mar=c(5, 4, 4, 5) + 0.1)
     d<-read.table(paste(dir.name, '../compare/biana_no_tap-omim_alzheimer-nn/pruned/results.dat', sep=""))
-    a<-barplot(rbind(d$picked, d$picked_good),beside=T,xlab="Percentage of pruned interactions (%)",ylab="Number of genes", legend.text=c("All genes in n.hood", "AD genes in n.hood"),names.arg=seq(0,80,by=10),ylim=c(0,300))
+    a<-barplot(rbind(d$picked, d$picked_good),beside=T,xlab="Percentage of pruned interactions (%)",ylab="Number of genes", names.arg=seq(0,80,by=10),ylim=c(0,300)) #legend.text=c("All genes in n.hood", "AD genes in n.hood"),
     par(new=T)
     plot(colMeans(a),100*d$picked_good/d$picked,col=2,xaxt="n",yaxt="n",xlab="",ylab="",type='l',bty="n",ylim=c(0,10))
     axis(4, xpd=T, col=2, col.axis=2)
     mtext("Ratio (%)", side=4, line=3, col=2)
+    d<-read.table(paste(dir.name, '../compare/biana_no_tap-omim_alzheimer-nn/pruned/results_random.dat', sep=""))
+    ycoords<-c()
+    for(i in seq(0, 80, by=10)) {
+	e<-d[d$percentage==i,]
+	ycoords<-c(ycoords, mean(100*e$picked_good/e$picked))
+    }
+    lines(colMeans(a), ycoords, lty=2, col=2)
+    legend("topright", c("All genes in n.hood", "AD genes in n.hood", "Ratio (observed)", "Ratio (random)"), pch=c(15,15, NA, NA), pt.cex=2, col=c("grey30", "grey70",2,2), lty=c(0,0,1,2), bty="n")
     dev.off()
 }
 
@@ -471,10 +486,18 @@ disease_category_figures<-function() {
     # Functional enrichment of modules in robust vs non-robust diseases
     #method<-"nn"
     dir.name<-"../data/module/"
-    d<-read.table(paste(dir.name, "biana_no_tap-omim/module_summary.dat", sep=""), header=T)
+    d<-read.table(paste(dir.name, "biana_no_tap-omim/module_summary.dat", sep=""), header=T) #!
+    e2<-d[d$scoring==method & d$phenotype %in% common.up, "n_module"]
+    f2<-d[d$scoring==method & d$phenotype %in% common.down, "n_module"]
+    d<-read.table(paste(dir.name, "biana_no_tap-omim/module_summary_ns.dat", sep=""), header=T)
     e<-d[d$scoring==method & d$phenotype %in% common.up,]
     f<-d[d$scoring==method & d$phenotype %in% common.down,]
     #g<-d[d$scoring==method & d$phenotype %in% non.common,]
+    e<-cbind(e, n_module=e2)
+    f<-cbind(f, n_module=f2)
+    print(e)
+    print("---")
+    print(f)
 
     dir.name<-dir.summary
     #labels<-c("Robust", "Uncharacterized", "Non-robust")
@@ -755,15 +778,15 @@ module_figures<-function() {
 omim_similarity_figures<-function() {
     library(RColorBrewer)
     val.cols <- brewer.pal(9,"Blues") 
-    tiff("omim.tif", width=2000, height=2000, res=300)
+    tiff("omim.tif", width=2000, height=2000, res=300, compression="lzw")
     d<-read.table("../data/omim/2009_Aug_27/similarity.dat")
     heatmap(as.matrix(d), revC=T, col=val.cols, margins=c(9,9), Rowv=NA, Colv=NA, scale="none") # labRow=scoring.methods.full, labCol=scoring.methods.full) 
     dev.off()
-    tiff("omim_in_ppi.tif", width=2000, height=2000, res=300)
+    tiff("omim_in_ppi.tif", width=2000, height=2000, res=300, compression="lzw")
     d<-read.table("../data/omim/2009_Aug_27/similarity_in_ppi.dat")
     heatmap(as.matrix(d), revC=T, col=val.cols, margins=c(9,9), Rowv=NA, Colv=NA, scale="none") 
     dev.off()
-    tiff("omim_extended.tif", width=2000, height=2000, res=300)
+    tiff("omim_extended.tif", width=2000, height=2000, res=300, compression="lzw")
     d<-read.table("../data/omim/2009_Aug_27/extended/similarity.dat")
     heatmap(as.matrix(d), revC=T, col=val.cols, margins=c(9,9), Rowv=NA, Colv=NA, scale="none") 
     dev.off()
@@ -841,7 +864,7 @@ manuscript_figures <- function() {
     # Average AUC (%) over all diseases for each network
     #cairo_ps(paste(dir.name, "Figure 1.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     #par(family = "Arial") 
-    tiff(paste(dir.name, "Figure 1.tif", sep=""), width=2000, height=2000, res=300)
+    tiff(paste(dir.name, "Figure 1.tif", sep=""), width=2000, height=2000, res=300, compression="lzw")
     #par(xpd=T, mar=par()$mar+c(0,0,0,0))
     #coords <- seq(0.4,4.8,by=1.1)
     #coords <- seq(0,7.8,by=1.3)
@@ -870,7 +893,7 @@ manuscript_figures <- function() {
     # Ratio of correctly predicted proteins (%) among top 10% predictions over all diseases for each network
     #cairo_ps(paste(dir.name, "Supplementary Figure 2.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     #par(family = "Arial") 
-    tiff(paste(dir.name, "Supplementary Figure 2.tif", sep=""), width=2000, height=2000, res=300)
+    tiff(paste(dir.name, "Figure S2.tif", sep=""), width=2000, height=2000, res=300, compression="lzw")
     par(xpd=T, mar=par()$mar+c(0,0,0,0))
     #coords <- seq(0.4,4.8,by=1.1)
     #coords <- seq(0,7.8,by=1.3)
@@ -901,7 +924,7 @@ manuscript_figures <- function() {
     #postscript(paste(dir.name, "Figure 4a.eps", sep=""), width = 6, height = 6, horizontal = FALSE, onefile = FALSE, paper = "special")
     #cairo_ps(paste(dir.name, "Figure 2.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     #par(family = "Arial") 
-    tiff(paste(dir.name, "Figure 2.tif", sep=""), width=2000, height=2000, res=300)
+    tiff(paste(dir.name, "Figure 2.tif", sep=""), width=2000, height=2000, res=300, compression="lzw")
     #par(xpd=T, mar=par()$mar+c(0,0,0,0))
 
     #prefix<-"biana_no_tap_vs_omim-wo_LI"
@@ -927,7 +950,7 @@ manuscript_figures <- function() {
     dev.off()
 
     #cairo_ps(paste(dir.name, "Supplementary Figure 3.eps", sep=""), width = 6, height = 6, onefile = TRUE)
-    tiff(paste(dir.name, "Supplementary Figure 3.tif", sep=""), width=2000, height=2000, res=300)
+    tiff(paste(dir.name, "Figure S1.tif", sep=""), width=2000, height=2000, res=300, compression="lzw")
     prefix<-"all_new_vs_all_new"
     # Significance of AUC & COV difference between methods on bPPI
     n<-length(scoring.method.ids)

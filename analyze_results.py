@@ -4,7 +4,8 @@
 # eg 13/08/2009
 #########################################################################
 
-from biana.utilities import graph_utilities as network_utilities
+#from biana.utilities import graph_utilities as network_utilities
+from toolbox import network_utilities
 from funcassociate import client
 from biana.utilities import TsvReader
 import calculate_mean_and_sigma
@@ -26,7 +27,13 @@ def score_combined(scores_file_list, output_scores_file):
 	    node_to_score_inner[node] = score
 	mean, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(node_to_score_inner.values())
 	for node, score in node_to_score_inner.iteritems():
-	    node_to_scores.setdefault(node, []).append((score-mean)/sigma)
+	    if sigma == 0:
+		if score-mean == 0:
+		    node_to_scores.setdefault(node, []).append(0)
+		else:
+		    node_to_scores.setdefault(node, []).append(float("inf"))
+	    else:
+		node_to_scores.setdefault(node, []).append((score-mean)/sigma)
     values = []
     for node, scores in node_to_scores.iteritems():
 	score = sum(scores) / len(scores)
@@ -115,26 +122,56 @@ def get_modules_of_graph(sub_graph, module_detection_type, output_file=None, inf
     elif module_detection_type == "mcl":
 	from os import system
 	if output_file is None:
-	    temp_file_name = ".temp_module_file.txt89734234"
+	    temp_file_name = "module_file_mcl.txt"
+	    f = open(temp_file_name, 'w')
+	    nodes = set()
+	    for node1, node2, data in sub_graph.edges(data=True):
+		nodes.add(node1)
+		nodes.add(node2)
+		f.write("%s\t%s\t%f\n" % (node1, node2, data))
+	    for node in sub_graph.nodes():
+		if node not in nodes:
+		    f.write("%s\n" % node)
+	    f.close()
+	    # Optimum inflation parameter was 1.7-1.8 in a recent comparison paper
+	    system("mcl %s --abc -I %f -o %s 2>> %s" % (temp_file_name, inflation, temp_file_name + ".mcl", temp_file_name + ".err"))
+	    temp_file_name = temp_file_name + ".mcl"
 	else:
 	    temp_file_name = output_file
-	f = open(temp_file_name, 'w')
-	nodes = set()
-	for node1, node2, data in sub_graph.edges(data=True):
-	    nodes.add(node1)
-	    nodes.add(node2)
-	    f.write("%s\t%s\t%f\n" % (node1, node2, data))
-	for node in sub_graph.nodes():
-	    if node not in nodes:
-		f.write("%s\n" % node)
-	f.close()
-	# Optimum inflation parameter was 1.7-1.8 in a recent comparison paper
-	system("mcl %s --abc -I %f -o %s 2>> %s" % (temp_file_name, inflation, temp_file_name + ".mcl", temp_file_name + ".err"))
-	f = open(temp_file_name + ".mcl")
+	f = open(temp_file_name)
 	modules = []
 	for line in f:
 	    words = line.strip().split("\t")
 	    modules.append(words)
+	f.close()
+    elif module_detection_type == "cfinder":
+	from os import system
+	if output_file is None:
+	    temp_file_name = "module_file_cfinder.txt"
+	    f = open(temp_file_name, 'w')
+	    nodes = set()
+	    for node1, node2, data in sub_graph.edges(data=True):
+		nodes.add(node1)
+		nodes.add(node2)
+		f.write("%s\t%s\t%f\n" % (node1, node2, data))
+	    for node in sub_graph.nodes():
+		if node not in nodes:
+		    f.write("%s\n" % node)
+	    f.close()
+	    system("CFinder_commandline -i %s -l /home/emre/arastirma/netzcore/external_src/CFinder-2.0.5--1440/licence.txt 2>> %s" % (temp_file_name, temp_file_name + ".err"))
+	    temp_file_name = temp_file_name + "_files/cliques"
+	else:
+	    temp_file_name = output_file
+	f = open(temp_file_name)
+	modules = []
+	for line in f:
+	    if line.startswith("#"):
+		continue
+	    if line.strip() == "":
+		continue
+	    words = line.strip().split(":")
+	    inner_words = words[1].strip().split(" ")
+	    modules.append(inner_words)
 	f.close()
     else:
 	raise ValueError("Unrecognized module detection type")
@@ -273,7 +310,7 @@ def get_connected_seed_enrichment_in_modules(modules, sub_graph, seeds, seed_ids
 
     return (ratio, n_seed, n_all, n_module, n)
 
-def check_connected_seed_enrichment_in_network(network_file, node_scores_file, node_mapping_file, id_type, output_method, default_non_seed_score, module_detection_type = "connected", go_ids = None, specie = "Homo sapiens", p_value_cutoff = 0.05):
+def check_connected_seed_enrichment_in_network(network_file, node_scores_file, node_mapping_file, id_type, output_method, default_non_seed_score, module_detection_type = "connected", module_file = None, go_ids = None, specie = "Homo sapiens", p_value_cutoff = 0.05):
     """
 	Get number of seeds included in one level neighborhood of seeds
 	module_detection_type: connected | mcl
@@ -300,7 +337,7 @@ def check_connected_seed_enrichment_in_network(network_file, node_scores_file, n
     #print len(non_mapped_nodes), "nodes do not exist in the mapping file"
 
     sub_graph = network_utilities.get_subgraph(g, seeds)
-    modules = get_modules_of_graph(sub_graph, module_detection_type)
+    modules = get_modules_of_graph(sub_graph, module_detection_type, module_file)
     if go_ids is None:
 	(ratio, n_seed, n_all, n_module, n) = get_connected_seed_enrichment_in_modules(modules, sub_graph, seeds, seed_ids, all_ids, id_to_mapped_ids, output_method)
     else:
@@ -308,7 +345,7 @@ def check_connected_seed_enrichment_in_network(network_file, node_scores_file, n
     return (ratio, n_seed, n_all, n_module, n)
 
 
-def check_connected_seed_enrichment_of_neighbors_in_network(network_file, node_scores_file, node_mapping_file, id_type, output_method, default_non_seed_score, module_detection_type = "connected", go_ids = None, specie = "Homo sapiens", p_value_cutoff = 0.05):
+def check_connected_seed_enrichment_of_neighbors_in_network(network_file, node_scores_file, node_mapping_file, id_type, output_method, default_non_seed_score, module_detection_type = "connected", module_file = None, go_ids = None, specie = "Homo sapiens", p_value_cutoff = 0.05):
     """
 	Get number of seeds included in one level neighborhood of seeds
 	module_detection_type: connected | mcl
@@ -341,14 +378,14 @@ def check_connected_seed_enrichment_of_neighbors_in_network(network_file, node_s
     #print len(non_mapped_nodes), "nodes do not exist in the mapping file"
 
     sub_graph = network_utilities.get_subgraph(g, selected_nodes)
-    modules = get_modules_of_graph(sub_graph, module_detection_type)
+    modules = get_modules_of_graph(sub_graph, module_detection_type, module_file)
     if go_ids is None:
 	(ratio, n_seed, n_all, n_module, n) = get_connected_seed_enrichment_in_modules(modules, sub_graph, seeds, seed_ids, all_ids, id_to_mapped_ids, output_method)
     else:
 	(ratio, n_seed, n_all, n_module, n) = get_seed_function_enrichment_in_modules(modules, sub_graph, seeds, seed_ids, all_ids, id_to_mapped_ids, output_method, go_ids, id_type = id_type, specie = specie, p_value_cutoff = p_value_cutoff)
     return (ratio, n_seed, n_all, n_module, n) 
 
-def check_connected_seed_enrichment_of_modules_of_given_nodes(nodes, network_file, node_scores_file, node_mapping_file, id_type, output_method, default_non_seed_score, module_detection_type = "connected", go_ids = None, specie = "Homo sapiens", p_value_cutoff = 0.05):
+def check_connected_seed_enrichment_of_modules_of_given_nodes(nodes, network_file, node_scores_file, node_mapping_file, id_type, output_method, default_non_seed_score, module_detection_type = "connected", module_file = None, go_ids = None, specie = "Homo sapiens", p_value_cutoff = 0.05):
     """
 	Get number of seeds included in modules (connected nodes) identified by given nodes
     """
@@ -376,14 +413,14 @@ def check_connected_seed_enrichment_of_modules_of_given_nodes(nodes, network_fil
     #print len(non_mapped_nodes), "nodes do not exist in the mapping file"
 
     sub_graph = network_utilities.get_subgraph(g, selected_nodes)
-    modules = get_modules_of_graph(sub_graph, module_detection_type)
+    modules = get_modules_of_graph(sub_graph, module_detection_type, module_file)
     if go_ids is None:
 	(ratio, n_seed, n_all, n_module, n) = get_connected_seed_enrichment_in_modules(modules, sub_graph, seeds, seed_ids, all_ids, id_to_mapped_ids, output_method)
     else:
 	(ratio, n_seed, n_all, n_module, n) = get_seed_function_enrichment_in_modules(modules, sub_graph, seeds, seed_ids, all_ids, id_to_mapped_ids, output_method, go_ids, id_type = id_type, specie = specie, p_value_cutoff = p_value_cutoff)
     return (ratio, n_seed, n_all, n_module, n) 
 
-def check_connected_seed_enrichment_of_high_scoring_modules(network_file, output_scores_file, node_scores_file, node_mapping_file, cutoff, id_type, output_method, default_non_seed_score, module_detection_type = "connected", go_ids = None, specie = "Homo sapiens", p_value_cutoff = 0.05):
+def check_connected_seed_enrichment_of_high_scoring_modules(network_file, output_scores_file, node_scores_file, node_mapping_file, cutoff, id_type, output_method, default_non_seed_score, module_detection_type = "connected", module_file = None, go_ids = None, specie = "Homo sapiens", p_value_cutoff = 0.05):
     """
 	Get number of seeds included in modules (connected nodes) identified by the scoring method
     """
@@ -392,7 +429,7 @@ def check_connected_seed_enrichment_of_high_scoring_modules(network_file, output
     g = network_utilities.create_network_from_sif_file(network_file, use_edge_data=True)
     dummy, dummy, node_to_score, dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = output_scores_file, store_edge_type = False)
     sub_graph = network_utilities.get_subgraph(g, selected_nodes)
-    modules = get_modules_of_graph(sub_graph, module_detection_type)
+    modules = get_modules_of_graph(sub_graph, module_detection_type, module_file)
 
     id_to_mapped_ids = get_id_to_mapped_id_mapping(node_mapping_file)
 
@@ -526,15 +563,22 @@ def output_mapped_node_id_scores(output_scores_file, node_mapping_file, one_gene
 	    
     values.sort()
     values.reverse()
+    included = set()
     i = 1
     if output_file is not None:
 	f = open(output_file, 'w')
 	f2 = open(output_file + ".ranks", 'w')
+	f3 = open(output_file + ".unique", 'w')
 	for score, gene in values:
 	    f.write("%s\t%s\n" % (gene, str(score)))
 	    f2.write("%s\t%d\n" % (gene, i))
+	    if gene not in included:
+		f3.write("%s\t%s\n" % (gene, str(score)))
+	    included.add(gene)
 	    i += 1
 	f.close()
+	f2.close()
+	f3.close()
     else:
 	print "%s\t%f" % (gene, score)
 

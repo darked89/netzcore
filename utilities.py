@@ -20,6 +20,8 @@ def main():
 
     #convert_sif_file_to_R_matrix(DATA_DIR + "input_runs_for_draft/entrez/edge_scores.sif", "test_ppi.dat")
 
+    case_study_pruned_networks()
+
     #case_study_neighborhood()
 
     #case_study_high_scoring()
@@ -35,7 +37,7 @@ def main():
 
     #get_drugs_by_targets()
 
-    get_average_age_of_disease_genes_in_network_extended()
+    #get_average_age_of_disease_genes_in_network_extended()
 
     return
 
@@ -376,7 +378,217 @@ def get_similarity_of_go_terms_for_omim_diseases():
 	print pheno, len(phenotype_to_genes[pheno]), len(phenotype_to_genes[pheno] & duplicated_genes)
     return 
 
+def case_study_pruned_networks():
+    """
+    cat /sbi/users/emre/data/netzcore/from_gaudi_2011/output_runs_on_random/biana_no_tap_no_reliability_pruned_p50_*/omim_breast_cancer/ns/r3i2/auc.txt > arastirma/netzcore/data/summary_runs_on_random/breast_cancer_pruned_p50.txt
+    vi %s/"//g
+    d<-read.table("breast_cancer_pruned_p50.txt")
+    e<-d$V2
+    f<-(e-mean(e))/sd(e)
+    which(f<=(-2))
+    > [1] 64
+    which(f>=2)
+    > [1] 38 42 78
+    e[which(f>=2)]
+    > [1] 0.886 0.870 0.898
+    e[which(f<=-2)]
+    > [1] 0.653
+
+    permuted:
+    which(f<=(-2))
+    > [1] 28 76
+    which(f>=(2))
+    > [1] 46
+    e[which(f>=(2))]
+    > [1] 0.865
+    e[which(f<=(-2))]
+    > [1] 0.580 0.543
+
+    pruned_80:
+    min(e)
+    > [1] 0.461
+    max(e)
+    > [1] 0.82
+    which(e==max(e))
+    > [1] 58
+    which(e==min(e)
+    > [1] 7
+    """
+    from toolbox import network_utilities as gu
+    network_file = DATA_DIR + "input_runs_for_draft/biana_no_tap_no_reliability/edge_scores.sif"
+    user_entity_id_mapping_file = DATA_DIR + "input_runs_for_draft/biana_no_tap_no_reliability/node_mapping.tsv.genesymbol.single"
+    seeds_file = DATA_DIR + "input_runs_for_draft/biana_no_tap_no_reliability/omim_breast_cancer/seed_scores.sif"
+    network_file_pruned = DATA_DIR + "human_interactome_biana/pruned/omim_breast_cancer/80/sampled_graph.sif.58"
+    module_file = DATA_DIR + "module/biana_no_tap-omim/mcl/modules.txt"
+    #network_file_permuted = DATA_DIR + "human_interactome_biana/permuted/50/sampled_graph.sif.46"
+    ueid_to_gene = get_ues_gene_mapping(user_entity_id_mapping_file)
+    seeds = set([line.strip().split()[0] for line in open(seeds_file)])
+    g = gu.create_network_from_sif_file(network_file, use_edge_data=False)
+    g_neighborhood = gu.get_neighborhood_subgraph(g, seeds)
+    neighborhood_edges = set(g_neighborhood.edges())
+    #g_sub_pruned = gu.get_neighborhood_subgraph(g_pruned, seeds)
+    #print len(g_sub.nodes()), len(g_sub.edges())
+    #print len(g_sub_pruned.nodes()), len(g_sub_pruned.edges())
+    g_pruned = gu.create_network_from_sif_file(network_file_pruned, use_edge_data=False)
+    #weak_edges = set(g.edges()) - set(g_pruned.edges())
+    strong_edges = set(g_pruned.edges())
+    network_file_pruned = DATA_DIR + "human_interactome_biana/pruned/omim_breast_cancer/80/sampled_graph.sif.7"
+    g_pruned = gu.create_network_from_sif_file(network_file_pruned, use_edge_data=False)
+    #strong_edges = set(g.edges()) - set(g_pruned.edges())
+    weak_edges = set(g_pruned.edges())
+    common_edges = weak_edges & strong_edges
+    weak_edges -= common_edges
+    strong_edges -= common_edges
+    weak_edges &= neighborhood_edges
+    strong_edges &= neighborhood_edges
+    #print len(weak_edges), len(strong_edges), len(common_edges)
+    g_sub = gu.create_graph()
+    #g_sub.add_edges_from(weak_edges | strong_edges)
+    g_sub.add_edges_from(strong_edges)
+    weak_edges = set() 
+
+    output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/seed_interaction_counts.txt"
+    f = open(output_file, 'w')
+    nodes = set()
+    for node in g_neighborhood.nodes():
+	if node in ueid_to_gene:
+	    nodes.add(node)
+	    if node in seeds:
+		f.write("%s\t%d\n" % (ueid_to_gene[node], g_neighborhood.degree(node)))
+    f.close()
+    #g_neighborhood = g_neighborhood.subgraph(nodes)    
+    #output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/breast_cancer_pruned_p0.dot"
+    #gu.create_dot_network_file(g_neighborhood, output_file, seeds, ueid_to_gene, draw_type="all")
+    #os.system("twopi -Tgif -O %s" % output_file)
+    return
+
+    nodes = set()
+    for node in g_sub.nodes():
+	if node in ueid_to_gene:
+	    nodes.add(node)
+    g_sub = g_sub.subgraph(nodes)
+
+    output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/breast_cancer_pruned_p80_strong.dot"
+    #gu.create_dot_network_file(g_sub, output_file, seeds, ueid_to_gene, weaks=weaks, draw_type="weak")
+    #gu.create_dot_network_file(g_sub_pruned, output_file, seeds, ueid_to_gene, weaks=weaks, draw_type="weak")
+    gu.create_dot_network_file(g_sub, output_file, seeds, ueid_to_gene, weak_edges=weak_edges, draw_type="all")
+    os.system("twopi -Tgif -O %s" % output_file)
+    
+    from toolbox import mcl_utilities as mcl
+    modules = mcl.get_modules_from_file(module_file)
+    
+    output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/breast_cancer_pruned_p80_modularized_strong.nnf"
+    f = open(output_file, 'w')
+
+    network_name = "breast_cancer_pruned_p80_"
+    module_sets = []
+    included_nodes = set()
+    included_edges = set()
+    # Output modules
+    for i, module in enumerate(modules):
+	m = set(module) & nodes
+	if len(m) > 0:
+	    module_sets.append(m)
+	    f.write("%s M%d_\n" % (network_name, i))
+	    for u, v in g_sub.edges(m):
+		if u == v:
+		    continue
+		if u in m and v in m:
+		    w = "pp"
+		    if (u,v) in weak_edges or (v,u) in weak_edges:
+			w = "weak"
+		    elif (u,v) in strong_edges or (v,u) in strong_edges:
+			w = "strong"
+		    included_nodes.add(u)
+		    included_nodes.add(v)
+		    included_edges.add((u,v))
+		    included_edges.add((v,u))
+		    u = ueid_to_gene[u]
+		    v = ueid_to_gene[v]
+		    f.write("M%d_ %s %s %s\n" % (i, u, w, v))
+	    for u in m:
+		if u not in included_nodes:
+		    included_nodes.add(u)
+		    u = ueid_to_gene[u]
+		    f.write("M%d_ %s\n" % (i, u))
+    # Connect modules
+    for i, module1 in enumerate(module_sets):
+	for j, module2 in enumerate(module_sets):
+	    if i<j:
+		connected_weak = False
+		connected_strong = False
+		for u in module1:
+		    for v in module2:
+			if (u,v) in strong_edges:
+			    connected_strong = True
+			    break
+			if (u,v) in weak_edges:
+			    connected_weak = True
+		if connected_strong:
+		    f.write("%s M%d_ %s M%d_\n" % (network_name, i, "strong", j))
+		elif connected_weak:
+		    f.write("%s M%d_ %s M%d_\n" % (network_name, i, "weak", j))
+    # Output the rest
+    for u,v in g_sub.edges():
+	if u == v:
+	    continue
+	if (u,v) in included_edges:
+	    continue
+	included_nodes.add(u)
+	included_nodes.add(v)
+	w = "pp"
+	if (u,v) in weak_edges or (v,u) in weak_edges:
+	    w = "weak"
+	elif (u,v) in strong_edges or (v,u) in strong_edges:
+	    w = "strong"
+	u = ueid_to_gene[u]
+	v = ueid_to_gene[v]
+    	f.write("%s %s %s %s\n" % (network_name, u,w,v))
+    for node in nodes - included_nodes:
+	f.write("%s %s\n" % (network_name, ueid_to_gene[node]))
+    f.close()
+
+    output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/breast_cancer_pruned_p80_strong.sif"
+    f = open(output_file, 'w')
+    included_nodes = set()
+    for u,v in g_sub.edges():
+	if u == v:
+	    continue
+	included_nodes.add(u)
+	included_nodes.add(v)
+	w = "pp"
+	if (u,v) in weak_edges or (v,u) in weak_edges:
+	    w = "weak"
+	elif (u,v) in strong_edges or (v,u) in strong_edges:
+	    w = "strong"
+	u = ueid_to_gene[u]
+	v = ueid_to_gene[v]
+    	f.write("%s %s %s\n" % (u,w,v))
+    for node in nodes - included_nodes:
+	f.write("%s\n" % ueid_to_gene[node])
+    f.close()
+
+    output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/breast_cancer_pruned_p80_seeds.txt"
+    f = open(output_file, 'w')
+    for seed in seeds:
+	if seed not in ueid_to_gene:
+	    print seed
+	    continue
+	f.write("%s\n" % ueid_to_gene[seed])
+    f.close()
+
+    for i, module in enumerate(module_sets):
+	output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/M%d_.txt" % i
+	f = open(output_file, 'w')
+	for node in module:
+	    f.write("%s\n" % ueid_to_gene[node])
+	f.close()
+	check_functional_enrichment(output_file, output_file+"funcassoc")
+    return
+
+
 def case_study_neighborhood():
+    perturbation = "pruned" #"permuted" #
     network_file = DATA_DIR + "input/biana_no_tap_relevance/edge_scores.sif"
     seeds_file = DATA_DIR + "input/biana_no_tap_relevance/omim_alzheimer/seeds.txt" 
     neighborhood_network_file = DATA_DIR + "compare/biana_no_tap_relevance-omim_alzheimer-nn/seed_neighborhood.sif"
@@ -385,11 +597,11 @@ def case_study_neighborhood():
     user_entity_id_mapping_file = DATA_DIR + "input_runs_for_draft/biana_no_tap_relevance/node_mapping.tsv.genesymbol.single"
     #seed_genes_file = DATA_DIR + "compare/biana_no_tap_relevance-omim_alzheimer-nd-top5/seeds.txt"
     all_genes_file = DATA_DIR + "compare/biana_no_tap_relevance-omim_alzheimer-nd-top5/all.txt"
-    seed_genes_file = DATA_DIR + "omim/alzheimer.txt" 
+    seed_genes_file = DATA_DIR + "omim/2009_Aug_27/alzheimer.txt" 
     aging_file = DATA_DIR + "uwaging/mutex_uwaging_genage_netage.txt"
     ad_file = DATA_DIR + "alzheimer_gold/gene_list.txt"
 
-    f = open(DATA_DIR + "compare/biana_no_tap_relevance-omim_alzheimer-nn/results.dat", 'w')
+    f = open(DATA_DIR + "compare/biana_no_tap-omim_alzheimer-nn/%s/results.dat" % perturbation, 'w')
     f.write("\tpicked_good\ttotal\tgood\tpicked\n")
 
     comparison = get_corresponding_genes_of_ues(neighborhood_network_file, user_entity_id_mapping_file)
@@ -415,6 +627,20 @@ def case_study_neighborhood():
     print len(picked_good), len(total), len(good), len(picked)
     f.write("%s\t%d\t%d\t%d\t%d\n" % ("p0", len(picked_good), len(total), len(good), len(picked)))
 
+    # Numbers with random AD-related set
+    f2 = open(DATA_DIR + "compare/biana_no_tap-omim_alzheimer-nn/%s/results_random.dat" % perturbation, 'w')
+    f2.write("\tpercentage\trun\tpicked_good\ttotal\tgood\tpicked\n")
+    from random import shuffle 
+    genes = list(total) # all_genes-seeds
+    random_genes = []
+    for i in xrange(1, 101):
+	shuffle(genes)
+	ad_genes_random = set(genes[:len(good)])
+	random_genes.append(ad_genes_random)
+	good = ad_genes_random
+	picked_good = comparison&ad_genes_random
+	f2.write("%s\t%d\t%d\t%d\t%d\t%d\t%d\n" % ("p0-%d" % i, 0, i, len(picked_good), len(total), len(good), len(picked)))
+
     good = aging_genes-seeds
     matched_aging = (comparison&aging_genes)-seeds
     picked_good = matched_aging
@@ -424,19 +650,22 @@ def case_study_neighborhood():
 
     print "ad-aging:", len((ad_genes&aging_genes)-seeds)
     print "matched_ad-matched_aging:", len(matched_ad&matched_aging)
-
-    # Check effect of pruning
-    seeds_file = DATA_DIR + "input/biana_no_tap_relevance/omim_alzheimer/seeds.txt" 
+    
+    # Check effect of permuting/pruning
     for p in xrange(10, 90, 10):
+	comparisons = []
 	n_picked_good, n_total, n_good, n_picked = [0.0] * 4
-	#os.mkdir(DATA_DIR + "compare/biana_no_tap_relevance-omim_alzheimer-nn/%d" % p)
+	#os.mkdir(DATA_DIR + "compare/biana_no_tap-omim_alzheimer-nn/%d" % p)
 	for i in xrange(1,101):
-	    #network_file = DATA_DIR + "human_interactome_biana/pruned/omim_alzheimer/%d/sampled_graph.sif.%d" % (p, i)
-	    network_file = DATA_DIR + "human_interactome_biana/permuted/%d/sampled_graph.sif.%d" % (p, i)
-	    neighborhood_network_file = DATA_DIR + "compare/biana_no_tap_relevance-omim_alzheimer-nn/%d/seed_neighborhood.sif.%d" % (p, i)
+	    if perturbation == "pruned":
+		network_file = DATA_DIR + "human_interactome_biana/%s/omim_alzheimer/%d/sampled_graph.sif.%d" % (perturbation, p, i)
+	    else:
+		network_file = DATA_DIR + "human_interactome_biana/%s/%d/sampled_graph.sif.%d" % (perturbation, p, i)
+	    neighborhood_network_file = DATA_DIR + "compare/biana_no_tap-omim_alzheimer-nn/%s/%d/seed_neighborhood.sif.%d" % (perturbation, p, i)
 	    #get_neighbors_of_nodes_in_network(network_file, seeds_file, neighborhood_network_file)
 	    comparison = get_corresponding_genes_of_ues(neighborhood_network_file, user_entity_id_mapping_file)
-	    all_genes = get_corresponding_genes_of_ues(network_file, user_entity_id_mapping_file)
+	    comparisons.append(comparison)
+	    #all_genes = get_corresponding_genes_of_ues(network_file, user_entity_id_mapping_file) # all networks contain all genes (even though they are unconnected)
 	    ad_genes = set([gene.strip() for gene in open(ad_file)]) & all_genes
 	    picked = comparison-seeds
 	    total = all_genes-seeds
@@ -452,10 +681,37 @@ def case_study_neighborhood():
 	print n_picked_good, n_total, n_good, n_picked
 	print "p_value:", sum(hypergeom.pmf(range(n_picked_good,n_picked+1), n_total, n_good, n_picked))
 	f.write("%s\t%d\t%d\t%d\t%d\n" % ("p%d"%p, n_picked_good, n_total, n_good, n_picked))
+
+	# Numbers with random AD-related set
+	genes = list(total) # all_genes-seeds
+	for j in xrange(1, 101):
+	    n_picked_good, n_total, n_good, n_picked = [0.0] * 4
+	    for i in xrange(1,101):
+		if perturbation == "pruned":
+		    network_file = DATA_DIR + "human_interactome_biana/%s/omim_alzheimer/%d/sampled_graph.sif.%d" % (perturbation, p, i)
+		else:
+		    network_file = DATA_DIR + "human_interactome_biana/%s/%d/sampled_graph.sif.%d" % (perturbation, p, i)
+		neighborhood_network_file = DATA_DIR + "compare/biana_no_tap-omim_alzheimer-nn/%s/%d/seed_neighborhood.sif.%d" % (perturbation, p, i)
+		#comparison = get_corresponding_genes_of_ues(neighborhood_network_file, user_entity_id_mapping_file)
+		comparison = comparisons[i-1]
+		ad_genes_random = random_genes[j-1]
+		picked_good = comparison&ad_genes_random
+		good = ad_genes_random
+		#all_genes = get_corresponding_genes_of_ues(network_file, user_entity_id_mapping_file)
+		picked = comparison-seeds
+		total = all_genes-seeds
+		n_picked_good += len(picked_good)
+		n_total += len(total)
+		n_good += len(good)
+		n_picked += len(picked)
+	    n_picked_good, n_total, n_good, n_picked = map(lambda x: int(round(x/100)), [n_picked_good, n_total, n_good, n_picked])
+	    f2.write("%s\t%d\t%d\t%d\t%d\t%d\t%d\n" % ("p%d-%d" % (p, j), p, j, n_picked_good, n_total, n_good, n_picked))
+
     f.close()
+    f2.close()
     return
 
-def get_corresponding_genes_of_ues(network_file, mapping_file, network_file_delim=" "):
+def get_ues_gene_mapping(mapping_file):
     ueid_to_gene = {}
     f = open(mapping_file)
     f.readline()
@@ -463,6 +719,11 @@ def get_corresponding_genes_of_ues(network_file, mapping_file, network_file_deli
 	ueid, gene = line.strip().split("\t")
 	ueid_to_gene[ueid] = gene
     f.close()
+    return ueid_to_gene 
+
+
+def get_corresponding_genes_of_ues(network_file, mapping_file, network_file_delim=" "):
+    ueid_to_gene = get_ues_gene_mapping(mapping_file)
     comparison = set()
     for line in open(network_file):
 	words = line.strip().split(network_file_delim)
@@ -480,7 +741,7 @@ def get_corresponding_genes_of_ues(network_file, mapping_file, network_file_deli
     return comparison
 
 def get_neighbors_of_nodes_in_network(network_file, node_file, output_file):
-    import biana.utilities.graph_utilities as gu
+    from toolbox import network_utilities as gu
     g = gu.create_network_from_sif_file(network_file, use_edge_data=True)
     nodes = [ line.strip() for line in open(node_file) ]
     neighbors = []
@@ -682,7 +943,7 @@ def prune_network():
     return
 
 def analyze_network():
-    import biana.utilities.graph_utilities as gu
+    from toolbox import network_utilities as gu
     g = gu.create_network_from_sif_file("/data/emre/toy_data/test_interactions_small.sif")
     degrees = g.degree(with_labels=True)
     node_to_values = gu.get_node_degree_related_values(g, ["v2","v3"])
