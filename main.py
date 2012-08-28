@@ -126,7 +126,8 @@ def decide_association_data(ASSOCIATION, PPI):
 	association_dir = data_dir + "tf_lineage" + os.sep #+ "hsdl_classification" + os.sep 
 	#association_scores_file = association_dir + "AbundanceTest_" + ASSOCIATION[5:] + ".txt"
 	#association_scores_file = association_dir + "WelchsTest_" + ASSOCIATION[5:] + ".txt"
-	association_scores_file = association_dir + "Borda_" + ASSOCIATION[5:] + ".txt"
+	#association_scores_file = association_dir + "Borda_" + ASSOCIATION[5:] + ".txt"
+	association_scores_file = association_dir + ASSOCIATION[5:] + ".txt"
 	association_scores_file_identifier_type = "genesymbol"
     elif ASSOCIATION.startswith("rob_"):
 	association_dir = data_dir + "rob" + os.sep + "gene_sets" + os.sep 
@@ -148,6 +149,28 @@ def decide_association_data(ASSOCIATION, PPI):
 	association_dir = data_dir + "arcadi" + os.sep + "associations_1e7" + os.sep 
 	association_scores_file = association_dir + ASSOCIATION[11:] + ".txt"
 	association_scores_file_identifier_type = "geneid" 
+    #elif ASSOCIATION.startswith("arcadi_"):
+    #	association_dir = data_dir + "arcadi" + os.sep + "associations" + os.sep 
+    #	association_scores_file = association_dir + ASSOCIATION[7:] + ".txt.geneid"
+    #	association_scores_file_identifier_type = "geneid"
+    elif ASSOCIATION == "santana":
+	association_dir = data_dir + "angels" + os.sep + "santana_paper" + os.sep
+	association_scores_file = association_dir + "seeds_geneid.txt"
+	association_scores_file_identifier_type = "geneid" # "uniprotaccession" need to create network accordingly
+    elif ASSOCIATION.startswith("mestres"):
+	association_dir = data_dir + "mestres" + os.sep
+	association_scores_file_identifier_type = "geneid" 
+	if ASSOCIATION == "mestres_tumor":
+	    association_scores_file = association_dir + "tumor_only.txt.geneid"
+	if ASSOCIATION == "mestres_normal":
+	    association_scores_file = association_dir + "normal.txt.geneid"
+    elif ASSOCIATION.startswith("bc_metastasis"):
+	association_dir = data_dir + "bc_metastasis" + os.sep 
+	association_scores_file_identifier_type = "genesymbol"
+	if ASSOCIATION == "bc_metastasis_lung":
+	    association_scores_file = association_dir + os.sep + "minn2005_bc_to_lung" + os.sep + "genes.txt"
+	if ASSOCIATION == "bc_metastasis_brain":
+	    association_scores_file = association_dir + os.sep + "bos2009_bc_to_brain" + os.sep + "genes.txt"
     elif ASSOCIATION.startswith("phenoscore_"):
 	association_dir = data_dir + "netzcorexpress" + os.sep 
 	association_scores_file = association_dir + "Phenoscore_" + ASSOCIATION[11:] + ".tab"
@@ -726,11 +749,11 @@ def run_experiment(MODE, PPI, ASSOCIATION, SCORING, N_REPETITION, N_ITERATION, f
 	#if N_X_VAL is None:
 	if leave_one_out_xval:
 	    N_X_VAL = N_SEED
-	analyze(PPI, SCORING, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, specie, network_file_filtered, candidates_file_mapped, functional_enrichment)
+	analyze(PPI, ASSOCIATION, SCORING, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, specie, network_file_filtered, candidates_file_mapped, functional_enrichment)
     elif MODE == "all":
 	prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix, biana_network_file_filtered_by_method, biana_network_file_filtered_by_reliability, network_file, network_file_filtered, input_log_file, node_file, seed_scores_file, network_file_identifier_type, node_description_file, association_scores_file, association_scores_file_identifier_type, node_mapping_file, input_dir, node_scores_file, edge_scores_file, interaction_relevance_file, interaction_relevance_file2, edge_scores_as_node_scores_file, sampled_file_prefix, candidates_file, candidates_file_mapped, analyze_network, prepare_mutated, network_dir, association_dir)
 	score(SCORING, score_commands, score_xval_commands, output_scores_file, log_file, job_file)
-	analyze(PPI, SCORING, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, specie, network_file_filtered, candidates_file_mapped, functional_enrichment)
+	analyze(PPI, ASSOCIATION, SCORING, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, specie, network_file_filtered, candidates_file_mapped, functional_enrichment)
     else:
 	raise ValueError("Unrecognized mode!")
     return
@@ -847,7 +870,11 @@ def compare_experiments(experiments, gold_standard_file=None, tex_format=False, 
 	    # Get high scoring node ids
 	    selected_ids, all_ids, seed_ids, selected_node_ids = analyze_results.get_top_scoring_node_ids_at_given_cutoff(output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_CUTOFF, association_scores_file_identifier_type, default_non_seed_score = DEFAULT_NON_SEED_SCORE, exclude_seeds = exclude_seeds, one_gene_per_node=True) 
 	    selected_ids2, all_ids2, seed_ids2, selected_node_ids2 = analyze_results.get_top_scoring_node_ids_at_given_cutoff(output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_CUTOFF, association_scores_file_identifier_type, default_non_seed_score = DEFAULT_NON_SEED_SCORE, exclude_seeds = exclude_seeds, one_gene_per_node=False)
-	    #print len(selected_ids), len(all_ids)
+	    if len(experiments) == 1:
+		selected_ids_with_seeds, all_ids3, seed_ids3, selected_node_ids_with_seeds = analyze_results.get_top_scoring_node_ids_at_given_cutoff(output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_CUTOFF, association_scores_file_identifier_type, default_non_seed_score = DEFAULT_NON_SEED_SCORE, exclude_seeds = False, one_gene_per_node=True) 
+		#print len(selected_ids), len(seed_ids), len(selected_ids3), len(seed_ids3), len(all_ids)
+		#print set(selected_ids3)-set(selected_ids)
+		#print set(seed_ids) & set(selected_ids3)
 	    if top_scoring_ids is None:
 		top_scoring_ids = set(selected_ids)
 		top_scoring_node_ids = set(selected_node_ids)
@@ -959,16 +986,40 @@ def compare_experiments(experiments, gold_standard_file=None, tex_format=False, 
     for id in seed_scoring_ids: 
 	out_file_seed.write("%s\n" % id)
     out_file_seed.close()
+    if len(experiments) == 1:
+	out_file_seed = open(compare_dir + "seeds_at_top.txt", "w")
+	for id in seed_scoring_ids & set(selected_ids_with_seeds): 
+	    out_file_seed.write("%s\n" % id)
+	out_file_seed.close()
+
 
     f = open(compare_dir + "README", "a")
 
     gold_ids = set([ line.strip() for line in open(gold_standard_file) ])
     matched_ids = gold_ids & top_scoring_ids
 
-    f.write("%s\n" % zip(["gold & seed", "gold & top", "gold & all"], map(lambda x: len(gold_ids & x), [ seed_scoring_ids, top_scoring_ids, all_scoring_ids ])))
-    f.write("seed-free: %s\n" % zip(["gold", "top", "all"], map(len, [ gold_ids-seed_scoring_ids, top_scoring_ids, all_scoring_ids-seed_scoring_ids ])))
-    f.write("matched ids: %s\n" % str(matched_ids))
-    f.write("ids to be modified in mapping files: %s" % str((gold_ids & all_scoring_ids2) - (gold_ids & all_scoring_ids)))
+    if len(experiments) == 1:
+	n_top = len(set(selected_ids_with_seeds))
+	n_top_seed = len(set(seed_ids) & set(selected_ids_with_seeds))
+	n_top_gold = len(set(gold_ids) & set(selected_ids_with_seeds))
+	n_top_gold_seed = len(set(gold_ids) & set(seed_ids) & set(selected_ids_with_seeds))
+	n_all = len(set(all_ids))
+	n_all_seed = len(set(seed_ids) & set(all_ids))
+	n_all_gold = len(set(gold_ids) & set(all_ids))
+	n_all_gold_seed = len(set(gold_ids) & set(seed_ids) & set(all_ids))
+
+	f.write("\ntop\nall %d\nseed %d\ngold %d\ngold&seed %d\n" % (n_top, n_top_seed, n_top_gold, n_top_gold_seed))
+	f.write("\nnetwork\nall %d\nseed %d\ngold %d\ngold&seed %d\n" % (n_all, n_all_seed, n_all_gold, n_all_gold_seed))
+	f.write("\nsum(dhyper(%d:%d, %d, %d, %d))\n" % (n_top_gold - n_top_gold_seed, min(n_all_gold - n_all_gold_seed, n_top - n_top_seed), n_all_gold - n_all_gold_seed, n_all - n_all_seed - n_all_gold + n_all_gold_seed, n_top - n_top_seed))
+	from scipy.stats import hypergeom
+	#print n_top_gold - n_top_gold_seed, ":", min(n_all_gold - n_all_gold_seed, n_top), n_all - n_all_seed, n_all_gold - n_all_gold_seed, n_top - n_top_seed
+	val = sum(hypergeom.pmf(range(n_top_gold - n_top_gold_seed, min(n_all_gold - n_all_gold_seed, n_top)), n_all - n_all_seed, n_all_gold - n_all_gold_seed, n_top - n_top_seed))
+	f.write("\n%e -> %f\n" % (val, val))
+
+    #f.write("%s\n" % zip(["gold & seed", "gold & top", "gold & all"], map(lambda x: len(gold_ids & x), [ seed_scoring_ids, top_scoring_ids, all_scoring_ids ])))
+    #f.write("seed-free: %s\n" % zip(["gold", "top", "all"], map(len, [ gold_ids-seed_scoring_ids, top_scoring_ids, all_scoring_ids-seed_scoring_ids ])))
+    f.write("\nmatched ids: %s\n" % str(matched_ids))
+    f.write("\nids to be modified in mapping files: %s\n" % str((gold_ids & all_scoring_ids2) - (gold_ids & all_scoring_ids)))
 
     out_file_matched = open(compare_dir + "matched.txt", "w")
     for id in matched_ids: 
@@ -978,9 +1029,9 @@ def compare_experiments(experiments, gold_standard_file=None, tex_format=False, 
     non_seed_all_ids = all_scoring_ids - seed_scoring_ids
     x = len(gold_ids & top_scoring_ids)
     m = len(gold_ids & non_seed_all_ids)
-    n = len(non_seed_all_ids)
+    n = len(non_seed_all_ids-gold_ids)
     k = len(top_scoring_ids)
-    f.write("\nsum(dhyper(%d:%d, %d, %d, %d))\n" % (x, min(m, len(top_scoring_ids)), m, n, k))
+    f.write("\nsum(dhyper(%d:%d, %d, %d, %d))\n\n" % (x, min(m, len(top_scoring_ids)), m, n, k))
     f.close()
 
 
@@ -1119,7 +1170,7 @@ def sum_up_experiments(ppis, phenotypes, analysis_type="auc", tex_format=False, 
 		for phenotype, method_to_auc in phenotype_container.iteritems():
 		    auc_list.append(method_to_auc[scoring][0])
 		mean, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(auc_list)
-		out_file.write("%s:\t%f\t+/- %f\n" % (ppi, mean, sigma))
+		out_file.write("%s:\t%f\t%f\n" % (ppi, mean, sigma))
     out_file.close()
 
     # for perturbed seeds
@@ -1180,7 +1231,7 @@ def sum_up_experiments(ppis, phenotypes, analysis_type="auc", tex_format=False, 
 		for ppi, phenotype_container in ppi_phenotype_auc_container.iteritems():
 		    auc_list.append(phenotype_container[phenotype][scoring][0])
 		mean, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(auc_list)
-		out_file.write("%s:\t%f\t+/- %f\n" % (phenotype, mean, sigma))
+		out_file.write("%s:\t%f\t%f\n" % (phenotype, mean, sigma))
     out_file.close()
 
     if seed_cutoff is not None:
@@ -1440,7 +1491,7 @@ def score_mcl(node_scores_file, edge_scores_file, output_scores_file, module_fil
     f.close()
     return
 
-def analyze(PPI, SCORING, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, specie, network_file, candidates_file_mapped, functional_enrichment):
+def analyze(PPI, ASSOCIATION, SCORING, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, r_script_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, specie, network_file, candidates_file_mapped, functional_enrichment):
     """
 	Does cross validation and percentage analysis on the output files
     """
@@ -1450,7 +1501,7 @@ def analyze(PPI, SCORING, output_scores_file, log_file, node_scores_file, associ
 	analyze_navlakha(SCORING, r_script_file, output_scores_file, node_scores_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, log_file, candidates_file_mapped)
     else:
 	if score_with_all_seeds:
-	    analyze_original(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, specie, network_file, functional_enrichment)
+	    analyze_original(PPI, ASSOCIATION, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, specie, network_file, functional_enrichment)
 	else:
 	    analyzed = analyze_xval(SCORING, r_script_file, output_scores_file, node_scores_file, predictions_file, labels_file, tex_script_file, output_log_file, output_dir, title, log_file, candidates_file_mapped, analysis_type = "auc") # user - for cutoff analysis, was used before for navlakha data 
 	    if analyzed:
@@ -1512,7 +1563,11 @@ def score_original(SCORING, score_commands, output_scores_file, log_file, job_fi
 		#os.system("qsub -cwd -o out -e err -l hostname=node34 -N %s -b y %s" % (SCORING, score_commands[SCORING]))
 		os.system("qsub -cwd -o out -e err -q %s -N %s -b y %s" % (qname, SCORING, score_commands[SCORING]))
 	    else:
+		import time
+		t1 = time.clock()
 		os.system(score_commands[SCORING])
+		t2 = time.clock()
+		print t2-t1
 	f.close()
     return
 
@@ -1686,7 +1741,7 @@ def analyze_xval_percentage(log_file, output_scores_file, node_scores_file, cand
     return
 
 
-def analyze_original(PPI, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, specie, network_file, functional_enrichment = False):
+def analyze_original(PPI, ASSOCIATION, output_scores_file, log_file, node_scores_file, association_scores_file_identifier_type, node_mapping_file, node_description_file, network_file_identifier_type, association_scores_validation_file, specie, network_file, functional_enrichment = False):
     if not os.path.exists(output_scores_file):
 	raise Exception("Output score file does not exist!")
 
@@ -1716,6 +1771,8 @@ def analyze_original(PPI, output_scores_file, log_file, node_scores_file, associ
 	#	f.write("%s\n" % str(analyze_results.calculate_seed_coverage_at_given_cutoff(output_scores_file+"."+association_scores_file_identifier_type, association_scores_validation_file, percentage, None, DEFAULT_NON_SEED_SCORE)))
 
     analyze_results.output_mapped_node_id_scores(output_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, one_gene_per_node=True, output_file=output_scores_file+"."+association_scores_file_identifier_type)
+    #analyze_results.output_mapped_node_id_scores(output_scores_file, node_mapping_file+".genesymbol", one_gene_per_node=True, output_file=output_scores_file+".genesymbol")
+    #os.system("cp %s %s" % (output_scores_file+"."+association_scores_file_identifier_type, "./extended/"+ASSOCIATION+".txt")) # for the analysis of extended omim disease similarity based on common genes
 
     if functional_enrichment and association_scores_file_identifier_type is not None and os.path.exists(node_mapping_file+"."+association_scores_file_identifier_type):
     	f.write("\nFUNCTIONAL ENRICHMENT ANALYSIS (OVER TOP %s SCORING NODES)\n" % DEFAULT_TOP_SCORING_CUTOFF)

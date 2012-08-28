@@ -5,7 +5,7 @@ DATA_DIR = "../data/"
 
 def main():
     #convert_ids_for_netscore_alzheimer_analysis()
-    get_seed_gene_counts(DATA_DIR + "input/biana_no_tap_no_reliability/")#"input_runs_for_draft/biana_no_tap_no_reliability/")
+    #get_seed_gene_counts(DATA_DIR + "input/biana_no_tap_no_reliability/")#"input_runs_for_draft/biana_no_tap_no_reliability/")
 
     #file_name = DATA_DIR + "omim/alzheimer.txt"
     #out_file_name = "test.txt"
@@ -22,11 +22,252 @@ def main():
 
     #case_study_neighborhood()
 
-    #get_go_terms()
+    #case_study_high_scoring()
+
+    #get_similarity_of_go_terms_for_omim_diseases()
+
+    # DATA_DIR + output/biana_no_tap_relevance/new_omim_diabetes/nc3/node_scores.sif
+    #convert_ueid_scores_to_gene_scores("node_scores.sif", "output.txt")
+
+    #get_omim_disease_similarity()
+    #get_omim_disease_similarity_in_network()
+    #get_omim_disease_similarity_in_network_extended()
+
+    #get_drugs_by_targets()
+
+    get_average_age_of_disease_genes_in_network_extended()
 
     return
 
-def get_go_terms():
+def get_average_age_of_disease_genes_in_network_extended():
+    # Prerequist: run analyze for this phenotypes in score_with_original_seeds mode
+    # That will convert and copy output files under the directory with proper names: extended/omim_xxx.txt
+    from parse_omim import get_disease_genes
+    dir_name = DATA_DIR + "omim/2009_Aug_27/extended/"
+    protein_age_file = "/home/emre/arastirma/data/collaboration/macarena/edat_humanprots_ev62.sort"
+    gene_to_ensembl_file = "/home/emre/arastirma/data/collaboration/macarena/mart_export.txt"
+    age_category = [ "Eukarya", "Metazoans", "Vertebrates", "Mammals"] #, "Human-specific" ]
+    output_file = DATA_DIR + "omim/2009_Aug_27/extended/age_category.dat"
+
+    node_scores_file = "/home/emre/arastirma/data/collaboration/arcadi/uncommon-max/node_scores.sif.genesymbol.single"
+    output_file = "/home/emre/arastirma/data/collaboration/arcadi/uncommon-max/age_category.dat"
+    
+    ensembl_to_category = dict([ line.strip().split("\t") for line in open(protein_age_file) ])
+    gene_to_category = {}
+    f = open(gene_to_ensembl_file)
+    f.readline()
+    for line in f:
+	gene, ensembl = line.strip().split("\t")
+	if ensembl not in ensembl_to_category:
+	    continue
+	category = ensembl_to_category[ensembl]
+	if category == "Human-specific": 
+	    category = "Mammals"
+	if gene in gene_to_category and category != gene_to_category[gene]:
+	    print "Warning: inconsistent category for", gene, category
+	gene_to_category[gene] = category
+    f.close()
+
+    if node_scores_file is not None:
+	f = open(output_file, 'w')
+	f.write("gene score category\n")
+	for line in open(node_scores_file):
+	    gene, score = line.split()
+	    if gene in gene_to_category:
+		category = gene_to_category[gene]
+	    else:
+		category = "NA"
+	    f.write("%s %s %s\n" % (gene, score, category))
+	f.close()
+	return
+
+    f = open(output_file, 'w')
+    f.write("%s\n" % " ".join(age_category))
+    disease_to_genes = get_disease_genes(dir_name, top_percentage=5) 
+    diseases = disease_to_genes.keys()
+    diseases.sort()
+    for disease in diseases:
+	i = 0.0 
+	category_to_count = dict([(category, 0) for category in age_category ])
+	genes = disease_to_genes[disease]
+	for gene in genes:
+	    if gene in gene_to_category:
+		i += 1
+		category_to_count[gene_to_category[gene]] += 1
+	f.write("omim_%s" % disease)
+	category_counts = []
+	for category, count in category_to_count.iteritems():
+	    category_counts.append((count, category))
+	category_counts.sort()
+	category_counts.reverse()
+	for count, category in category_counts:
+	    f.write(" %f" % (count/i))
+	f.write("\n")
+    f.close()
+    return
+
+def get_drugs_by_targets():
+    from parse_drugbank import get_drug_targets
+    drugbank_file = "/home/emre/arastirma/data/disease/drugbank/drugbank.xml" 
+    drug_to_targets, drug_to_description, drug_to_indication = get_drug_targets(drugbank_file)
+
+    def output_drugs_by_targets(disease_to_genes, output_file):
+	f = open(output_file, 'w')
+	f.write("Drug\tDescription\tIndication\tTargets\tRepurposes\tAffected target ratio for repurposes\n")
+	for drug, targets in drug_to_targets.iteritems():
+	    description = drug_to_description[drug]
+	    if description is not None:
+		description = description.encode('ascii', 'replace').replace("\n", " ").replace("\r", "")
+	    else: 
+		description = ""
+	    indication = drug_to_indication[drug]
+	    if indication is not None:
+		indication = indication.encode('ascii', 'replace').replace("\n", " ").replace("\r", "")
+	    else: 
+		indication = ""
+	    diseases = []
+	    for disease, genes in disease_to_genes.iteritems():
+		ratio = len(targets & genes) / float(len(targets))
+		if len(targets) > 1 and ratio > 0.65:
+		    diseases.append((ratio, disease))
+	    if len(diseases) == 0:
+		continue
+	    diseases.sort()
+	    diseases.reverse()
+	    #f.write("%s\t%s\t%s\t%s\t%s\n" % (drug, description, indication, " | ".join(targets), " | ".join(diseases)))
+	    f.write("%s\t%s\t" % (drug, description))
+	    f.write("%s\t%s\t" % (indication, " | ".join(targets)))
+	    f.write("%s\t%s\n" % (" | ".join(zip(*diseases)[1]), " | ".join(map(str, zip(*diseases)[0]))))
+	f.close()
+	return
+
+    from parse_omim import get_disease_genes
+    dir_name = DATA_DIR + "omim/2009_Aug_27/" 
+    disease_to_genes = get_disease_genes(dir_name) 
+    output_file = "drug_to_repurpose.txt" 
+    output_drugs_by_targets(disease_to_genes, output_file)
+
+    dir_name = DATA_DIR + "omim/2009_Aug_27/extended/"
+    disease_to_genes = get_disease_genes(dir_name, top_percentage=1)
+    output_file = "drug_to_repurpose_extended.txt"
+    output_drugs_by_targets(disease_to_genes, output_file)
+    return
+
+    
+
+def get_omim_disease_similarity():
+    from parse_omim import get_disease_similarity_matrix
+    dir_name = DATA_DIR + "omim/2009_Aug_27/"
+    get_disease_similarity_matrix(dir_name, dir_name + "similarity.dat")
+    return
+
+def get_omim_disease_similarity_in_network():
+    from parse_omim import get_disease_similarity_matrix
+    dir_name = DATA_DIR + "omim/2009_Aug_27/"
+    network_file = DATA_DIR + "input/biana_no_tap_no_reliability/edge_scores.sif"
+    node_mapping_file = DATA_DIR + "input/biana_no_tap_no_reliability/node_mapping.tsv.genesymbol"
+    convert_multiple_entry_to_single(node_mapping_file)
+    genes_in_network = get_corresponding_genes_of_ues(network_file, node_mapping_file + ".single")
+    get_disease_similarity_matrix(dir_name, dir_name + "similarity_in_ppi.dat", genes_to_be_considered = genes_in_network)
+    return
+
+def get_omim_disease_similarity_in_network_extended():
+    # Prerequist: run analyze for this phenotypes in score_with_original_seeds mode
+    # That will convert and copy output files under the directory with proper names: extended/omim_xxx.txt
+    from parse_omim import get_disease_similarity_matrix
+    dir_name = DATA_DIR + "omim/2009_Aug_27/extended/"
+    get_disease_similarity_matrix(dir_name, dir_name + "similarity_top5.dat", top_percentage=5)
+    return
+
+def convert_ueid_scores_to_gene_scores(node_scores_file, output_scores_file):
+    node_mapping_file = DATA_DIR + "input/biana_no_tap_relevance/node_mapping.tsv.genesymbol.single"
+    from analyze_results import get_id_to_mapped_id_mapping
+    id_to_mapped_ids = get_id_to_mapped_id_mapping(node_mapping_file)
+    node_to_score = {}
+    for line in open(node_scores_file):
+	ueid, score = line.strip().split()
+	node_to_score[ueid] = score
+    gene_to_score = {}
+    for node, score in node_to_score.iteritems():
+	if node not in id_to_mapped_ids: # ueid to "-" mapping
+	    continue
+	gene = id_to_mapped_ids[node][0]
+	if len(id_to_mapped_ids[node])>1:
+	    print id_to_mapped_ids[node]
+	if gene in gene_to_score:
+	    if score > gene_to_score[gene]:
+		gene_to_score[gene] = score
+	else:
+	    gene_to_score[gene] = score
+    f = open(output_scores_file, 'w')
+    for gene, score in gene_to_score.iteritems():
+	f.write("%s\t%s\n" % (gene, score))
+    f.close()
+    values = gene_to_score.items()
+    values.sort(lambda x,y: cmp(y[1],x[1]))
+    f = open(output_scores_file+".ranked", 'w')
+    for i, val in enumerate(values):
+	f.write("%s\t%s\n" % (val[0], i+1))
+    f.close()
+    return
+
+def case_study_high_scoring():
+    base_dir = "/home/emre/arastirma/netzcore/doc/draft/alzheimer_case_study/"
+    network_file = DATA_DIR + "input/biana_no_tap_relevance/edge_scores.sif"
+    node_mapping_file = DATA_DIR + "input/biana_no_tap_relevance/node_mapping.tsv.genesymbol.single"
+    seeds_file = DATA_DIR + "input/biana_no_tap_relevance/new_omim_alzheimer/seed_scores.sif" 
+    candidates_file = DATA_DIR + "input/biana_no_tap_relevance/new_omim_alzheimer/candidates.txt" 
+    ad_omim_file = DATA_DIR + "omim/2011_Nov_2/new_omim_alzheimer.txt" 
+    aging_file = DATA_DIR + "uwaging/mutex_uwaging_genage_netage.txt"
+    ad_file = DATA_DIR + "alzheimer_gold/gene_list.txt"
+
+    f = open(base_dir + "weighted_bPPI.eda", 'w')
+    f.write("weight\n")
+    nodes_in_network = set()
+    for line in open(network_file):
+	words = line.strip().split()
+	f.write("%s (%s) %s = %s\n" % (words[0], words[1], words[2], words[1]))
+	nodes_in_network.add(words[0])
+	nodes_in_network.add(words[2])
+    f.close()
+
+    f = open(base_dir + "seeds_in_network.txt", 'w')
+    for line in open(seeds_file):
+	f.write("%s\n" % line.strip().split()[0])
+    f.close()
+
+    convert_genesymbol_to_user_entity_id(node_mapping_file + ".reversed", ad_omim_file, base_dir + "seed_nodes.txt")
+    convert_genesymbol_to_user_entity_id(node_mapping_file + ".reversed", aging_file, base_dir + "aging_nodes.txt")
+    convert_genesymbol_to_user_entity_id(node_mapping_file + ".reversed", ad_file, base_dir + "ad_gold_nodes.txt")
+    seed_nodes = set([gene.strip() for gene in open(base_dir + "seed_nodes.txt")]) & nodes_in_network
+    aging_nodes = set([gene.strip() for gene in open(base_dir + "aging_nodes.txt")]) & nodes_in_network
+    ad_nodes = set([gene.strip() for gene in open(base_dir + "ad_gold_nodes.txt")]) & nodes_in_network
+    candidate_nodes = set([gene.strip() for gene in open(candidates_file)]) & nodes_in_network
+    
+    f = open(base_dir + "node_phenotypes.noa", 'w')
+    f.write("phenotype\n")
+    common = seed_nodes & aging_nodes & ad_nodes
+    for node in common:
+	f.write("%s = %s\n" % (node, "seed-ad-aging"))
+    for node in (seed_nodes & ad_nodes)-common:
+	f.write("%s = %s\n" % (node, "seed-ad"))
+    for node in (seed_nodes & aging_nodes)-common:
+	f.write("%s = %s\n" % (node, "seed-aging"))
+    for node in (ad_nodes & aging_nodes)-common:
+	f.write("%s = %s\n" % (node, "ad-aging"))
+    for node in (seed_nodes - ad_nodes) - aging_nodes:
+	f.write("%s = %s\n" % (node, "seed"))
+    for node in (ad_nodes - seed_nodes) - aging_nodes:
+	f.write("%s = %s\n" % (node, "ad"))
+    for node in (aging_nodes - seed_nodes) - ad_nodes:
+	f.write("%s = %s\n" % (node, "aging"))
+    for node in candidate_nodes - (seed_nodes | ad_nodes | aging_nodes):
+	f.write("%s = %s\n" % (node, "candidate"))
+    f.close()
+
+    return
+
+def get_similarity_of_go_terms_for_omim_diseases():
     base_dir = "/home/emre/arastirma/netzcore/data/module/biana_no_tap-omim/"
     f = open(base_dir + "modules.txt")
     phenotype_to_functions = {}
@@ -231,6 +472,8 @@ def get_corresponding_genes_of_ues(network_file, mapping_file, network_file_deli
 	    id1 = words[0]
 	    id2 = id1
 	for ueid in [id1, id2]:
+	    if ueid not in ueid_to_gene:
+		continue 
 	    gene = ueid_to_gene[ueid]
 	    if gene != "-":
 		comparison.add(gene)
@@ -276,8 +519,8 @@ def convert_sif_file_to_R_matrix(file_name, out_file_name):
 
 def check_pearson_correlation_between_seed_connectivity_and_performance():
     from scipy import stats
-    method_to_values = read_R_data_file(DATA_DIR + "summary/biana_no_tap7_vs_all5-top5/auc_ppis.dat")
-    metric_to_values = read_R_data_file(DATA_DIR + "summary/biana_no_tap7_vs_all5-top5/seeds.dat")
+    method_to_values = read_R_data_file(DATA_DIR + "summary/biana_no_tap_vs_all-wo_LI/auc_ppis.dat")
+    metric_to_values = read_R_data_file(DATA_DIR + "summary/biana_no_tap_vs_all-wo_LI/seeds.dat")
     for method, values1 in method_to_values.iteritems():
 	values1.sort()
 	for metric, values2 in metric_to_values.iteritems():
@@ -304,19 +547,27 @@ def read_R_data_file(file_name, seperator="\t"):
 
 def get_unique_ids_for_biana_ids(file_name, attribute, out_file):
         biana_ids = [ line.rstrip() for line in open(file_name) ]
-        fetch_unique_ids(biana_ids, attribute, out_file)
+        fetch_attributes_for_biana_ids(biana_ids, attribute, out_file, unique=True)
 
-def fetch_unique_ids(biana_ids, attribute, out_file):
+def fetch_attributes_for_biana_ids(biana_ids, attribute, out_file, unique=False):
         import MySQLdb
+        #db = MySQLdb.connect("localhost", "jgarcia", "", "biana_server_release4")
         db = MySQLdb.connect("localhost", "", "", "test_biana")
         c=db.cursor()
-        #c.execute("SELECT U.userEntityID, E.value FROM userEntityUnification_protocol_12 U, externalEntity%s E where U.externalEntityID=E.externalEntityID AND E.type='unique' AND U.userEntityID IN (%s)" % (attribute, ",".join(biana_ids)))
-        c.execute("SELECT U.userEntityID, E.value FROM userEntityUnification_protocol_12 U, externalEntity%s E where U.externalEntityID=E.externalEntityID AND E.type='cross-reference' AND U.userEntityID IN (%s)" % (attribute, ",".join(biana_ids)))
-        f = open(out_file, 'w')
+        if unique:
+                query = "SELECT U.userEntityID, E.value FROM userEntityUnification_protocol_12 U, externalEntity%s E where U.externalEntityID=E.externalEntityID AND E.type='unique' AND U.userEntityID IN (%s)" % (attribute, ",".join(biana_ids))
+        else:
+                query = "SELECT U.userEntityID, E.value FROM userEntityUnification_protocol_12 U, externalEntity%s E where U.externalEntityID=E.externalEntityID AND U.userEntityID IN (%s)" % (attribute, ",".join(biana_ids))
+        c.execute(query)
+        biana_id_to_values = {}
         for row in c.fetchall():
-                f.write("%s\n" % "\t".join(map(str, row)))
+                biana_id_to_values.setdefault(row[0], set()).add(row[1])
+        f = open(out_file, 'w')
+        for biana_id, values in biana_id_to_values.iteritems():
+                f.write("%s\t%s\n" % (biana_id, "|".join(map(str, values))))
         f.close()
         return
+
 
 
 def get_common_non_empty_navlakha_files():
@@ -370,13 +621,13 @@ def convert_ids_for_netscore_alzheimer_analysis():
     #node_association_file = DATA_DIR + "uwaging/mutex_uwaging_genage_netage.txt"
     node_association_file1 = DATA_DIR + "uwaging/uwaging_genage_netage.txt"
     for node_association_file in [ node_association_file1 ]: #, node_association_file2, node_association_file3 ]:
-    	convert_genesymbol_to_user_entity_id(node_mapping_file + ".single.reversed", node_association_file)
+    	convert_genesymbol_to_user_entity_id(node_mapping_file + ".single.reversed", node_association_file, node_association_file + ".user_entity_id")
 
 
-def convert_genesymbol_to_user_entity_id(node_mapping_file, node_association_file):
+def convert_genesymbol_to_user_entity_id(node_mapping_file, node_association_file, out_file):
     from analyze_results import get_id_to_mapped_id_mapping
     id_to_mapped_ids = get_id_to_mapped_id_mapping(node_mapping_file)
-    f = open(node_association_file + ".user_entity_id", 'w')
+    f = open(out_file, 'w')
     for line in open(node_association_file):
 	gene = line.strip()
 	if gene in id_to_mapped_ids:

@@ -2,12 +2,17 @@ dir.name<-"../data/summary/"
 cols<-c(2,7,3,4,6,5,8) #rainbow(7) #2:8 #heat.colors(7)
 color5<-cols[1:5]
 color2<-c(3,4)
-#scoring.methods<-c("N.Score", "N.Zcore", "N.Short", "F.Flow", "P.Rank", "R.Walk", "N.Prop")
-scoring.methods<-c("N.Score", "N.Zcore", "N.Short", "F.Flow", "P.Rank")
+scoring.methods<-c("N.Score", "N.Zcore", "N.Short", "N.Combo", "F.Flow", "P.Rank", "R.Walk", "N.Prop")
+scoring.methods.full<-c("NetScore", "NetZcore", "NetShort", "NetCombo", "Functional\nFlow", "Page\nRank", "Random\nWalk", "Network\n Propagation")
+#scoring.methods<-c("N.Score", "N.Zcore", "N.Short", "F.Flow", "P.Rank")
+scoring.method.ids<-c("ns", "nz", "nd", "nc3", "ff", "nr", "rw", "np")
 
 main <- function() {
     #manuscript()
-    manuscript2()
+    #manuscript2()
+
+    #disease_category_figures()
+    case_study_score_distributions()
 
     #case_study_figures()
     #navlakha_figures()
@@ -26,13 +31,13 @@ manuscript2<-function() {
 }
 
 
-
 ###### MANUSCRIPT2 FIGURES ######
 manuscript2_figures<-function() {
     neighborhood_figures()
     robustness_figures()
     disease_category_figures()
     module_figures()
+    omim_similarity_figures()
 }
 
 lambda<-function(x) { x<-substring(x, 6); words<-unlist(strsplit(x, "_")); x<-paste(words, collapse=" "); return(x) }
@@ -72,8 +77,9 @@ neighborhood_figures <- function() {
 ###### ROBUSTNESS FIGURES ######
 robustness_figures <- function() {
 
-    dir.name<-"../data/summary/"
+    dir.name<-"../data/summary_draft_before_revision/"
     percentages<-seq(0,80,by=10) # c(0, 10, 30, 50, 70)
+    scoring.methods<-c("N.Score", "N.Zcore", "N.Short", "F.Flow", "P.Rank")
 
     # Average AUC (%) at different levels of interaction permutation over OMIM disorders on bPPI network
     cairo_ps(paste(dir.name, "Figure P2a.eps", sep=""), width = 6, height = 6, onefile = TRUE) # ps: horizontal = FALSE, onefile = FALSE, paper = "special")
@@ -108,7 +114,7 @@ robustness_figures <- function() {
     dev.off()
 
     # Average AUC (%) at different levels of interaction permutation over OMIM disorders on GOH network
-    dir.name<-"../data/summary/"
+    dir.name<-"../data/summary_draft_before_revision/"
     cairo_ps(paste(dir.name, "Figure PS1a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     par(family = "Arial") 
     e<-c()
@@ -141,7 +147,7 @@ robustness_figures <- function() {
     dev.off()
 
     # Average AUC (%) at different levels of interaction pruning over OMIM disorders on bPPI network
-    dir.name<-"../data/summary/"
+    dir.name<-"../data/summary_draft_before_revision/"
     cairo_ps(paste(dir.name, "Figure P2b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     par(family = "Arial") 
     e<-c()
@@ -175,7 +181,7 @@ robustness_figures <- function() {
     dev.off()
 
     # Average AUC (%) at different levels of interaction pruning over OMIM disorders on GOH network
-    dir.name<-"../data/summary/"
+    dir.name<-"../data/summary_draft_before_revision/"
     cairo_ps(paste(dir.name, "Figure PS1b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     par(family = "Arial") 
     e<-c()
@@ -207,7 +213,7 @@ robustness_figures <- function() {
     dev.off()
 
     # Average AUC (%) for two groups of OMIM disorders based on number of seeds on bPPI network 
-    dir.name<-"../data/summary/"
+    dir.name<-"../data/summary_draft_before_revision/"
     cairo_ps(paste(dir.name, "Figure P3a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     par(family = "Arial") 
 
@@ -228,7 +234,7 @@ robustness_figures <- function() {
     dev.off()
 
     # Average AUC (%) for two groups of OMIM disorders based on number of seeds on GOH network
-    dir.name<-"../data/summary/"
+    dir.name<-"../data/summary_draft_before_revision/"
     cairo_ps(paste(dir.name, "Figure PS2a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     par(family = "Arial") 
 
@@ -248,7 +254,7 @@ robustness_figures <- function() {
     dev.off()
 
     # Average AUC (%) at different levels of seed permutation over OMIM disorders on bPPI network
-    dir.name<-"../data/summary/"
+    dir.name<-"../data/summary_draft_before_revision/"
     cairo_ps(paste(dir.name, "Figure P3b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     par(family = "Arial") 
     e<-c()
@@ -280,7 +286,7 @@ robustness_figures <- function() {
     dev.off()
 
     # Average AUC (%) at different levels of seed permutation over OMIM disorders on GOH network
-    dir.name<-"../data/summary/"
+    dir.name<-"../data/summary_draft_before_revision/"
     cairo_ps(paste(dir.name, "Figure PS2b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     par(family = "Arial") 
     e<-c()
@@ -323,9 +329,10 @@ disease_category_figures<-function() {
     #cols<-2:23
     method<-"ns"
     percentages<-seq(0,80,by=10)
+    dir.summary<-"../data/summary_draft_before_revision/"
 
     # Change on AUC of diseases over permuted and pruned interactions
-    dir.name<-"../data/summary/"
+    dir.name<-dir.summary
     label<-"Percentage of perturbated interactions"
     container.permuted<-data.frame()
     container.pruned<-data.frame()
@@ -350,6 +357,7 @@ disease_category_figures<-function() {
     rownames(container.pruned)<-phenotypes
 
     # Take common to both permuted and pruned
+
     # Robustness cutoff: auc-(auc-50)/2
     common.up<-c()
     common.down<-c()
@@ -376,6 +384,8 @@ disease_category_figures<-function() {
     container<-container.pruned
     container.pruned.up<-container[common.up,]
     container.pruned.down<-container[common.down,]
+
+    write.table(cbind(container.permuted[,1], container.permuted[,1]-(container.permuted[,1]-50)/2, container.permuted[,6], container.pruned[,6]), paste(dir.summary, 'test.dat', sep=""), sep="\t", col.names=c("AUC", "critical AUC", "50% swap AUC", "50% deletion AUC"))
 
     # Before robustness cutoff: median(aucs)
     container<-container.permuted
@@ -405,8 +415,14 @@ disease_category_figures<-function() {
 
     common<-union(common.up, common.down)
     non.common<-phenotypes[!(phenotypes %in% common)]
+    # Now two categories: robust vs non-robust
+    common.down<-union(common.down, non.common)
+    container<-container.permuted
+    container.permuted.down<-container[common.down,]
+    container<-container.pruned
+    container.pruned.down<-container[common.down,]
 
-    dir.name<-"../data/summary/"
+    dir.name<-dir.summary
     cairo_ps(paste(dir.name, "Figure P4a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     par(family = "Arial") 
 
@@ -429,7 +445,7 @@ disease_category_figures<-function() {
     legend(40, 20, c("Interaction permutation", "Interaction pruning"), lty=c(1,2), col=c(1,1), bty="n")
     dev.off()
 
-    dir.name<-"../data/summary/"
+    dir.name<-dir.summary
     cairo_ps(paste(dir.name, "Figure P4b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     par(family = "Arial") 
 
@@ -458,87 +474,139 @@ disease_category_figures<-function() {
     d<-read.table(paste(dir.name, "biana_no_tap-omim/module_summary.dat", sep=""), header=T)
     e<-d[d$scoring==method & d$phenotype %in% common.up,]
     f<-d[d$scoring==method & d$phenotype %in% common.down,]
-    g<-d[d$scoring==method & d$phenotype %in% non.common,]
+    #g<-d[d$scoring==method & d$phenotype %in% non.common,]
 
-    dir.name<-"../data/summary/"
-    labels<-c("Robust", "Uncharacterized", "Non-robust")
+    dir.name<-dir.summary
+    #labels<-c("Robust", "Uncharacterized", "Non-robust")
+    labels<-c("Robust", "Non-robust")
     cairo_ps(paste(dir.name, "Figure P5a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     par(family = "Arial") 
-    boxplot(e$n_module, g$n_module, f$n_module, col=8, names=labels, xlab="Disease category", ylab="Number of modules", ylim=c(0,20))
+    #boxplot(e$n_module, g$n_module, f$n_module, col=8, names=labels, xlab="Disease category", ylab="Number of modules", ylim=c(0,20))
+    boxplot(e$n_module, f$n_module, col=8, names=labels, xlab="Disease category", ylab="Number of modules", ylim=c(0,15))
+    #boxplot(e$n_module, f$n_module, col=8, boxwex=0.4, at=c(0.75, 1.25), xlim=c(0.5,1.5), names=labels, xlab="Disease category", ylab="Number of modules", ylim=c(0,15))
     dev.off()
     a<-wilcox.test(e$n_module, f$n_module)
     print(c("module:", a$p.value))
 
     cairo_ps(paste(dir.name, "Figure P5b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     par(family = "Arial") 
-    boxplot(100*e$n_seed_go_in_modules/e$n_seed_go, 100*g$n_seed_go_in_modules/g$n_seed_go, 100*f$n_seed_go_in_modules/f$n_seed_go, col=8, names=labels, xlab="Disease category", ylab="Average seed GO term enrichment among the modules (%)", ylim=c(0,100))
+    #boxplot(100*e$n_seed_go_in_modules/e$n_seed_go, 100*g$n_seed_go_in_modules/g$n_seed_go, 100*f$n_seed_go_in_modules/f$n_seed_go, col=8, names=labels, xlab="Disease category", ylab="Average seed GO term enrichment among the modules (%)", ylim=c(0,100))
+    boxplot(100*e$n_seed_go_in_modules/e$n_seed_go, 100*f$n_seed_go_in_modules/f$n_seed_go, col=8, names=labels, xlab="Disease category", ylab="Average seed GO term enrichment among the modules (%)", ylim=c(0,100))
     dev.off()
     a<-wilcox.test(e$n_seed_go_in_modules/e$n_seed_go, f$n_seed_go_in_modules/f$n_seed_go)
     print(c("enrichment: ", a$p.value)) #, mean(e$n_seed_go_in_modules/e$n_seed_go, na.rm=T), mean(f$n_seed_go_in_modules/f$n_seed_go, na.rm=T)))
 
     cairo_ps(paste(dir.name, "Figure P5c.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     par(family = "Arial") 
-    boxplot(100*e$n_seed_go_in_modules/e$n_go_in_modules, 100*g$n_seed_go_in_modules/g$n_go_in_modules, 100*f$n_seed_go_in_modules/f$n_seed_go, col=8, names=labels, xlab="Disease category", ylab="Average coverage of seed GO terms among the modules (%)", ylim=c(0,100))
+    #boxplot(100*e$n_seed_go_in_modules/e$n_go_in_modules, 100*g$n_seed_go_in_modules/g$n_go_in_modules, 100*f$n_seed_go_in_modules/f$n_seed_go, col=8, names=labels, xlab="Disease category", ylab="Average coverage of seed GO terms among the modules (%)", ylim=c(0,100))
+    boxplot(100*e$n_seed_go_in_modules/e$n_go_in_modules, 100*f$n_seed_go_in_modules/f$n_seed_go, col=8, names=labels, xlab="Disease category", ylab="Average coverage of seed GO terms among the modules (%)", ylim=c(0,100))
     dev.off()
     a<-wilcox.test(e$n_seed_go_in_modules/e$n_go_in_modules, f$n_seed_go_in_modules/f$n_go_in_modules)
     print(c("ratio: ", a$p.value))
 
     cairo_ps(paste(dir.name, "Figure P5d.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     par(family = "Arial") 
-    boxplot(e$n_seed_go, g$n_seed_go, f$n_seed_go, col=8, names=labels, xlab="Disease category", ylab="Number of seed GO terms", ylim=c(0,150))
+    #boxplot(e$n_seed_go, g$n_seed_go, f$n_seed_go, col=8, names=labels, xlab="Disease category", ylab="Number of seed GO terms", ylim=c(0,150))
+    boxplot(e$n_seed_go, f$n_seed_go, col=8, names=labels, xlab="Disease category", ylab="Number of seed GO terms", ylim=c(0,150))
     dev.off()
     a<-wilcox.test(e$n_seed_go, f$n_seed_go)
     print(c("seed go: ", a$p.value))
 
     cairo_ps(paste(dir.name, "Figure P5e.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     par(family = "Arial") 
-    boxplot(e$n_go_in_modules, g$n_go_in_modules, f$n_go_in_modules, col=8, names=labels, xlab="Disease category", ylab="Number of GO terms in the modules", ylim=c(0,250))
+    #boxplot(e$n_go_in_modules, g$n_go_in_modules, f$n_go_in_modules, col=8, names=labels, xlab="Disease category", ylab="Number of GO terms in the modules", ylim=c(0,250))
+    boxplot(e$n_go_in_modules, f$n_go_in_modules, col=8, names=labels, xlab="Disease category", ylab="Number of GO terms in the modules", ylim=c(0,350))
     dev.off()
     a<-wilcox.test(e$n_go_in_modules, f$n_go_in_modules)
     print(c("go: ", a$p.value))
 
     cairo_ps(paste(dir.name, "Figure P5f.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     par(family = "Arial") 
-    boxplot(e$n_go_in_modules/e$n_module, g$n_go_in_modules/g$n_module, f$n_go_in_modules/f$n_module, col=8, names=labels, xlab="Disease category", ylab="Average number of GO terms per module", ylim=c(0,100))
+    #boxplot(e$n_go_in_modules/e$n_module, g$n_go_in_modules/g$n_module, f$n_go_in_modules/f$n_module, col=8, names=labels, xlab="Disease category", ylab="Average number of GO terms per module", ylim=c(0,100))
+    boxplot(e$n_go_in_modules/e$n_module, f$n_go_in_modules/f$n_module, col=8, names=labels, xlab="Disease category", ylab="Average number of GO terms per module", ylim=c(0,100))
     dev.off()
     a<-wilcox.test(e$n_go_in_modules/e$n_module, f$n_go_in_modules/f$n_module)
     print(c("go per module: ", a$p.value))
 
+    cairo_ps(paste(dir.name, "Figure P5g.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    par(family = "Arial") 
+    #boxplot(e$n_seed_go_in_modules, g$n_seed_go_in_modules, f$n_seed_go_in_modules, col=8, names=labels, xlab="Disease category", ylab="Number of seed GO terms in the modules", ylim=c(0,100))
+    boxplot(e$n_seed_go_in_modules, f$n_seed_go_in_modules, col=8, names=labels, xlab="Disease category", ylab="Number of seed GO terms in the modules", ylim=c(0,100))
+    dev.off()
+    a<-wilcox.test(e$n_seed_go_in_modules, f$n_seed_go_in_modules)
+    print(c("seed go in modules: ", a$p.value)) 
+
+    s<-read.table(paste(dir.name, 'biana_no_tap-omim/seeds.dat', sep=""))
+    a<-merge(e, s, by.x="phenotype", by.y="row.names")
+    b<-merge(f, s, by.x="phenotype", by.y="row.names")
+    cairo_ps(paste(dir.name, "Figure P5h.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    par(family = "Arial") 
+    boxplot(a$n_seed_go/a$n_seed, b$n_seed_go/b$n_seed, col=8, names=labels, xlab="Disease category", ylab="Number of seed GO terms per seed", ylim=c(0,5))
+    dev.off()
+    a<-wilcox.test(a$n_seed_go/a$n_seed, b$n_seed_go/b$n_seed)
+    print(c("seed go per seed: ", a$p.value)) 
 
     # n_seed and n_path in robust vs non-robust diseases
-    dir.name<-"../data/summary/"
-    s<-read.table(paste(dir.name, 'biana_no_tap-omim/seeds.dat', sep=""))
+    #dir.name<-dir.summary
     cairo_ps(paste(dir.name, "Figure PS3a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     par(family = "Arial") 
-    boxplot(s[common.up,"n_seed"], s[non.common,"n_seed"], s[common.down,"n_seed"], col=8, names=labels, xlab="Disease category", ylab="Number of seeds", ylim=c(0,120))
+    #boxplot(s[common.up,"n_seed"], s[non.common,"n_seed"], s[common.down,"n_seed"], col=8, names=labels, xlab="Disease category", ylab="Number of seeds", ylim=c(0,120))
+    boxplot(s[common.up,"n_seed"], s[common.down,"n_seed"], col=8, names=labels, xlab="Disease category", ylab="Number of seeds", ylim=c(0,120))
     dev.off()
     a<-wilcox.test(s[common.up,"n_seed"], s[common.down,"n_seed"])
     print(c("seed:", a$p.value))
     cairo_ps(paste(dir.name, "Figure PS3b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     par(family = "Arial") 
-    boxplot(s[common.up,"n_path"], s[non.common,"n_path"], s[common.down,"n_path"], col=8, names=labels, xlab="Disease category", ylab="Average length of seed connecting paths", ylim=c(0,5))
+    #boxplot(s[common.up,"n_path"], s[non.common,"n_path"], s[common.down,"n_path"], col=8, names=labels, xlab="Disease category", ylab="Average length of seed connecting paths", ylim=c(0,5))
+    boxplot(s[common.up,"n_path"], s[common.down,"n_path"], col=8, names=labels, xlab="Disease category", ylab="Average length of seed connecting paths", ylim=c(0,5))
     dev.off()
     a<-wilcox.test(s[common.up,"n_path"], s[common.down,"n_path"])
     print(c("path:", a$p.value))
 
-    return()
+
+    # comparison of the age of the genes
+    cairo_ps(paste(dir.name, "Figure PS6.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    d<-read.table("../data/omim/2009_Aug_27/extended/age_category.dat")
+    d<-d*100
+    coords <- seq(0.7, 3.7, by=1)
+    boxplot(d[common.up,], col="green", at=coords, boxwex=0.3, pars=list(xaxt="n"), xlab="Phylogenetic category", ylab="Ratio of genes (%)", ylim=c(0,100))
+    coords <- coords + 0.32
+    axis(1,tick=F,labels=c("Eukarya", "Metazoans", "Vertebrates", "Mammals"), at=coords)
+    #boxplot(d[non.common,], col="blue", at=coords, boxwex=0.3, pars=list(xaxt="n"),add=T)
+    #coords <- coords + 0.32
+    boxplot(d[common.down,], col="red", at=coords, boxwex=0.3, pars=list(xaxt="n"),add=T)
+    legend("topright", c("robust", "uncharacterized", "non-robust"), fill=c("green", "blue", "red"), bty="n", horiz=F)
+    dev.off()
+    a<-wilcox.test(d[common.up,1], d[common.down,1])
+    print(c("eukarya:", a$p.value))
+    a<-wilcox.test(d[common.up,2], d[common.down,2])
+    print(c("metzoans:", a$p.value))
+    a<-wilcox.test(d[common.up,3], d[common.down,3])
+    print(c("vertebrates:", a$p.value))
+    a<-wilcox.test(d[common.up,4], d[common.down,4])
+    print(c("mammals:", a$p.value))
+
+    return() 
+    
+    # Below gives error in batch execution due to margins of the heatmaps but images can be generated in interactive mode
 
     library(gplots)
-    library(brewer)
-    cols<-c(rep("red", length(common.up)), rep("grey", length(non.common)), rep("green", length(common.down)))
-    #cols<-c(rep("blue", length(common.up)), rep("grey", length(non.common)), rep("orange", length(common.down)))
+    library(RColorBrewer)
+    #cols<-c(rep("red", length(common.up)), rep("grey", length(non.common)), rep("green", length(common.down)))
+    cols<-c(rep("green", length(common.up)), rep("lightgrey", length(common.down)))
     val.cols <- brewer.pal(9,"Blues") #greenred
     # Common functions in pairwise  enrichment
-    dir.name<-"../data/summary/"
+    dir.name<-dir.summary
     cairo_ps(paste(dir.name, "Figure PS5a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     dir.name<-"../data/module/"
     d<-read.table(paste(dir.name, "biana_no_tap-omim/functional_similarity_matrix.dat", sep=""), header=T)
-    e<-d[c(common.up, non.common, common.down),c(common.up, non.common, common.down)]
+    #e<-d[c(common.up, non.common, common.down),c(common.up, non.common, common.down)]
+    e<-d[c(common.up, common.down),c(common.up, common.down)]
     e[upper.tri(e)]<-NA
     heatmap.2(as.matrix(e), revC=F, trace="none", dendrogram="none", col=val.cols, density.info="none", margins=c(12,12), RowSideColors=cols, Rowv=NA, Colv=NA, labRow=sapply(rownames(e), lambda), labCol=sapply(rownames(e), lambda), keysize=0.1)
-    par(fig=c(0.8, 0.9, 0.1, 0.2), new = T)
+    par(fig=c(0.9, 1.0, 0.0, 0.1), new = T)
     par(xaxt="n", yaxt="n")
-    image(as.matrix(1:5),col=greenred(5))
+    image(as.matrix(1:5),col=greenred(5), mar=c(2,2))
     text(c(0, 0.5, 1), rep(0, 3), c(0, 0.5, 1), col="white")
     #heatmap.2(as.matrix(e), revC=F, trace="none", dendrogram="none", col=greenred, density.info="none", margins=c(10,10), keysize=0.8, RowSideColors=cols, Rowv=NA, Colv=NA, labRow=NA, labCol=NA) #labCol=sapply(rownames(e), lambda))
     x1<-0.11 #par("usr")[1]
@@ -550,21 +618,22 @@ disease_category_figures<-function() {
     x<-seq(x1, x2, by=interval)
     interval<-(y2-y1)/(n-1)
     y<-rev(seq(y1, y2, by=interval))
-    #text(x,y,sapply(rownames(e), lambda), cex=0.8, srt=30, pos=4)
+    text(x,y,sapply(rownames(e), lambda), cex=0.8, srt=30, pos=4)
     dev.off()
 
-    dir.name<-"../data/summary/"
+    dir.name<-dir.summary
     cairo_ps(paste(dir.name, "Figure PS5b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     dir.name<-"../data/module/"
     d<-read.table(paste(dir.name, "biana_no_tap-omim/gene_similarity_matrix.dat", sep=""), header=T)
-    e<-d[c(common.up, non.common, common.down),c(common.up, non.common, common.down)]
+    #e<-d[c(common.up, non.common, common.down),c(common.up, non.common, common.down)]
+    e<-d[c(common.up, common.down),c(common.up, common.down)]
     e[upper.tri(e)]<-NA
     heatmap.2(as.matrix(e), revC=F, trace="none", dendrogram="none", col=val.cols, density.info="none", margins=c(12,12), RowSideColors=cols, Rowv=NA, Colv=NA, labRow=sapply(rownames(e), lambda), labCol=sapply(rownames(e), lambda), keysize=0.1)
     dev.off()
 
     dir.name<-"../data/module/"
     d<-read.table(paste(dir.name, "biana_no_tap-omim/phenotype_vs_functions.dat", sep=""), header=T)
-    dir.name<-"../data/summary/"
+    dir.name<-dir.summary
     cairo_ps(paste(dir.name, "Figure PS5c.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     #selected<-c("omim_breast_cancer", "omim_lung_cancer", "omim_prostate_cancer", "omim_leukemia", "omim_diabetes", "omim_obesity", "omim_insulin")
     selected<-common.up
@@ -581,12 +650,12 @@ disease_category_figures<-function() {
     e<-e[rowSums(e)>2,]
     e<-e[,colSums(e)>0]
     lambda2<-function(x) { words<-unlist(strsplit(x, "_")); x<-paste(words, collapse=" "); return(x) }
-    heatmap.2(as.matrix(e), revC=F, trace="none", dendrogram="none", col=val.cols, density.info="none", margins=c(7,30), keysize=0.1, labCol=sapply(colnames(e), lambda), labRow=sapply(rownames(e), lambda2), cexCol=0.9, cexRow=0.9)
+    heatmap.2(as.matrix(e), revC=F, trace="none", dendrogram="none", col=val.cols, density.info="none", margins=c(7,30), keysize=0.1, labCol=sapply(colnames(e), lambda), labRow=sapply(rownames(e), lambda2), cexCol=0.7, cexRow=0.7)
     dev.off()
 
     dir.name<-"../data/module/"
     d<-read.table(paste(dir.name, "biana_no_tap-omim/phenotype_vs_genes.dat", sep=""), header=T)
-    dir.name<-"../data/summary/"
+    dir.name<-dir.summary
     cairo_ps(paste(dir.name, "Figure PS5e.eps", sep=""), width = 6, height = 6, onefile = TRUE)
     selected<-common.up
     e<-d[,selected]
@@ -604,6 +673,33 @@ disease_category_figures<-function() {
     print(c("common.down", rownames(e)))
     heatmap.2(as.matrix(e), revC=F, trace="none", dendrogram="none", col=val.cols, density.info="none", margins=c(7,30), keysize=0.1, labCol=sapply(colnames(e), lambda), labRow=rownames(e), cexCol=0.9)
     dev.off()
+
+    return()
+
+    # Was trying an alternative definition
+    # Robustness cutoff: median of sum of auc_i-(auc_0/2) for each disease where i = 0 - 80 (%)
+    n<-9
+
+    d<-container.permuted[,]-container.permuted[,1]/2
+    d<-rowSums(d[,1:n])/n
+    cutoff.d<-median(d)
+
+    e<-container.pruned[,]-container.pruned[,1]/2
+    e<-rowSums(e[,1:n])/n
+    cutoff.e<-median(e)
+
+    common.up<-names(which(d>cutoff.d & e>cutoff.e))
+    common.down<-names(which(d<cutoff.d & e<cutoff.e))
+
+    common<-union(common.up, common.down)
+    non.common<-phenotypes[!(phenotypes %in% common)]
+
+    container<-container.permuted
+    container.permuted.up<-container[common.up,]
+    container.permuted.down<-container[common.down,]
+    container<-container.pruned
+    container.pruned.up<-container[common.up,]
+    container.pruned.down<-container[common.down,]
 
 }
 
@@ -655,12 +751,31 @@ module_figures<-function() {
     dev.off()
 }
 
-
+###### OMIM DISEASE SIMILARITY FIGURES #####
+omim_similarity_figures<-function() {
+    library(RColorBrewer)
+    val.cols <- brewer.pal(9,"Blues") 
+    tiff("omim.tif", width=2000, height=2000, res=300)
+    d<-read.table("../data/omim/2009_Aug_27/similarity.dat")
+    heatmap(as.matrix(d), revC=T, col=val.cols, margins=c(9,9), Rowv=NA, Colv=NA, scale="none") # labRow=scoring.methods.full, labCol=scoring.methods.full) 
+    dev.off()
+    tiff("omim_in_ppi.tif", width=2000, height=2000, res=300)
+    d<-read.table("../data/omim/2009_Aug_27/similarity_in_ppi.dat")
+    heatmap(as.matrix(d), revC=T, col=val.cols, margins=c(9,9), Rowv=NA, Colv=NA, scale="none") 
+    dev.off()
+    tiff("omim_extended.tif", width=2000, height=2000, res=300)
+    d<-read.table("../data/omim/2009_Aug_27/extended/similarity.dat")
+    heatmap(as.matrix(d), revC=T, col=val.cols, margins=c(9,9), Rowv=NA, Colv=NA, scale="none") 
+    dev.off()
+}
 
 
 
 ###### MANUSCRIPT2 TESTS ######
 manuscript2_tests<-function() {
+
+    dir.summary<-"../data/summary_draft_before_revision/"
+
     # Significance of modules detected by methods vs nn
     d<-read.table(paste(dir.name, "../module/", "biana_no_tap-omim/", "module_summary.dat", sep=""), header=T)
     for(k in 1:length(scoring.methods)) {
@@ -683,7 +798,7 @@ manuscript2_tests<-function() {
     }
 
     # Significance of AUC difference of methods between two groups based on number of seeds
-    dir.name<-"../data/summary/"
+    dir.name<-dir.summary
     s<-read.table(paste(dir.name, 'biana_no_tap-omim/seeds.dat', sep=""))
     d<-read.table(paste(dir.name, 'biana_no_tap-omim/auc_ppis.dat', sep=""))
     cutoff<-median(s$n_seed)
@@ -695,6 +810,24 @@ manuscript2_tests<-function() {
 	print(a$p.value)
     }
     cor(d[order(rownames(d)),], s[order(rownames(s)),])
+
+    # Linear regression using n_path & ns 
+    y<-d[rownames(s),"ns"]
+    x<-s[rownames(s),"n_path"]
+    cor(x, y)
+    fit<-lm(y~x)
+    summary(fit)
+    cor(fit$fitted.values, y)^2 # fit$coefficients[[2]]*x+fit$coefficients[[1]]
+    1 - sum(fit$residuals^2) / sum((y-mean(y))^2)
+    plot(x, y, ylim=c(0,100), xlim=c(0,100))
+    abline(fit)
+
+    #y<-d[rownames(s),]
+    #x<-s[rownames(s),]
+    #fit <- lm(y$ns ~ n_seed + n_linker + n_path, data=x)
+    #fit.other <- lm(y$ns ~ n_path, data=x)
+    #anova(fit, fit.other)
+
 }
 
 
@@ -703,36 +836,22 @@ manuscript2_tests<-function() {
 ###### MANUSCRIPT FIGURES ######
 manuscript_figures <- function() {
 
-    # Average AUC (%) over all diseases and networks
-    #postscript(paste(dir.name, "Figure 2a.eps", sep=""), width = 6, height = 6, horizontal = FALSE, onefile = FALSE, paper = "special", family="arial", bg="white")
-    #svg(paste(dir.name, "Figure 2a.svg", sep=""), width = 6, height = 6, onefile = TRUE)
-    cairo_ps(paste(dir.name, "Figure S1a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
-    par(family = "Arial") 
-    d<-read.table(paste(dir.name, 'all7_vs_all5-top5/auc_phenotypes.dat', sep=""))
-    boxplot(d, xlab="Prediction method", ylab="AUC(%)", names=scoring.methods, col=8, notch=FALSE, varwidth=FALSE, ylim=c(0,80))
-    dev.off()
-
-    # Ratio of correctly predicted proteins (%) among top 10% predictions over all diseases and networks
-    #postscript(paste(dir.name, "Figure 2b.eps", sep=""), width = 6, height = 6, horizontal = FALSE, onefile = FALSE, paper = "special")
-    cairo_ps(paste(dir.name, "Figure S1b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
-    par(family = "Arial") 
-    d<-read.table(paste(dir.name, 'all7_vs_all5-top5/cov_phenotypes.dat', sep=""))
-    boxplot(d, xlab="Prediction method", ylab="Seeds covered at top 5% (%)", names=scoring.methods, col=8, notch=FALSE, varwidth=FALSE, ylim=c(0,80))
-    dev.off()
-
     #par(mar=c(5, 4, 4, 2) + 0.1) # to reset margins
 
     # Average AUC (%) over all diseases for each network
-    cairo_ps(paste(dir.name, "Figure 1a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
-    par(family = "Arial") 
-    par(xpd=T, mar=par()$mar+c(-1,0,1,0))
+    #cairo_ps(paste(dir.name, "Figure 1.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    #par(family = "Arial") 
+    tiff(paste(dir.name, "Figure 1.tif", sep=""), width=2000, height=2000, res=300)
+    #par(xpd=T, mar=par()$mar+c(0,0,0,0))
     #coords <- seq(0.4,4.8,by=1.1)
-    coords <- seq(0,7.8,by=1.3)
+    #coords <- seq(0,7.8,by=1.3)
+    coords <- seq(0.05,7.75,by=1.1)
     i = 1
     for(ppi in c("goh", "entrez", "biana", "biana_no_tap", "biana_no_tap_relevance")) {
-	d<-read.table(paste(dir.name, ppi, '7_vs_all5-top5/auc_ppis.dat', sep=""))
+	d<-read.table(paste(dir.name, ppi, '_vs_all-wo_LI/auc_ppis.dat', sep=""))
+	d<-d[,scoring.method.ids]
 	if(i == 1) {
-	    boxplot(d,col=cols[i],at=coords, boxwex=0.2, pars=list(xaxt="n"), xlab="Prediction method", ylab="AUC(%)", ylim=c(0,100), xlim=c(0.18,8.42))
+	    boxplot(d,col=cols[i],at=coords, boxwex=0.2, pars=list(xaxt="n"), xlab="Prediction method", ylab="AUC (%)", ylim=c(0,100), xlim=c(0.18,8.42))
 	} 
 	else {
 	    boxplot(d,col=cols[i],at=coords, boxwex=0.2, pars=list(xaxt="n"), names=F, add=T)
@@ -744,21 +863,24 @@ manuscript_figures <- function() {
 	coords <- coords + 0.2
 	i = i + 1
     }
-    legend(0.5, 119, c("GOH", "ENTREZ", "PPI", "bPPI", "bPPI weighted"), fill=color5, bty="n", ncol=3, cex=0.9) #horiz=T, x.intersp=0.5)
-    text(text.coords+0.35, par("usr")[3]-4, srt=0, adj=1, labels=scoring.methods, xpd=T, cex=0.9)
+    legend(0.5, 119, c("Goh", "Entrez", "PPI", "bPPI", "weighted bPPI"), fill=color5, bty="n", ncol=3, cex=0.9) #horiz=T, x.intersp=0.5)
+    text(text.coords+0.15, par("usr")[3]-3, srt=40, adj=1, labels=scoring.methods.full, xpd=T, cex=0.9)
     dev.off()
 
     # Ratio of correctly predicted proteins (%) among top 10% predictions over all diseases for each network
-    cairo_ps(paste(dir.name, "Figure 1b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
-    par(family = "Arial") 
-    par(xpd=T, mar=par()$mar+c(-1,0,1,0))
+    #cairo_ps(paste(dir.name, "Supplementary Figure 2.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    #par(family = "Arial") 
+    tiff(paste(dir.name, "Supplementary Figure 2.tif", sep=""), width=2000, height=2000, res=300)
+    par(xpd=T, mar=par()$mar+c(0,0,0,0))
     #coords <- seq(0.4,4.8,by=1.1)
-    coords <- seq(0,7.8,by=1.3)
+    #coords <- seq(0,7.8,by=1.3)
+    coords <- seq(0.05,7.75,by=1.1)
     i = 1
     for(ppi in c("goh", "entrez", "biana", "biana_no_tap", "biana_no_tap_relevance")) {
-	d<-read.table(paste(dir.name, ppi, '7_vs_all5-top5/cov_ppis.dat', sep=""))
+	d<-read.table(paste(dir.name, ppi, '_vs_all-wo_LI/cov_ppis.dat', sep=""))
+	d<-d[,scoring.method.ids]
 	if(i == 1) {
-	    boxplot(d,col=cols[i],at=coords, boxwex=0.2, pars=list(xaxt="n"), xlab="Prediction method", ylab="Seeds covered at top 5% (%)", ylim=c(0,100), xlim=c(0.18,8.42))
+	    boxplot(d,col=cols[i],at=coords, boxwex=0.2, pars=list(xaxt="n"), xlab="Prediction method", ylab="Sensitivity at top 1% (%)", ylim=c(0,100), xlim=c(0.18,8.42))
 	} 
 	else {
 	    boxplot(d,col=cols[i],at=coords, boxwex=0.2, pars=list(xaxt="n"), names=F, add=T)
@@ -770,86 +892,314 @@ manuscript_figures <- function() {
 	coords <- coords + 0.2
 	i = i + 1
     }
-    legend(0.5, 119, c("GOH", "ENTREZ", "PPI", "bPPI", "bPPI weighted"), fill=color5, bty="n", ncol=3, cex=0.9) 
-    text(text.coords+0.35, par("usr")[3]-4, srt=0, adj=1, labels=scoring.methods, xpd=T, cex=0.9)
+    legend(0.5, 119, c("Goh", "Entrez", "PPI", "bPPI", "weighted bPPI"), fill=color5, bty="n", ncol=3, cex=0.9) 
+    text(text.coords+0.15, par("usr")[3]-4, srt=40, adj=1, labels=scoring.methods.full, xpd=T, cex=0.9)
     dev.off()
 
     # Average AUC (%) for two groups of OMIM disorders based on number of seeds on bPPI network
     dir.name<-"../data/summary/"
     #postscript(paste(dir.name, "Figure 4a.eps", sep=""), width = 6, height = 6, horizontal = FALSE, onefile = FALSE, paper = "special")
-    cairo_ps(paste(dir.name, "Figure 2.eps", sep=""), width = 6, height = 6, onefile = TRUE)
-    par(family = "Arial") 
+    #cairo_ps(paste(dir.name, "Figure 2.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    #par(family = "Arial") 
+    tiff(paste(dir.name, "Figure 2.tif", sep=""), width=2000, height=2000, res=300)
+    #par(xpd=T, mar=par()$mar+c(0,0,0,0))
 
-    s<-read.table(paste(dir.name, 'biana_no_tap7_vs_all5-top5/seeds.dat', sep=""))
-    d<-read.table(paste(dir.name, 'biana_no_tap7_vs_all5-top5/auc_ppis.dat', sep=""))
+    #prefix<-"biana_no_tap_vs_omim-wo_LI"
+    prefix<-"biana_no_tap_vs_all-wo_LI"
+    s<-read.table(paste(dir.name, prefix, '/seeds.dat', sep=""))
+    d<-read.table(paste(dir.name, prefix, '/auc_ppis.dat', sep=""))
 
-    cutoff<-40 #median(s$n_seed)
+    d<-d[,scoring.method.ids]
+
+    cutoff<-median(s$n_seed)
     x<-d[rownames(s[s$n_seed<cutoff,]),]
     y<-d[rownames(s[s$n_seed>=cutoff,]),]
 
     #coords <- seq(0.6, 5.0, by=1.1)
-    coords <- seq(0.6, 7.2, by=1.1)
-    boxplot(x,col="lightgray", at=coords, boxwex=0.4, pars=list(xaxt="n"), xlab="Prediction method", ylab="AUC(%)", ylim=c(0,100), xlim=c(0.5,7.7))
+    #coords <- seq(0.6, 7.2, by=1.1)
+    coords <- seq(0.6, 8.3, by=1.1)
+    boxplot(x,col="lightgrey", at=coords, boxwex=0.4, pars=list(xaxt="n"), xlab="Prediction method", ylab="AUC(%)", ylim=c(0,100), xlim=c(0.6,8.7))
     #axis(1,tick=F,labels=scoring.methods,at=coords+0.2)
-    text(coords+0.6, par("usr")[3]-4, srt=0, adj=1, labels=scoring.methods, xpd=T, cex=0.9)
+    text(coords+0.55, par("usr")[3]-3, srt=40, adj=1, labels=scoring.methods.full, xpd=T, cex=0.9)
     coords <- coords + 0.4
-    boxplot(y,col="darkgray", at=coords, boxwex=0.4, pars=list(xaxt="n"), names=F, add=T)
-    legend(1.5, 5, c("# of seeds < 40", "# of seeds >= 40"), fill=c("lightgray","darkgray"), bty="n", horiz=T, cex=0.9)
+    boxplot(y,col="darkgrey", at=coords, boxwex=0.4, pars=list(xaxt="n"), names=F, add=T)
+    legend(1.5, 5, c(paste("# of seeds < ", cutoff, sep=""), paste("# of seeds >= ", cutoff, sep="")), fill=c("lightgrey","darkgrey"), bty="n", horiz=T, cex=0.9)
     dev.off()
+
+    #cairo_ps(paste(dir.name, "Supplementary Figure 3.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    tiff(paste(dir.name, "Supplementary Figure 3.tif", sep=""), width=2000, height=2000, res=300)
+    prefix<-"all_new_vs_all_new"
+    # Significance of AUC & COV difference between methods on bPPI
+    n<-length(scoring.method.ids)
+    pvals<-matrix(1, n, n)
+    print("AUC & COV differences between methods on bPPI")
+    d<-read.table(paste(dir.name, prefix, "/auc_ppis.dat", sep=""))
+    e<-read.table(paste(dir.name, prefix, "/cov_ppis.dat", sep=""))
+    d<-d[order(row.names(d)),scoring.method.ids]
+    e<-e[order(row.names(e)),scoring.method.ids]
+    for(i in 1:length(scoring.method.ids)) {
+	for(j in 1:length(scoring.method.ids)) {
+		if(i<j) {
+		    a<-wilcox.test(d[,i], d[,j], alternative="greater", paired=T)
+		    b<-wilcox.test(e[,i], e[,j], alternative="greater", paired=T)
+		    if(a$p.value <= 0.05 || b$p.value <= 0.05) {
+			print(c(scoring.method.ids[i], scoring.method.ids[j], a$p.value, b$p.value))
+		    }
+		}
+		if(i==j) {
+		    val<-1
+		} else {
+		    val<-wilcox.test(d[,i], d[,j], alternative="greater", paired=T)$p.value
+		}
+		pvals[i,j]<-val 
+	}
+    }
+    library(gplots)
+    library(RColorBrewer)
+    pvals<-ifelse((pvals<=0.05) == TRUE, 1, 0)
+    val.cols <- brewer.pal(9,"Blues") 
+    #heatmap.2(as.matrix(pvals), revC=F, trace="none", dendrogram="none", col=val.cols, density.info="none", margins=c(9,9), Rowv=NA, Colv=NA, labRow=scoring.methods.full, labCol=scoring.methods.full, key=F) #keysize=0.1) #, key=F)
+    heatmap(as.matrix(pvals), revC=T, col=val.cols, margins=c(9,9), Rowv=NA, Colv=NA, labRow=scoring.methods.full, labCol=scoring.methods.full, scale="none") 
+    dev.off()
+
+    case_study_score_distributions()
 }
 
+case_study_score_distributions <- function() {
 
+    ctd.dir.name<-"../data/ctd/"
+    compare.dir.name<-"../data/compare/"
+
+    #labels<-c("Alzheimer's Disease", "Diabetes", "AIDS")
+    i = 1
+
+    is.wholenumber <-function(x, tol = .Machine$double.eps^0.5)  { abs(x - round(x)) < tol }
+
+    tiff(paste(dir.name, "Figure 3.tif", sep=""), width=2000, height=2000, res=300, compression="lzw")
+    op<-par()
+    par(mfrow=c(3,1))
+    for(p in c("alzheimer", "diabetes", "aids")) {
+	print(p)
+	e<-read.table(paste(ctd.dir.name, p, "_nc.dat", sep=""), row.names=1, header=T)
+	seeds<-read.table(paste(compare.dir.name, "biana_no_tap_relevance-new_omim_", p, "-gad/seeds.txt", sep=""))
+
+	# direct vs rest
+	print("#direct vs rest")
+	d<-e[!rownames(e) %in% seeds$V1,]
+	x<-d[which(d$is_direct==1), "nc_score"]
+	y<-d[which(d$is_direct==0), "nc_score"]
+	a<-t.test(x, y, alternative="greater")
+	#print(c(a$p.value, format(mean(x), 2), format(mean(y), 2)))
+	print(a$p.value)
+	print(c(format(mean(x), 2), format(sd(x), 2)))
+	print(c(format(mean(y), 2), format(sd(y), 2)))
+
+	direct<-x
+	rest<-y
+
+	# direct vs non-ctd
+	print("# direct vs non-ctd")
+	d<-e[!rownames(e) %in% seeds$V1,]
+	x<-d[which(d$is_direct==1), "nc_score"]
+	y<-d[which(d$in_ctd==0), "nc_score"]
+	a<-t.test(x, y, alternative="greater")
+	print(a$p.value)
+	print(c(format(mean(x), 2), format(sd(x), 2)))
+	print(c(format(mean(y), 2), format(sd(y), 2)))
+	
+	nonctd<-y
+
+	# ctd vs rest
+	print("# ctd vs rest")
+	d<-e[!rownames(e) %in% seeds$V1,]
+	x<-d[which(d$in_ctd==1), "nc_score"]
+	y<-d[which(d$in_ctd==0), "nc_score"]
+	a<-t.test(x, y, alternative="greater")
+	print(a$p.value)
+	print(c(format(mean(x), 2), format(sd(x), 2)))
+	print(c(format(mean(y), 2), format(sd(y), 2)))
+
+	# direct vs indirect
+	print("# direct vs indirect")
+	d<-e[!rownames(e) %in% seeds$V1,]
+	x<-d[which(d$is_direct==1), "nc_score"]
+	y<-d[which(d$is_direct==0 & d$in_ctd==1), "nc_score"]
+	a<-t.test(x, y, alternative="greater")
+	print(a$p.value)
+	print(c(format(mean(x), 2), format(sd(x), 2)))
+	print(c(format(mean(y), 2), format(sd(y), 2)))
+
+	indirect<-y
+
+	print("")
+
+	#f<-density(direct)
+	#f<-cumsum(f$y*c(0,diff(f$x)))
+	#f<-cumsum(f$y*c(0,diff(f$x)))
+
+	breaks = seq(0, 0.4, by=0.1) 
+	k = length(breaks) - 1
+
+	d.cut = cut(direct, breaks, right=FALSE) 
+	d.freq = table(d.cut) 
+	d.cumfreq = cumsum(rev(d.freq))
+	f = 100*d.cumfreq/cumsum(d.freq)[k]
+	#f = spline(f)
+	print(cbind(d.freq))
+	print(cbind(f))
+	
+	plot(c(1,k), c(0, 100), type='n', xaxt="n", xlim=c(0.99,k+0.001), axes=F, xlab=paste("", "NetCombo score", sep=""), ylab="Cumulative % of genes") # , xlog=T, alpha = 0.5
+	axis(1, 1:k, labels=c(">0.3", ">0.2", ">0.1", ">0.0"), pos=0, tcl=-0.3)
+	#mtext(c(">0.3", ">0.2", ">0.1", ">0.0"), 1, at=1:k)
+	axis(2, seq(0,100,by=20), col = "grey30", tcl = -0.3)
+	axis(4, seq(0,100,by=20), col = "grey30", tcl = -0.3, pos=k)
+	polygon(c(0, 1:k, k+0.001), c(0, f, 0), col="grey30", border=1)
+	lines(f, col="black") # spline(f)
+	#polygon(c(f$x,max(f$x)+0.001), c(f$y, 0), col="grey30", border=1)
+	a<-f[3]
+	points(3, a, pch=21, bg="white")
+	rect(3+0.02, a+1, 3+0.13, a+11, col="white", border="grey")
+	b<-round(a, digits=1)
+	if(is.wholenumber(b)) # 50%
+	    b<-paste(b, ".0", sep="")
+	text(3+0.07, a+6, b, col="black")
+
+	#d.cut = cut(rest, breaks, right=FALSE) 
+	d.cut = cut(nonctd, breaks, right=FALSE) 
+	d.freq = table(d.cut) 
+	d.cumfreq = cumsum(rev(d.freq))
+	f = 100*d.cumfreq/cumsum(d.freq)[k]
+	#f = spline(f)
+	print(cbind(d.freq))
+	print(cbind(f))
+
+	polygon(c(0, 1:k, k+0.001), c(0, f, 0), col="grey70", border=1)
+	lines(f, col="black") 
+	#polygon(c(f$x,max(f$x)+0.001), c(f$y, 0), col="grey70", border=1)
+	a<-f[3]
+	points(3, a, pch=21, bg="white")
+	rect(3+0.02, a-2, 3+0.13, a+8, col="white", border="grey")
+	text(3+0.07, a+3, round(a, digits=1), col="black")
+
+	#rect(3+0.1, a-7, 3+0.3, a-1, col="white")
+	#text(3+0.2, a-0.2, round(a, digits=2))
+
+	#legend("topleft", c("direct CTD disease-gene associations", "rest (indirect or no association)"), fill=c("grey30", "grey70"), bty='n')
+	legend("topleft", c("direct CTD disease-gene associations", "no association"), fill=c("grey30", "grey70"), bty='n')
+
+	i = i+1
+    }
+    par(op)
+    #box()
+    dev.off()
+
+    #require(splines)
+    #yy <-predict(interpSpline(x, y))
+}
 
 
 ###### MANUSCRIPT TESTS ######
 manuscript_tests <- function() {
     dir.name<-"../data/summary/"
 
-    #networks<-c("biana-all", "biana_no_tap-all", "biana_no_tap_relevance-all", "goh-all", "entrez-all")
-    #networks<-c("biana7_vs_all5-top5", "biana_no_tap7_vs_all5-top5", "biana_no_tap_relevance7_vs_all5-top5", "goh7_vs_all5-top5", "entrez7_vs_all5-top5")
-
-    scoring.methods<-c("ns", "nz", "nd", "ff", "nr", "rw", "np")
-    network<-"biana_no_tap7_vs_all5-top5"
+    #prefix<-"all_new_vs_omim-w_LI"
+    #prefix<-"all_new_vs_omim-wo_LI"
+    #prefix<-"all_new_vs_goh-wo_LI"
+    #prefix<-"all_new_vs_chen-wo_LI"
+    prefix<-"biana_no_tap_vs_all-wo_LI"
 
     # Significance of AUC & COV difference between methods on bPPI
-    d<-read.table(paste(dir.name, network, "/auc_ppis.dat", sep=""))
-    e<-read.table(paste(dir.name, network, "/cov_ppis.dat", sep=""))
-    d<-d[order(row.names(d)),]
-    e<-e[order(row.names(e)),]
-    for(i in 1:length(scoring.methods)) {
-	for(j in 1:length(scoring.methods)) {
+    n<-length(scoring.method.ids)
+    print("AUC & COV differences between methods on bPPI")
+    d<-read.table(paste(dir.name, prefix, "/auc_ppis.dat", sep=""))
+    e<-read.table(paste(dir.name, prefix, "/cov_ppis.dat", sep=""))
+    d<-d[order(row.names(d)),scoring.method.ids]
+    e<-e[order(row.names(e)),scoring.method.ids]
+    for(i in 1:length(scoring.method.ids)) {
+	for(j in 1:length(scoring.method.ids)) {
 		if(i<j) {
-		    print(c("---", scoring.methods[i], scoring.methods[j], "---"))
 		    a<-wilcox.test(d[,i], d[,j], alternative="greater", paired=T)
-		    print(a$p.value)
-		    a<-wilcox.test(e[,i], e[,j], alternative="greater", paired=T)
-		    print(a$p.value)
+		    b<-wilcox.test(e[,i], e[,j], alternative="greater", paired=T)
+		    if(a$p.value <= 0.05 || b$p.value <= 0.05) {
+			print(c(scoring.method.ids[i], scoring.method.ids[j], a$p.value, b$p.value))
 		    }
+		}
 	}
     }
 
-    # Correlation between seed connectivity measures and AUC on bPPI
-    d<-read.table(paste(dir.name, network, "/auc_ppis.dat", sep=""))
-    d<-d[order(rownames(d)),]
-    s<-read.table(paste(dir.name, network, "/seeds.dat", sep=""))
-    s<-s[order(rownames(s)),]
-    print(cor(d,s))
+    prefices<-c("biana_vs_all-wo_LI", "biana_no_tap_vs_all-wo_LI", "biana_no_tap_relevance_vs_all-wo_LI", "goh_vs_all-wo_LI", "entrez_vs_all-wo_LI")
+    #prefices<-c("biana_vs_omim-wo_LI", "biana_no_tap_vs_omim-wo_LI", "biana_no_tap_relevance_vs_omim-wo_LI", "goh_vs_omim-wo_LI", "entrez_vs_omim-wo_LI")
+    #prefices<-c("all_new_vs_omim-w_LI", "all_new_vs_omim-wo_LI", "all_new_vs_goh-wo_LI", "all_new_vs_chen-wo_LI")
+    for(prefix in prefices) {
+	# Correlation between seed connectivity measures and AUC on bPPI
+	print(c("Correlations on ", prefix))
+	d<-read.table(paste(dir.name, prefix, "/auc_ppis.dat", sep=""))
+	d<-d[order(rownames(d)),]
+	s<-read.table(paste(dir.name, prefix, "/seeds.dat", sep=""))
+	s<-s[order(rownames(s)),]
+	print(cor(d,s)) 
+    }
 
-    # Significance of AUC change between bPPI n_seed <= 40 and > 40
-    d<-read.table(paste(dir.name, network, "/auc_ppis.dat", sep=""))
-    s<-read.table(paste(dir.name, network, "/seeds.dat", sep=""))
+    prefix<-"biana_no_tap_vs_all-wo_LI"
+    # Significance of AUC change between bPPI n_seed < cutoff and >= cutoff
+    d<-read.table(paste(dir.name, prefix, "/auc_ppis.dat", sep=""))
+    s<-read.table(paste(dir.name, prefix, "/seeds.dat", sep=""))
 
-    cutoff<-40
-    x<-d[rownames(d) %in% rownames(s)[s$n_seed<cutoff],]
-    y<-d[rownames(d) %in% rownames(s)[s$n_seed>=cutoff],]
+    cutoff<-median(s$n_seed)
+    x<-d[rownames(d) %in% rownames(s)[s$n_seed<cutoff],scoring.method.ids]
+    y<-d[rownames(d) %in% rownames(s)[s$n_seed>=cutoff],scoring.method.ids]
+    print(c(dim(x), dim(y)))
 
+    print("AUC difference between two groups based on n_seed using bPPI")
     #wilcox.test(x$ns, x$nd, alternative="less", paired=T)
     #wilcox.test(x$nd, y$nd, alternative="greater", paired=F)
     #wilcox.test(x$np, y$np, alternative="greater", paired=F)
-    for(i in 1:length(scoring.methods)) {
+    for(i in 1:length(scoring.method.ids)) {
 	a<-wilcox.test(x[,i], y[,i], alternative="greater", paired=F)
-	print(c(scoring.methods[i], a$p.value))
+	print(c(scoring.method.ids[i], a$p.value))
     }
+
+    prefix<-"biana_no_tap_vs_all-wo_LI"
+    prefix2<-"biana_no_tap_relevance_vs_all-wo_LI"
+    # Significance between bPPI and weighted bPPI
+    print("AUC difference between bPPI and weighted bPPI")
+    d<-read.table(paste(dir.name, prefix, "/auc_ppis.dat", sep=""))
+    e<-read.table(paste(dir.name, prefix2, "/auc_ppis.dat", sep=""))
+    d<-d[order(row.names(d)),scoring.method.ids]
+    e<-e[order(row.names(e)),scoring.method.ids]
+    for(i in 1:length(scoring.method.ids)) {
+	a<-wilcox.test(e[,i], d[,i], alternative="greater", paired=T)
+	print(c(scoring.method.ids[i], a$p.value))
+    }
+
+    prefix<-"all_new_vs_omim-w_LI"
+    prefix2<-"all_new_vs_omim-wo_LI"
+    # Significance between bPPI and weighted bPPI
+    print("AUC difference between OMIM-LI and OMIM")
+    d<-read.table(paste(dir.name, prefix, "/auc_ppis.dat", sep=""))
+    e<-read.table(paste(dir.name, prefix2, "/auc_ppis.dat", sep=""))
+    d<-d[order(row.names(d)),scoring.method.ids]
+    e<-e[order(row.names(e)),scoring.method.ids]
+    for(i in 1:length(scoring.method.ids)) {
+	a<-wilcox.test(e[,i], d[,i], alternative="greater", paired=T)
+	print(c(scoring.method.ids[i], a$p.value))
+    }
+
+
+    prefix<-"goh_vs_all-wo_LI"
+    prefix2<-"biana_no_tap_vs_all-wo_LI"
+    # Significance between Goh and bPPI 
+    print("AUC difference between Goh and bPPI")
+    d<-read.table(paste(dir.name, prefix, "/auc_ppis.dat", sep=""))
+    e<-read.table(paste(dir.name, prefix2, "/auc_ppis.dat", sep=""))
+    d<-d[order(row.names(d)),scoring.method.ids]
+    e<-e[order(row.names(e)),scoring.method.ids]
+    for(i in 1:length(scoring.method.ids)) {
+	a<-wilcox.test(e[,i], d[,i], alternative="greater", paired=T)
+	print(c(scoring.method.ids[i], a$p.value))
+    }
+
+
 }
 
 
@@ -957,29 +1307,44 @@ case_study_figures <- function() {
 
 ###### NAVLAKHA ######
 navlakha_figures <- function() {
+    library(RColorBrewer)
     dir.name<-"../data/compare/navlakha/"
     postscript(paste(dir.name, "results.eps", sep=""), width = 6, height = 6, horizontal = FALSE, onefile = FALSE, paper = "special")
     d <- read.table(paste(dir.name, "results.dat", sep=""))
     par(mar=c(6,6,0.2,0))
     #scoring.methods <- c("ns", "nz", "nd", "ff", "nr", "mcl")
     #scoring.methods <- c("mcl")
-    scoring.methods <- c("ns", 'np')
-    colors <- c(2,6,4,5,3,8)
-    chars <- c(21:25,12)
+    #scoring.methods <- c("ns", 'np')
+    scoring.methods <- c("ns", "nz", "nd", "ff", "nr", "rw", "np", "nc", "nc3")
+    #colors <- c(2,6,4,5,3,8,1,7,9)
+    colors<-c(brewer.pal(9, "Set1"), brewer.pal(8, "Accent"))
+    chars <- c(0:2,5:6,9:14)
     for(i in 1:length(scoring.methods)) {
-	if(scoring.methods[i] == "mcl") {
+	if(scoring.methods[i] %in% c("mcl", "nc3")) {
 	    e<-subset(d, substr(rownames(d),1,3)==scoring.methods[i])
 	}
 	else {
 	    e<-subset(d, substr(rownames(d),1,2)==scoring.methods[i])
 	}
+	e<-e[order(e$sens),]
+	n<-dim(e)[1]
+	x<-c(e$sens[1])
+	y<-c(e$ppv[1])
+	for(j in seq(i+1, n, by=5)) {
+	    x<-c(x, e$sens[j])
+	    y<-c(y, e$ppv[j])
+	}
+	x<-c(x, e$sens[n])
+	y<-c(y, e$ppv[n])
 	if(i == 1) {
-	    plot(e$sens, e$ppv, col=colors[i], pch=chars[i], cex=3, xlim=c(0,1), ylim=c(0,1))
+	    plot(e$sens, e$ppv, col=colors[i], type="l", xlim=c(0,1), ylim=c(0,1))
+	    points(x, y, col=colors[i], pch=chars[i], cex=2)
 	} else {
-	    points(e$sens, e$ppv, col=colors[i], pch=chars[i], cex=3)
+	    lines(e$sens, e$ppv, col=colors[i], lwd=1)
+	    points(x, y, col=colors[i], pch=chars[i], cex=2)
 	}   
 	#lines(e$sens, e$ppv, col=colors[i])
-	text(e$sens[length(e$ppv)], e$ppv[length(e$ppv)]-0.05, col=colors[i], toupper(scoring.methods[i]))
+	text(e$sens[1], e$ppv[1]+0.05, col=colors[i], toupper(scoring.methods[i]))
     }
     legend("topright", scoring.methods, col=colors, pch=chars)
     dev.off()
@@ -1009,6 +1374,27 @@ aneurysm_figures <- function() {
 
 ###### OBSOLETE FIGURES ######
 old_figures <- function() { 
+
+    # Average AUC (%) over all diseases and networks
+    #postscript(paste(dir.name, "Figure 2a.eps", sep=""), width = 6, height = 6, horizontal = FALSE, onefile = FALSE, paper = "special", family="arial", bg="white")
+    #svg(paste(dir.name, "Figure 2a.svg", sep=""), width = 6, height = 6, onefile = TRUE)
+    cairo_ps(paste(dir.name, "Figure S1a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    par(family = "Arial") 
+    d<-read.table(paste(dir.name, 'all_new_vs_all_new-wo_LI/auc_phenotypes.dat', sep=""))
+    d<-d[,scoring.method.ids]
+    boxplot(d, xlab="Prediction method", ylab="AUC(%)", names=scoring.methods, col=8, notch=FALSE, varwidth=FALSE, ylim=c(0,80))
+    dev.off()
+
+    # Ratio of correctly predicted proteins (%) among top 10% predictions over all diseases and networks
+    #postscript(paste(dir.name, "Figure 2b.eps", sep=""), width = 6, height = 6, horizontal = FALSE, onefile = FALSE, paper = "special")
+    cairo_ps(paste(dir.name, "Figure S1b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    par(family = "Arial") 
+    d<-read.table(paste(dir.name, 'all_new_vs_all_new-wo_LI/cov_phenotypes.dat', sep=""))
+    d<-d[,scoring.method.ids]
+    boxplot(d, xlab="Prediction method", ylab="Seeds covered at top 1% (%)", names=scoring.methods, col=8, notch=FALSE, varwidth=FALSE, ylim=c(0,80))
+    dev.off()
+
+
     postscript(paste(dir.name, "3a.eps", sep=""), width = 6, height = 6, horizontal = FALSE, onefile = FALSE, paper = "special")
     d<-read.table(paste(dir.name, 'biana_no_tap-omim/auc_ppis.dat', sep=""))
     e<-data.frame(d[,1],d[,2],d[,3])
@@ -1342,3 +1728,4 @@ old_figures <- function() {
 
 
 main()
+

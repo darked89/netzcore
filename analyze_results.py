@@ -11,6 +11,9 @@ import calculate_mean_and_sigma
 
 
 def score_combined(scores_file_list, output_scores_file, combination_type="standard", reverse_ranking=False):
+    """
+	Calculates a combined score based on normalized scores of each scoring method
+    """
     node_to_scores = {}
     inf = float("Inf")
     for scores_file in scores_file_list:

@@ -2,7 +2,7 @@ import os
 
 # GLOBAL VARIABLES
 only_print_command = False
-use_cluster = True #!
+use_cluster = False #True #!
 leave_one_out_xval = False #!
 score_with_all_seeds = True #False #!
 only_auc = True #! False # In the analysis_xval if True auc.txt created only, other graphs are not drawn
@@ -25,15 +25,15 @@ GO_ENRICHMENT_P_VALUE_CUTOFF = 0.05
 # FOLLOWING LOCAL ONLY TO MAIN
 ignore_experiment_failures = False
 delay_experiment = True
-tex_format = True #False 
-functional_enrichment = False
+tex_format = False 
+functional_enrichment = False #!
 
 MODE = "score" # prepare, score, analyze, compare, summary, module
-user_friendly_id = "bppi_relevance-new_omim-uncommon-max" #goh-omim_w_LI" #"biana_no_tap-omim" #"all7_vs_all5-top5" # "navlakha" #"biana_no_tap" # a.k.a. emre friendly id for compare and summary
+user_friendly_id = "biana_no_tap_relevance-new_omim_aids-gad_function" #"bppi_relevance-new_omim-uncommon-max" #goh-omim_w_LI" #"biana_no_tap-omim" #"all7_vs_all5-top5" # "navlakha" #"biana_no_tap" # a.k.a. emre friendly id for compare and summary
 summary_seed_cutoff = 1 #None #2 #20 # Seed cutoff considered for inclusion of an experiment in sum_up_experiments, if None seed.dat is not created. Also used in compare_experiments if analysis_type is user
 prepare_mutated = None #"perturbed" # Creates permutad/pruned networks 
 analyze_network = False #!
-exclude_seeds_in_comparison = True
+exclude_seeds_in_comparison = True #!
 comparison_analysis_type = "common_intersection" # "user" for cutoff analysis (ppi/sens values similar to navlakha)
 
 new_omim_phenotypes = ['adrenoleukodystrophy', 'aids', 'alzheimer', 'amyloidosis', 'amyotrophic', 'anemia', 'arrhythmogenic', 'asthma', 'atrial', 'autism', 'autoimmune', 'bardet_biedl', 'blood', 'brachydactyly', 'breast', 'cardiomyopathy', 'cataract', 'cerebral', 'charcot_marie_tooth', 'colon', 'colorectal', 'combined', 'cone_rod', 'congenital', 'coronary', 'deafness', 'dementia', 'diabetes', 'diamond_blackfan', 'dystonia', 'ectodermal', 'epidermolysis', 'epilepsy', 'epileptic', 'epiphyseal', 'esophageal', 'factor', 'fanconi', 'gastric', 'glomerulosclerosis', 'glycogen', 'hemolytic', 'hemophagocytic', 'hepatocellular', 'high', 'hypercholesterolemia', 'hypertension', 'ichthyosis', 'immunodeficiency', 'keratosis', 'leigh', 'leukemia', 'long', 'lung', 'lymphoma', 'macular', 'malaria', 'melanoma', 'mental', 'microcephaly', 'microphthalmia', 'microvascular', 'mitochondrial', 'multiple', 'muscular', 'myasthenic', 'myocardial', 'myopathy', 'neuropathy', 'noonan', 'obesity', 'osteopetrosis', 'ovarian', 'pancreatic', 'parkinson', 'pituitary', 'prostate', 'pulmonary', 'renal', 'retinitis', 'rheumatoid', 'schizophrenia', 'severe', 'short', 'spastic', 'spinocerebellar', 'systemic', 'thrombophilia', 'thyroid', 'usher', 'xeroderma', 'zellweger']
@@ -60,16 +60,15 @@ arcadi_phenotypes_5e8 = [ "arcadi_5e8_" + p for p in arcadi_phenotypes_5e8 ]
 arcadi_phenotypes_1e7 = [ "Age-related_macular_degeneration", "Alopecia_areata", "Alzheimers_disease", "Ankylosing_spondylitis", "Asthma", "Basal_cell_carcinoma_", "Bipolar_disorder", "Bipolar_disorder_and_schizophrenia", "Bladder_cancer", "Breast_cancer", "Celiac_disease", "Chronic_kidney_disease", "Chronic_lymphocytic_leukemia", "Chronic_obstructive_pulmonary_disease", "Colorectal_cancer", "Coronary_heart_disease", "Creutzfeldt-Jakob_disease", "Crohns_disease", "Dupuytrens_disease", "Esophageal_cancer", "Glaucoma", "Graves_disease", "HIV-1_control", "Hypertension", "IgA_nephropathy", "Inflammatory_bowel_disease", "Intracranial_aneurysm", "Kawasaki_disease", "Leprosy", "Lung_cancer", "Melanoma", "Multiple_sclerosis", "Myocardial_infarction", "Nasopharyngeal_carcinoma", "Pagets_disease", "Pancreatic_cancer", "Parkinsons_disease", "Primary_biliary_cirrhosis", "Progressive_supranuclear_palsy", "Prostate_cancer", "Psoriasis", "Renal_cell_carcinoma", "Restless_legs_syndrome", "Rheumatoid_arthritis", "Schizophrenia", "Sudden_cardiac_arrest", "Systemic_lupus_erythematosus", "Systemic_sclerosis", "Testicular_cancer", "Type_1_diabetes", "Type_2_diabetes", "Ulcerative_colitis", "Vitiligo" ]
 arcadi_phenotypes_1e7 = [ "arcadi_1e7_" + p for p in arcadi_phenotypes_1e7 ]
 
+#arcadi_phenotypes = ["AL_Leukemia", "AL_Sclerosis", "Abdominal_aortic_aneurysm", "Age-related_macular_degeneration", "Allergic_rhinitis", "Alzheimer", "Ankylosing_spondylitis", "Asthma", "Atopic_dermatitis", "Autism", "Basal_cell_carcinoma_", "Behcet_disease", "Beta_thalassemia-hemoglobin_E_disease", "Bipolar_disorder", "Bladder_cancer", "Breast_cancer", "Celiac_disease", "Chronic_Hepatitis_C_infection", "Chronic_kidney_disease", "Chronic_lymphocytic_leukemia", "Chronic_obstructive_pulmonary_disease", "Colorectal_cancer", "Corneal_astigmatism", "Coronary_heart_disease", "Crohn_disease", "Dupuytren_disease", "Endometrial_cancer", "Endometriosis", "Eosinophilic_esophagitis", "Esophageal_cancer", "Essential_tremor", "Ewing_sarcoma", "Follicular_lymphoma", "Fuchs_corneal_dystrophy", "Gallstones", "Gastric_cancer", "Glaucoma", "Glioma", "Glomerulosclerosis", "Graves_disease", "Heart_failure", "Hepatitis_B", "Hepatocellular_carcinoma", "Hirschsprung_disease", "Hodgkin_lymphoma", "Hypertension", "Hypothyroidism", "Idiopathic_pulmonary_fibrosis", "Infantile_hypertrophic_pyloric_stenosis", "Inflammatory_bowel_disease", "Intracranial_aneurysm", "Ischemic_stroke", "Kawasaki_disease", "Keloid", "Leprosy", "Lung_adenocarcinoma", "Lung_cancer", "Malaria", "Melanoma", "Meningioma_", "Meningococcal_disease", "Multiple_sclerosis", "Myeloproliferative_neoplasms", "Myocardial_infarction", "Nasopharyngeal_carcinoma", "Neonatal_lupus", "Nephrolithiasis", "Nephropathy", "Neuroblastoma", "Non-obstructive_azoospermia", "Nonsyndromic_cleft_lip_with_or_without_cleft_palate", "Osteoarthritis", "Osteoporosis", "Otosclerosis", "Ovarian_cancer", "Paget_disease", "Pancreatic_cancer", "Parkinson_disease", "Polycystic_ovary_syndrome", "Primary_biliary_cirrhosis", "Primary_sclerosing_cholangitis", "Progranulin_levels", "Progressive_supranuclear_palsy", "Prostate_cancer", "Psoriasis", "Psoriatic_arthritis", "Renal_cell_carcinoma", "Renal_function_and_chronic_kidney_disease", "Rheumatoid_arthritis", "Schizophrenia", "Stroke", "Sudden_cardiac_arrest", "Systemic_lupus_erythematosus", "Systemic_sclerosis", "Testicular_cancer", "Testicular_germ_cell_cancer", "Testicular_germ_cell_tumor", "Thyroid_cancer", "Tuberculosis", "Type_1_diabetes", "Type_2_diabetes", "Ulcerative_colitis", "Urinary_bladder_cancer", "Venous_thromboembolism", "Vitiligo"]
+#arcadi_phenotypes = [ "arcadi_" + p for p in arcadi_phenotypes ]
+
 ppis = []
 #ppis += ["hprd"] #, "ophid"]
 #ppis += ["goh", "entrez", "biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
 #ppis += ["biana_no_tap_no_reliability", "biana_no_tap_relevance", "biana_no_reliability"] 
 #ppis += ["goh"] 
 #ppis += ["entrez"]
-#ppis += ["biana_no_reliability"]
-#ppis += ["biana_no_tap_no_reliability"] 
-#ppis += ["biana_no_tap_relevance"]
-ppis += ["bppi_new"]
 #ppis += ["baldo_synthetic"]
 #ppis += ["rh_human_gi"]
 #ppis += ["humannet"]
@@ -81,6 +80,10 @@ ppis += ["bppi_new"]
 #ppis += [ "biogrid_yeast_no_tap" ]
 #ppis += [ "yeastnet2" ]
 #ppis += ["ravasi"]
+ppis += ["bppi_new"]
+#ppis += ["biana_no_reliability"]
+#ppis += ["biana_no_tap_no_reliability"] 
+#ppis += ["biana_no_tap_relevance"]
 #ppis += ["biana_no_tap_coexpression_no_weight", "biana_no_tap_coexpression", "biana_no_tap_coexpression_differential", "biana_no_tap_coexpression_no_weight_localization", "biana_no_tap_coexpression_localization", "biana_no_tap_coexpression_differential_localization"]
 #ppis += ["biana_no_tap_no_reliability_permuted_p10_71"] 
 #ppis += ["biana_no_tap_no_reliability_permuted_p%s_%s" % (p, i) for p in xrange(10,110,10) for i in xrange(1,101) ] 
@@ -118,7 +121,12 @@ phenotypes = []
 #phenotypes += ["omim_alzheimer"] 
 #phenotypes += ["new_omim_alzheimer"] 
 #phenotypes += ["new_omim_arrhythmogenic"] 
-#phenotypes += ["new_omim_diabetes"] 
+#phenotypes += ["new_omim_congenital"] 
+#phenotypes += ["new_omim_parkinson"] 
+#phenotypes += ["new_omim_pancreatic"] 
+#phenotypes += ["new_omim_colorectal"] 
+#phenotypes += ["new_omim_aids"] 
+#phenotypes += ["new_omim_diabetes"]
 #phenotypes += ["new_omim_diabetes_type_2"]
 #phenotypes += ["new_omim_insulin"] 
 #phenotypes += ["new_omim_adrenoleukodystrophy"] 
@@ -131,11 +139,15 @@ phenotypes = []
 #phenotypes += [arcadi_phenotypes_5e8[0]]
 phenotypes += arcadi_phenotypes_5e8
 phenotypes += arcadi_phenotypes_1e7
+#phenotypes += ["bc_metastasis_brain", "bc_metastasis_lung"]
+#phenotypes += ["santana"]
+#phenotypes += ["mestres_normal", "mestres_tumor"]
+#phenotypes += arcadi_phenotypes
 
 scoring_parameters = []
 #scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)] 
-#scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
-#scoring_parameters += [("nd", 1, 1)] 
+scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
+scoring_parameters += [("nd", 1, 1)] 
 #scoring_parameters += [("rw", 1, 1), ("np", 1, 1)] 
 #scoring_parameters += [("nr", 1, 1)]
 #scoring_parameters += [("rw", 1, 1)]
@@ -180,7 +192,7 @@ rhodes_network_dir = data_dir + "rhodes_human_probabilistic_ppi" + os.sep
 # Gene info file 
 gene_info_file = data_dir + "gene_info" + os.sep + "genes.tsv"
 
-COMPARISON_GOLD_STANDARD_FILE = data_dir + "alzheimer_gold" + os.sep + "gene_list.txt" 
+#COMPARISON_GOLD_STANDARD_FILE = data_dir + "alzheimer_gold" + os.sep + "gene_list.txt" 
 #COMPARISON_GOLD_STANDARD_FILE = data_dir + "netage" + os.sep + "AD_genes.txt" 
 #COMPARISON_GOLD_STANDARD_FILE = data_dir + "uwaging" + os.sep + "aging.txt" # 22, 9 from genage
 #COMPARISON_GOLD_STANDARD_FILE = data_dir + "genage" + os.sep + "aging_candidates.txt" # 261, 9 from uwaging, 91 from netage
@@ -189,6 +201,18 @@ COMPARISON_GOLD_STANDARD_FILE = data_dir + "alzheimer_gold" + os.sep + "gene_lis
 #COMPARISON_GOLD_STANDARD_FILE = data_dir + "uwaging" + os.sep + "uwaging_mutex_genage_netage.txt" # 12 intersection of uwaging - genage & uwagin - netage
 #COMPARISON_GOLD_STANDARD_FILE = data_dir + "uwaging" + os.sep + "mutex_uwaging_genage_netage.txt" # 99 intersection of uwaging - genage & uwaging - netage & genage - netage
 #COMPARISON_GOLD_STANDARD_FILE = data_dir + "netage" + os.sep + "longetivity.txt" # 456, 8 from uwaging, 91 from genage
+#COMPARISON_GOLD_STANDARD_FILE = data_dir + "aerts06_gene_prioritization" + os.sep + "arrhytmia.txt" 
+#COMPARISON_GOLD_STANDARD_FILE = data_dir + "aerts06_gene_prioritization" + os.sep + "congenital.txt" 
+#COMPARISON_GOLD_STANDARD_FILE = data_dir + "moran2008" + os.sep + "parkinson_from_moran2008_extended.txt" 
+#COMPARISON_GOLD_STANDARD_FILE = data_dir + "kegg" + os.sep + "pancreatic.txt" 
+#COMPARISON_GOLD_STANDARD_FILE = data_dir + "kegg" + os.sep + "colorectal.txt" 
+#COMPARISON_GOLD_STANDARD_FILE = data_dir + "aids.txt" 
+#COMPARISON_GOLD_STANDARD_FILE = data_dir + "gad" + os.sep + "associations/alzheimer.txt" 
+#COMPARISON_GOLD_STANDARD_FILE = data_dir + "gad" + os.sep + "associations/colorectal.txt" 
+#COMPARISON_GOLD_STANDARD_FILE = data_dir + "gad" + os.sep + "associations/pancreatic.txt" 
+#COMPARISON_GOLD_STANDARD_FILE = data_dir + "gad" + os.sep + "associations/aids.txt" 
+#COMPARISON_GOLD_STANDARD_FILE = data_dir + "gad" + os.sep + "associations/diabetes.txt" 
+#COMPARISON_GOLD_STANDARD_FILE = data_dir + "ctd" + os.sep + "associations/alzheimer_direct.txt" 
 
 scoring_methods = ["nd", "nz", "ns", "ff", "nr", "nw", "nl", "nx", "nh", "n1", "nb", "rw", "np", "mcl", "nc", "nc2", "nc3", "nc7"]
 
