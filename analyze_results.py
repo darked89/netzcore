@@ -10,6 +10,20 @@ from funcassociate import client
 from biana.utilities import TsvReader
 import calculate_mean_and_sigma
 
+def get_seed_degrees(network_file, seed_scores_file):
+    g = network_utilities.create_network_from_sif_file(network_file, use_edge_data=False)
+    seeds, dummy, initial_node_to_score, dummy = network_utilities.get_nodes_and_edges_from_sif_file(file_name = seed_scores_file, store_edge_type = False)
+    #seed_to_degree = {}
+    counts = []
+    for seed in seeds:
+	i = 0
+	for u1, u2 in g.edges(seed):
+	    if u1 == u2: # ignore self edges
+		continue
+	    i += 1
+	counts.append(i)
+	#seed_to_degree[seed] = i
+    return sum(counts)/float(len(counts)) #seed_to_degree
 
 def score_combined(scores_file_list, output_scores_file, combination_type="standard", reverse_ranking=False):
     """
@@ -661,7 +675,7 @@ def check_functional_enrichment_at_given_cutoff(output_scores_file, node_scores_
     """
     selected_ids, all_ids, seed_ids, selected_node_ids = get_top_scoring_node_ids_at_given_cutoff(output_scores_file, node_scores_file, node_mapping_file, cutoff, id_type, default_non_seed_score, exclude_seeds)
     #print len(selected_ids), len(all_ids)
-    output_method("%d gene names/ids among %d\n" % (len(selected_ids), len(all_ids)))
+    #output_method("%d gene names/ids among %d\n" % (len(selected_ids), len(all_ids)))
     check_functional_enrichment(selected_ids, all_ids, id_type, output_method, specie = specie, mode = mode)
     return
 

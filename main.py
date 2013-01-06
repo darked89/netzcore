@@ -49,7 +49,7 @@ def main(ppis, phenotypes, scoring_parameters, user_friendly_id=user_friendly_id
 	    if MODE in ("score", "all") and use_cluster and delay_experiment:
 		delay = 10
 		experiment_count = get_number_of_jobs_in_queues()
-		while experiment_count > 20: #!
+		while experiment_count > 60: 
 		    time.sleep(delay)
 		    experiment_count = get_number_of_jobs_in_queues()
     
@@ -159,7 +159,7 @@ def decide_association_data(ASSOCIATION, PPI):
 	if ASSOCIATION == "mestres_tumor":
 	    association_scores_file = association_dir + "tumor_only.txt.geneid"
 	if ASSOCIATION == "mestres_normal":
-	    association_scores_file = association_dir + "normal.txt.geneid"
+	    association_scores_file = association_dir + "normal_only.txt.geneid"
     elif ASSOCIATION.startswith("bc_metastasis"):
 	association_dir = data_dir + "bc_metastasis" + os.sep 
 	association_scores_file_identifier_type = "geneid" #"genesymbol"
@@ -691,8 +691,8 @@ def decide_score_commands(node_scores_file, edge_scores_file, output_scores_file
 			    "np": Template("~/bin/R -f %sscoreNetwork/random_walk.r --args %s.$fold %s %s.$fold 1 > %s.$fold" % (src_dir, node_scores_file, edge_scores_file, output_scores_file, score_log_file)),
 			  }
 
-    score_commands = { "ns": src_dir + "scoreNetwork/scoreN_ns_nz_noScale -s s -n %s -e %s -o %s -r %d -i %d &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, score_log_file),
-		       "nz": src_dir + "scoreNetwork/scoreN_ns_nz_noScale -s z -n %s -e %s -o %s -i %d -x %d -d %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir + "sampled_graph.sif.", score_log_file), 
+    score_commands = { "ns": src_dir + "scoreNetwork/scoreN -s s -n %s -e %s -o %s -r %d -i %d &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, score_log_file),
+		       "nz": src_dir + "scoreNetwork/scoreN -s z -n %s -e %s -o %s -i %d -x %d -d %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir + "sampled_graph.sif.", score_log_file), 
 		       "nh": src_dir + "scoreNetwork/scoreN -s h -n %s -e %s -o %s -r %d -i %d -x %d -d %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir + "sampled_graph.sif.", score_log_file), 
 		       "n1": src_dir + "scoreNetwork/scoreN -s 1 -n %s -e %s -o %s -r %d -i %d -x %d -d %s &> %s" % (node_scores_file, edge_scores_file, output_scores_file, N_REPETITION, N_ITERATION, N_SAMPLE_GRAPH, sampling_dir + "sampled_graph.sif.", score_log_file), 
 		       "nd": src_dir + "scoreNetwork/scoreN -s d -n %s -e %s -o %s &> %s" % (node_scores_file, edge_scores_as_node_scores_file, output_scores_file, score_log_file),
@@ -780,8 +780,12 @@ def analyze_modules(experiments, module_detection_type, enrichment_type="go", us
 	(seed_scores_file, node_scores_file, node_mapping_file, edge_scores_file, edge_scores_as_node_scores_file, output_scores_file, \
 	score_log_file, sampled_file_prefix, candidates_file_mapped, log_file, input_log_file, job_file, output_log_file, predictions_file, \
 	labels_file, r_script_file, tex_script_file) = decide_scoring_and_analysis_files(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association, candidates_file)
+	module_dir += user_friendly_id + os.sep
 	if i == 0:
-	    module_dir += user_friendly_id + os.sep
+	    file_enrichment = open(module_dir + "enrichment.txt", 'w')
+	file_enrichment.write("#%s %s %s\n" % (PPI, ASSOCIATION, SCORING))
+	analyze_results.check_functional_enrichment_at_given_cutoff(output_scores_file, node_scores_file, node_mapping_file+"."+association_scores_file_identifier_type, DEFAULT_TOP_SCORING_CUTOFF, association_scores_file_identifier_type, file_enrichment.write, DEFAULT_NON_SEED_SCORE, exclude_seeds=False, specie = specie) # "5%"
+	if i == 0:
 	    if not os.path.exists(module_dir): 
 		os.mkdir(module_dir)
 	    file_module_summary = open(module_dir + "module_summary.dat", 'w')
@@ -789,8 +793,6 @@ def analyze_modules(experiments, module_detection_type, enrichment_type="go", us
 		file_module_summary.write("ppi phenotype scoring n_seed_go n_module n_seed_go_in_modules n_go_in_modules ratio\n")
 	    else:
 		file_module_summary.write("ppi phenotype scoring n_seed n_module n_seed_in_modules n_all_in_modules ratio\n")
-	if i != 0:
-	    module_dir += user_friendly_id + os.sep
 	file_module = open(module_dir + "modules.txt", 'a')
 	if prev_assoc != ASSOCIATION:
 	    #nodes = compare_experiments([ (PPI, ASSOCIATION) + parameters for parameters in scoring_parameters], None, False, False, "test", False, 1, "common_intersection_return")
@@ -837,6 +839,7 @@ def analyze_modules(experiments, module_detection_type, enrichment_type="go", us
     #print "%s\t%s" % (prev_assoc, "\t".join(map(lambda x: "%s %.2f %d %d %d %d" % (x[0], x[1][0], x[1][1], x[1][2], x[1][3], x[1][4]), method_and_val)))
     print "%s\t%s" % (prev_assoc, "\t".join(map(lambda x: "%s %d %d %d %d %.2f" % (x[0], x[1][4], x[1][3], x[1][1], x[1][2], x[1][0]), method_and_val)))
     file_module_summary.close()
+    file_enrichment.close()
     return
 
 def compare_experiments(experiments, gold_standard_file=None, tex_format=False, functional_enrichment=False, user_friendly_id="test", exclude_seeds = True, seed_cutoff=None, analysis_type = "common_intersection"):
@@ -1065,12 +1068,15 @@ def sum_up_experiments(ppis, phenotypes, analysis_type="auc", tex_format=False, 
 		labels_file, r_script_file, tex_script_file) = decide_scoring_and_analysis_files(input_dir, input_base_dir_network, sampling_dir, output_dir, output_base_dir_association, None)
 		n_seed, n_linker, n_path = [None] * 3
 		n_seed, n_linker, n_path = prepare_data.get_number_of_mapped_seeds(input_log_file)
+
+		n_degree = analyze_results.get_seed_degrees(edge_scores_file, seed_scores_file)
+		#print ppi, phenotype, n_degree
 		if n_seed < seed_cutoff: #if n_seed >= seed_cutoff: 
 		    phenotypes_to_skip.add(phenotype)
 		    print "Skipping", phenotype, n_seed
 		    continue
 		else:
-		    phenotype_to_seed_values.setdefault(phenotype, []).append((n_seed, n_linker, n_path))
+		    phenotype_to_seed_values.setdefault(phenotype, []).append((n_seed, n_linker, n_path, n_degree))
 	phenotypes = list(set(phenotypes)-phenotypes_to_skip)
 
     ppi_phenotype_auc_container = dict([ (ppi, dict([ (phenotype, {}) for phenotype in phenotypes ])) for ppi in ppis ])
@@ -1187,7 +1193,7 @@ def sum_up_experiments(ppis, phenotypes, analysis_type="auc", tex_format=False, 
 		if "perturbed" not in phenotype:
 		    break
 		pheno, iter = phenotype.rsplit("_", 1)
-		iter_to_score_to_pheno.setdefault(iter, {}).setdefault(scoring, []).append(method_to_auc[scoring])
+		iter_to_score_to_pheno.setdefault(iter, {}).setdefault(scoring, []).append(method_to_auc[scoring][0])
 	for iter, score_to_pheno in iter_to_score_to_pheno.iteritems():
 	    aucs = []
 	    for scoring in common_methods:
@@ -1239,9 +1245,9 @@ def sum_up_experiments(ppis, phenotypes, analysis_type="auc", tex_format=False, 
 
     if seed_cutoff is not None:
 	data_file = open(summary_dir + "seeds.dat", 'w')
-	data_file.write("\tn_seed\tn_linker\tn_path\n")
+	data_file.write("\tn_seed\tn_linker\tn_path\tn_degree\n")
 	for phenotype, values in phenotype_to_seed_values.iteritems():
-	    n_seeds, n_linkers, n_paths = zip(*values)
+	    n_seeds, n_linkers, n_paths, n_degrees = zip(*values)
 	    mean_seeds, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(n_seeds)
 	    #print phenotype, values
 	    if n_linkers[0] is None: # If n_linker has not been calculated - though only checks the first 
@@ -1252,7 +1258,11 @@ def sum_up_experiments(ppis, phenotypes, analysis_type="auc", tex_format=False, 
 		mean_paths, sigma = None, None
 	    else:
 		mean_paths, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(n_paths)
-	    data_file.write("%s\t%s\t%s\t%s\n" % (phenotype, mean_seeds, mean_linkers, mean_paths))
+	    if n_degrees[0] is None:
+		mean_degrees, sigma = None, None
+	    else:
+		mean_degrees, sigma = calculate_mean_and_sigma.calc_mean_and_sigma(n_degrees)
+	    data_file.write("%s\t%s\t%s\t%s\t%s\n" % (phenotype, mean_seeds, mean_linkers, mean_paths, mean_degrees))
 	data_file.close()
 
     return
@@ -1895,13 +1905,14 @@ if __name__ == "__main__":
     if multiple == False:
 	main(ppis, phenotypes, scoring_parameters)
     else:
-	for i_parameter in range(10,110,10): 
+	for i_parameter in range(10,90,10): 
 	    ufi = user_friendly_id + "_permuted_p%d-omim" % i_parameter
 	    #ufi = user_friendly_id + "_pruned_p%d-omim" % i_parameter
 	    #ufi = user_friendly_id + "-omim_perturbed_p%d" % i_parameter
 	    #ppis = ["biana_no_tap_no_reliability_pruned_non_seed_interactions_p%s_%s" % (p, i) for p in xrange(i_parameter,i_parameter+10,10) for i in xrange(1,101) ] 
-	    ppis = ["biana_no_tap_no_reliability_permuted_p%s_%s" % (p, i) for p in xrange(i_parameter,i_parameter+10,10) for i in xrange(1,101) ] 
-	    #ppis = ["goh_permuted_p%s_%s" % (p, i) for p in xrange(i_parameter,i_parameter+10,10) for i in xrange(1,101) ] 
+	    #ppis = ["biana_no_tap_no_reliability_permuted_p%s_%s" % (p, i) for p in xrange(i_parameter,i_parameter+10,10) for i in xrange(1,101) ] 
+	    #ppis = ["biana_no_tap_no_reliability_pruned_p%s_%s" % (p, i) for p in xrange(i_parameter,i_parameter+10,10) for i in xrange(1,101) ] 
+	    ppis = ["goh_permuted_p%s_%s" % (p, i) for p in xrange(i_parameter,i_parameter+10,10) for i in xrange(1,101) ] 
 	    #ppis = ["goh_pruned_p%s_%s" % (p, i) for p in xrange(i_parameter,i_parameter+10,10) for i in xrange(1,101) ] 
 	    #phenotypes = [ "perturbed_%s_p%i_%i" % (d, p, i) for d in omim_phenotypes for p in xrange(i_parameter,i_parameter+10,10) for i in xrange(1,101) ]  
 	    #phenotypes = [ "perturbed_%s_p%i_%i" % (d, p, i) for d in ["omim_systemic_lupus_erythematosus"] for p in xrange(i_parameter,i_parameter+10,10) for i in xrange(11,101) ]  

@@ -1,16 +1,20 @@
-dir.name<-"../data/summary/"
 cols<-c(2,7,3,4,6,5,8) #rainbow(7) #2:8 #heat.colors(7)
 color5<-cols[1:5]
 color2<-c(3,4)
-scoring.methods<-c("N.Score", "N.Zcore", "N.Short", "N.Combo", "F.Flow", "P.Rank", "R.Walk", "N.Prop")
-scoring.methods.full<-c("NetScore", "NetZcore", "NetShort", "NetCombo", "Functional\nFlow", "Page\nRank", "Random\nWalk", "Network\n Propagation")
-#scoring.methods<-c("N.Score", "N.Zcore", "N.Short", "F.Flow", "P.Rank")
-scoring.method.ids<-c("ns", "nz", "nd", "nc3", "ff", "nr", "rw", "np")
+#scoring.methods<-c("N.Score", "N.Zcore", "N.Short", "N.Combo", "F.Flow", "P.Rank", "R.Walk", "N.Prop")
+#scoring.methods.full<-c("NetScore", "NetZcore", "NetShort", "NetCombo", "Functional\nFlow", "Page\nRank", "Random\nWalk", "Network\n Propagation")
+scoring.methods<-c("N.Score", "N.Zcore", "N.Short", "F.Flow", "P.Rank")
+#scoring.method.ids<-c("ns", "nz", "nd", "nc3", "ff", "nr", "rw", "np")
+scoring.method.ids<-c("ns", "nz", "nd", "ff", "nr")
+
+dir.name<-"../data/summary/"
+out.dir<-"../doc/draft/plos_one_plasticity/img/"
 
 main <- function() {
     #manuscript()
-    #manuscript2()
+    manuscript2()
 
+    #omim_similarity_figures() 
     #case_study_figures()
     #navlakha_figures()
     #aneurysm_figures()
@@ -19,13 +23,12 @@ main <- function() {
 
 manuscript<-function() {
     manuscript_figures()
-    #case_study_score_distributions()
     manuscript_tests()
 }
 
 manuscript2<-function() {
     manuscript2_figures()
-    manuscript2_tests()
+    #manuscript2_tests() 
 }
 
 
@@ -33,9 +36,8 @@ manuscript2<-function() {
 manuscript2_figures<-function() {
     neighborhood_figures()
     robustness_figures()
-    disease_category_figures()
-    module_figures()
-    omim_similarity_figures()
+    disease_category_figures() 
+    module_figures() 
 }
 
 lambda<-function(x) { x<-substring(x, 6); words<-unlist(strsplit(x, "_")); x<-paste(words, collapse=" "); return(x) }
@@ -46,7 +48,8 @@ neighborhood_figures <- function() {
 
     dir.name<-"../data/summary_draft_before_revision/"
     # Number of genes in neighborhood of alzheimer over randomly permuted bPPI network 
-    cairo_ps(paste(dir.name, "Figure P1a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    #cairo_ps(paste(dir.name, "Figure P1a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    svg(paste(out.dir, "AD_a.svg", sep=""))
     par(family = "Arial") 
     par(mar=c(5, 4, 4, 5) + 0.1)
     d<-read.table(paste(dir.name, '../compare/biana_no_tap-omim_alzheimer-nn/permuted/results.dat', sep=""))
@@ -66,7 +69,8 @@ neighborhood_figures <- function() {
     dev.off()
 
     # Number of genes in neighborhood of alzheimer over randomly pruned bPPI network 
-    cairo_ps(paste(dir.name, "Figure P1b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    #cairo_ps(paste(dir.name, "Figure P1b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    svg(paste(out.dir, "AD_b.svg", sep=""))
     par(family = "Arial") 
     par(mar=c(5, 4, 4, 5) + 0.1)
     d<-read.table(paste(dir.name, '../compare/biana_no_tap-omim_alzheimer-nn/pruned/results.dat', sep=""))
@@ -92,12 +96,15 @@ neighborhood_figures <- function() {
 ###### ROBUSTNESS FIGURES ######
 robustness_figures <- function() {
 
-    dir.name<-"../data/summary_draft_before_revision/"
+    #dir.name<-"../data/summary_draft_before_revision/"
+    dir.name<-"../data/summary_runs_on_random/"
+
     percentages<-seq(0,80,by=10) # c(0, 10, 30, 50, 70)
     scoring.methods<-c("N.Score", "N.Zcore", "N.Short", "F.Flow", "P.Rank")
 
     # Average AUC (%) at different levels of interaction permutation over OMIM disorders on bPPI network
-    cairo_ps(paste(dir.name, "Figure P2a.eps", sep=""), width = 6, height = 6, onefile = TRUE) # ps: horizontal = FALSE, onefile = FALSE, paper = "special")
+    #cairo_ps(paste(dir.name, "Figure P2a.eps", sep=""), width = 6, height = 6, onefile = TRUE) # ps: horizontal = FALSE, onefile = FALSE, paper = "special")
+    svg(paste(out.dir, "permuted.svg", sep=""))
     par(family = "Arial") 
     e<-c()
     f<-c()
@@ -105,7 +112,6 @@ robustness_figures <- function() {
     for(p in percentages) {
 	if(p == 0) {
 	    d <- read.table(paste(dir.name, 'biana_no_tap-omim/auc_phenotypes.dat', sep=""))
-	    dir.name<-"../data/summary_runs_on_random/"
 	}
 	else {
 	    d <- read.table(paste(dir.name, 'biana_no_tap_permuted_p', p, '-omim/auc_phenotypes.dat', sep=""))
@@ -113,6 +119,7 @@ robustness_figures <- function() {
 		stop("Object dimension is different from expected!")
 	    }
 	}
+	d<-d[,scoring.method.ids]
 	m <- mean(d)
 	n <- dim(d)[1]
 	error <- qt(0.975, df=n-1) * sd(d) / sqrt(n)
@@ -129,8 +136,7 @@ robustness_figures <- function() {
     dev.off()
 
     # Average AUC (%) at different levels of interaction permutation over OMIM disorders on GOH network
-    dir.name<-"../data/summary_draft_before_revision/"
-    cairo_ps(paste(dir.name, "Figure PS1a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    svg(paste(out.dir, "permuted_goh.svg", sep=""))
     par(family = "Arial") 
     e<-c()
     f<-c()
@@ -138,8 +144,6 @@ robustness_figures <- function() {
     for(p in percentages) {
 	if(p == 0) {
 	    d <- read.table(paste(dir.name, 'goh-omim/auc_phenotypes.dat', sep=""))
-	    #d <- d[,1:3]
-	    dir.name<-"../data/summary_runs_on_random/"
 	}
 	else {
 	    d <- read.table(paste(dir.name, 'goh_permuted_p', p, '-omim/auc_phenotypes.dat', sep=""))
@@ -147,6 +151,7 @@ robustness_figures <- function() {
 		stop("Object dimension is different from expected!")
 	    }
 	}
+	d<-d[,scoring.method.ids]
 	m <- mean(d)
 	n <- dim(d)[1]
 	error <- qt(0.975, df=n-1) * sd(d) / sqrt(n)
@@ -162,8 +167,7 @@ robustness_figures <- function() {
     dev.off()
 
     # Average AUC (%) at different levels of interaction pruning over OMIM disorders on bPPI network
-    dir.name<-"../data/summary_draft_before_revision/"
-    cairo_ps(paste(dir.name, "Figure P2b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    svg(paste(out.dir, "pruned.svg", sep=""))
     par(family = "Arial") 
     e<-c()
     f<-c()
@@ -171,7 +175,6 @@ robustness_figures <- function() {
     for(p in percentages) {
 	if(p == 0) {
 	    d <- read.table(paste(dir.name, 'biana_no_tap-omim/auc_phenotypes.dat', sep=""))
-	    dir.name<-"../data/summary_runs_on_random/"
 	}
 	else {
 	    d <- read.table(paste(dir.name, 'biana_no_tap_pruned_p', p, '-omim/auc_phenotypes.dat', sep=""))
@@ -181,6 +184,7 @@ robustness_figures <- function() {
 		stop("Object dimension is different from expected!")
 	    }
 	}
+	d<-d[,scoring.method.ids]
 	m <- mean(d)
 	n <- dim(d)[1]
 	error <- qt(0.975, df=n-1) * sd(d) / sqrt(n)
@@ -196,8 +200,7 @@ robustness_figures <- function() {
     dev.off()
 
     # Average AUC (%) at different levels of interaction pruning over OMIM disorders on GOH network
-    dir.name<-"../data/summary_draft_before_revision/"
-    cairo_ps(paste(dir.name, "Figure PS1b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    svg(paste(out.dir, "pruned_goh.svg", sep=""))
     par(family = "Arial") 
     e<-c()
     f<-c()
@@ -205,7 +208,6 @@ robustness_figures <- function() {
     for(p in percentages) {
 	if(p == 0) {
 	    d <- read.table(paste(dir.name, 'goh-omim/auc_phenotypes.dat', sep=""))
-	    dir.name<-"../data/summary_runs_on_random/"
 	}
 	else {
 	    d <- read.table(paste(dir.name, 'goh_pruned_p', p, '-omim/auc_phenotypes.dat', sep=""))
@@ -213,6 +215,7 @@ robustness_figures <- function() {
 		stop("Object dimension is different from expected!")
 	    }
 	}
+	d<-d[,scoring.method.ids]
 	m <- mean(d)
 	n <- dim(d)[1]
 	error <- qt(0.975, df=n-1) * sd(d) / sqrt(n)
@@ -227,50 +230,8 @@ robustness_figures <- function() {
     legend(0.5, 100, scoring.methods, fill=color5, bty="n", ncol=3)
     dev.off()
 
-    # Average AUC (%) for two groups of OMIM disorders based on number of seeds on bPPI network 
-    dir.name<-"../data/summary_draft_before_revision/"
-    cairo_ps(paste(dir.name, "Figure P3a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
-    par(family = "Arial") 
-
-    s<-read.table(paste(dir.name, 'biana_no_tap-omim/seeds.dat', sep=""))
-    d<-read.table(paste(dir.name, 'biana_no_tap-omim/auc_ppis.dat', sep=""))
-    cutoff<-median(s$n_seed)
-    #cutoff<-median(s$n_path)
-    x<-d[rownames(s)[s$n_seed<=cutoff],]
-    y<-d[rownames(s)[s$n_seed>cutoff],]
-
-    coords <- seq(0.6, 5.0, by=1.1)
-    boxplot(x, col=color2[1], at=coords, boxwex=0.4, pars=list(xaxt="n"), xlab="Prediction method", ylab="AUC(%)", ylim=c(0,100))
-    axis(1,tick=F, labels=scoring.methods[1:5], at=coords+0.2)
-    coords <- coords + 0.4
-    boxplot(y, col=color2[2], at=coords, boxwex=0.4, pars=list(xaxt="n"), names=F, add=T)
-    legend(1.5, 5, c(paste("# of seeds < ", cutoff, sep=""), paste("# of seeds >= ", cutoff, sep="")), fill=color2, bty="n", horiz=T)
-    #legend(1.0, 15, c("Group with shorter seed-connecting paths", "Group with longer seed-connecting paths"), fill=color2, bty="n") #1.5, 5, horiz=T, cex=0.9)
-    dev.off()
-
-    # Average AUC (%) for two groups of OMIM disorders based on number of seeds on GOH network
-    dir.name<-"../data/summary_draft_before_revision/"
-    cairo_ps(paste(dir.name, "Figure PS2a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
-    par(family = "Arial") 
-
-    s<-read.table(paste(dir.name, 'goh-omim/seeds.dat', sep=""))
-    d<-read.table(paste(dir.name, 'goh-omim/auc_ppis.dat', sep=""))
-
-    cutoff<-median(s$n_seed)
-    x<-d[rownames(s)[s$n_seed<=cutoff],]
-    y<-d[rownames(s)[s$n_seed>cutoff],]
-
-    coords <- seq(0.6, 5.0, by=1.1)
-    boxplot(x,col=3, at=coords, boxwex=0.4, pars=list(xaxt="n"), xlab="Prediction method", ylab="AUC(%)", ylim=c(0,100))
-    axis(1,tick=F,labels=scoring.methods,at=coords+0.2)
-    coords <- coords + 0.4
-    boxplot(y,col=4, at=coords, boxwex=0.4, pars=list(xaxt="n"), names=F, add=T)
-    legend(1.5, 5, c(paste("# of seeds < ", cutoff, sep=""), paste("# of seeds >= ", cutoff, sep="")), fill=color2, bty="n", horiz=T)
-    dev.off()
-
     # Average AUC (%) at different levels of seed permutation over OMIM disorders on bPPI network
-    dir.name<-"../data/summary_draft_before_revision/"
-    cairo_ps(paste(dir.name, "Figure P3b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    svg(paste(out.dir, "perturbed.svg", sep=""))
     par(family = "Arial") 
     e<-c()
     f<-c()
@@ -278,7 +239,6 @@ robustness_figures <- function() {
     for(p in percentages) {
 	if(p == 0) {
 	    d <- read.table(paste(dir.name, 'biana_no_tap-omim/auc_phenotypes.dat', sep=""))
-	    dir.name<-"../data/summary_runs_on_random/"
 	}
 	else {
 	    d<-read.table(paste(dir.name, 'biana_no_tap-omim_perturbed_p', p, '/auc_perturbed.dat', sep=""))
@@ -286,6 +246,7 @@ robustness_figures <- function() {
 		stop("Object dimension is different from expected!")
 	    }
 	}
+	d<-d[,scoring.method.ids]
 	m <- mean(d)
 	n <- dim(d)[1]
 	error <- qt(0.975, df=n-1) * sd(d) / sqrt(n)
@@ -301,8 +262,7 @@ robustness_figures <- function() {
     dev.off()
 
     # Average AUC (%) at different levels of seed permutation over OMIM disorders on GOH network
-    dir.name<-"../data/summary_draft_before_revision/"
-    cairo_ps(paste(dir.name, "Figure PS2b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    svg(paste(out.dir, "perturbed_goh.svg", sep=""))
     par(family = "Arial") 
     e<-c()
     f<-c()
@@ -310,7 +270,6 @@ robustness_figures <- function() {
     for(p in percentages) {
 	if(p == 0) {
 	    d <- read.table(paste(dir.name, 'goh-omim/auc_phenotypes.dat', sep=""))
-	    dir.name<-"../data/summary_runs_on_random/"
 	}
 	else {
 	    d<-read.table(paste(dir.name, 'goh-omim_perturbed_p', p, '/auc_perturbed.dat', sep=""))
@@ -318,6 +277,7 @@ robustness_figures <- function() {
 		stop("Object dimension is different from expected!")
 	    }
 	}
+	d<-d[,scoring.method.ids]
 	m <- mean(d)
 	n <- dim(d)[1]
 	error <- qt(0.975, df=n-1) * sd(d) / sqrt(n)
@@ -337,24 +297,67 @@ robustness_figures <- function() {
 
 
 ###### DISEASE CATEGORY FIGURES ######
+
+remove_go_term_redundancy<-function(input.file, out.file) {
+    # Remove redundancy among seed go terms
+    library(GOSemSim)
+    d<-read.table(input.file, header=T)
+    d2<-d[0,1:2]
+    k<-1
+    phenotypes<-as.vector(levels(d$phenotype))
+    for(pheno in phenotypes) {
+    	s <- d[d$phenotype == pheno, ]
+	to.remove<-c()
+	for(i in 1:nrow(s)) {
+	    for(j in 1:nrow(s)) {
+		if(i<j) {
+		    go1<-as.character(s[i,"go"])
+		    go2<-as.character(s[j,"go"])
+		    a<-goSim(go1, go2, ont="BP", measure="Wang")
+		    if(!is.na(a) & a>=0.9) {
+			#print(c(go1, go2, a))
+			if(s[i,"level"] < s[j,"level"]) {
+			    to.remove<-c(to.remove,go2)
+			} else {
+			    to.remove<-c(to.remove,go1)
+			}
+		    }
+		}
+	    }
+	}
+	print(c(pheno, union(to.remove, to.remove)))
+	for(go in setdiff(d[d$phenotype == pheno,"go"],to.remove)) {
+	    #d2<-rbind(d2, c(pheno, go))
+	    d2[k,1]<-pheno
+	    d2[k,2]<-go
+	    k<-k+1
+	}
+    }
+    names(d2)<-names(d)[1:2]
+    write.table(d2, out.file, row.names=F)
+    return()
+}
+
 disease_category_figures<-function() {
 
-    #common.up<-c('omim_anemia', 'omim_breast_cancer', 'omim_leukemia', 'omim_lymphoma', 'omim_systemic_lupus_erythematosus')
-    #common.down<-c('omim_asthma', 'omim_ataxia', 'omim_cataract', 'omim_neuropathy', 'omim_schizophrenia', 'omim_spastic_paraplegia')
+    #common.up.old<-c('omim_anemia', 'omim_breast_cancer', 'omim_leukemia', 'omim_lymphoma', 'omim_systemic_lupus_erythematosus')
+    #common.down.old<-c('omim_asthma', 'omim_ataxia', 'omim_cataract', 'omim_neuropathy', 'omim_schizophrenia', 'omim_spastic_paraplegia')
+    common.up<-c("omim_breast_cancer", "omim_cardiomyopathy", "omim_diabetes", "omim_leukemia", "omim_obesity", "omim_parkinson_disease")
+    common.down<-c("omim_anemia", "omim_ataxia", "omim_cataract", "omim_epilepsy", "omim_hypertension", "omim_mental_retardation", "omim_schizophrenia", 
+		    "omim_alzheimer", "omim_lung_cancer", "omim_lymphoma", "omim_myopathy", "omim_prostate_cancer", "omim_systemic_lupus_erythematosus")
     #cols<-2:23
+    #to.remove<-c("omim_insulin", "omim_neuropathy", "omim_asthma", "omim_spastic_paraplegia") # they are already out in the new analysis files
     method<-"ns"
     percentages<-seq(0,80,by=10)
-    dir.summary<-"../data/summary_draft_before_revision/"
+    dir.name<-"../data/summary_runs_on_random/"
 
     # Change on AUC of diseases over permuted and pruned interactions
-    dir.name<-dir.summary
     label<-"Percentage of perturbated interactions"
     container.permuted<-data.frame()
     container.pruned<-data.frame()
     for(p in percentages) {
 	if(p == 0) {
 	    d<-read.table(paste(dir.name, 'biana_no_tap-omim/auc_ppis.dat', sep=""))
-	    dir.name<-"../data/summary_runs_on_random/"
 	    container.permuted<-d[order(rownames(d)), method]
 	    container.pruned<-d[order(rownames(d)), method]
 	    phenotypes<-rownames(d)[order(rownames(d))]
@@ -400,7 +403,7 @@ disease_category_figures<-function() {
     container.pruned.up<-container[common.up,]
     container.pruned.down<-container[common.down,]
 
-    write.table(cbind(container.permuted[,1], container.permuted[,1]-(container.permuted[,1]-50)/2, container.permuted[,6], container.pruned[,6]), paste(dir.summary, 'test.dat', sep=""), sep="\t", col.names=c("AUC", "critical AUC", "50% swap AUC", "50% deletion AUC"))
+    write.table(cbind(container.permuted[,1], container.permuted[,1]-(container.permuted[,1]-50)/2, container.permuted[,6], container.pruned[,6]), paste(dir.name, 'critical_auc.dat', sep=""), sep="\t", col.names=c("AUC", "critical AUC", "50% swap AUC", "50% deletion AUC"))
 
     # Before robustness cutoff: median(aucs)
     container<-container.permuted
@@ -437,8 +440,10 @@ disease_category_figures<-function() {
     container<-container.pruned
     container.pruned.down<-container[common.down,]
 
-    dir.name<-dir.summary
-    cairo_ps(paste(dir.name, "Figure P4a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    print(common.up);
+    print(common.down);
+
+    svg(paste(out.dir, "tolerant.svg", sep=""))
     par(family = "Arial") 
 
     for(i in 1:length(common.up)) {
@@ -460,8 +465,7 @@ disease_category_figures<-function() {
     legend(40, 20, c("Interaction permutation", "Interaction pruning"), lty=c(1,2), col=c(1,1), bty="n")
     dev.off()
 
-    dir.name<-dir.summary
-    cairo_ps(paste(dir.name, "Figure P4b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    svg(paste(out.dir, "intolerant.svg", sep=""))
     par(family = "Arial") 
 
     for(i in 1:length(common.down)) {
@@ -485,110 +489,162 @@ disease_category_figures<-function() {
 
     # Functional enrichment of modules in robust vs non-robust diseases
     #method<-"nn"
-    dir.name<-"../data/module/"
-    d<-read.table(paste(dir.name, "biana_no_tap-omim/module_summary.dat", sep=""), header=T) #!
+    module.dir<-"../data/module/"
+    d<-read.table(paste(module.dir, "biana_no_tap-omim/module_summary.dat", sep=""), header=T) 
     e2<-d[d$scoring==method & d$phenotype %in% common.up, "n_module"]
     f2<-d[d$scoring==method & d$phenotype %in% common.down, "n_module"]
-    d<-read.table(paste(dir.name, "biana_no_tap-omim/module_summary_ns.dat", sep=""), header=T)
+    d<-read.table(paste(module.dir, "biana_no_tap-omim/module_summary_ns-only_bp.dat", sep=""), header=T) # before it was no_parent
     e<-d[d$scoring==method & d$phenotype %in% common.up,]
     f<-d[d$scoring==method & d$phenotype %in% common.down,]
     #g<-d[d$scoring==method & d$phenotype %in% non.common,]
     e<-cbind(e, n_module=e2)
     f<-cbind(f, n_module=f2)
+    #i<-which(e$n_module == 0)
+    #e.m<-e[-i,]
+    #j<-which(f$n_module == 0)
+    #f.m<-f[-j,]
     print(e)
     print("---")
     print(f)
 
-    dir.name<-dir.summary
     #labels<-c("Robust", "Uncharacterized", "Non-robust")
-    labels<-c("Robust", "Non-robust")
-    cairo_ps(paste(dir.name, "Figure P5a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
-    par(family = "Arial") 
-    #boxplot(e$n_module, g$n_module, f$n_module, col=8, names=labels, xlab="Disease category", ylab="Number of modules", ylim=c(0,20))
-    boxplot(e$n_module, f$n_module, col=8, names=labels, xlab="Disease category", ylab="Number of modules", ylim=c(0,15))
-    #boxplot(e$n_module, f$n_module, col=8, boxwex=0.4, at=c(0.75, 1.25), xlim=c(0.5,1.5), names=labels, xlab="Disease category", ylab="Number of modules", ylim=c(0,15))
-    dev.off()
+    labels<-c("Tolerant", "Non-tolerant")
+    #svg(paste(out.dir, "module.svg", sep=""))
+    #par(family = "Arial") 
+    ##boxplot(e$n_module, g$n_module, f$n_module, col=8, names=labels, xlab="Disease category", ylab="Number of modules", ylim=c(0,20))
+    #boxplot(e$n_module, f$n_module, col=8, names=labels, xlab="Disease category", ylab="Number of modules", ylim=c(0,15))
+    #dev.off()
     a<-wilcox.test(e$n_module, f$n_module)
     print(c("module:", a$p.value))
 
-    cairo_ps(paste(dir.name, "Figure P5b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
-    par(family = "Arial") 
-    #boxplot(100*e$n_seed_go_in_modules/e$n_seed_go, 100*g$n_seed_go_in_modules/g$n_seed_go, 100*f$n_seed_go_in_modules/f$n_seed_go, col=8, names=labels, xlab="Disease category", ylab="Average seed GO term enrichment among the modules (%)", ylim=c(0,100))
-    boxplot(100*e$n_seed_go_in_modules/e$n_seed_go, 100*f$n_seed_go_in_modules/f$n_seed_go, col=8, names=labels, xlab="Disease category", ylab="Average seed GO term enrichment among the modules (%)", ylim=c(0,100))
-    dev.off()
+    #svg(paste(out.dir, "seed_go_per_module.svg", sep=""))
+    #par(family = "Arial") 
+    #boxplot(100*e$n_seed_go_in_modules/e$n_seed_go, 100*f$n_seed_go_in_modules/f$n_seed_go, col=8, names=labels, xlab="Disease category", ylab="Average seed GO term enrichment among the modules (%)", ylim=c(0,100))
+    #dev.off()
     a<-wilcox.test(e$n_seed_go_in_modules/e$n_seed_go, f$n_seed_go_in_modules/f$n_seed_go)
-    print(c("enrichment: ", a$p.value)) #, mean(e$n_seed_go_in_modules/e$n_seed_go, na.rm=T), mean(f$n_seed_go_in_modules/f$n_seed_go, na.rm=T)))
+    print(c("seed go enrichment in modules: ", a$p.value)) #, mean(e$n_seed_go_in_modules/e$n_seed_go, na.rm=T), mean(f$n_seed_go_in_modules/f$n_seed_go, na.rm=T)))
 
-    cairo_ps(paste(dir.name, "Figure P5c.eps", sep=""), width = 6, height = 6, onefile = TRUE)
-    par(family = "Arial") 
-    #boxplot(100*e$n_seed_go_in_modules/e$n_go_in_modules, 100*g$n_seed_go_in_modules/g$n_go_in_modules, 100*f$n_seed_go_in_modules/f$n_seed_go, col=8, names=labels, xlab="Disease category", ylab="Average coverage of seed GO terms among the modules (%)", ylim=c(0,100))
-    boxplot(100*e$n_seed_go_in_modules/e$n_go_in_modules, 100*f$n_seed_go_in_modules/f$n_seed_go, col=8, names=labels, xlab="Disease category", ylab="Average coverage of seed GO terms among the modules (%)", ylim=c(0,100))
-    dev.off()
+    a<-wilcox.test(e$n_seed_go_in_modules/e$n_module, f$n_seed_go_in_modules/f$n_module)
+    print(c("seed go in modules per module: ", a$p.value)) 
+
+    #svg(paste(out.dir, "seed_go_to_all_go_in_module.svg", sep=""))
+    #par(family = "Arial") 
+    #boxplot(100*e$n_seed_go_in_modules/e$n_go_in_modules, 100*f$n_seed_go_in_modules/f$n_seed_go, col=8, names=labels, xlab="Disease category", ylab="Average coverage of seed GO terms among the modules (%)", ylim=c(0,100))
+    #dev.off()
     a<-wilcox.test(e$n_seed_go_in_modules/e$n_go_in_modules, f$n_seed_go_in_modules/f$n_go_in_modules)
     print(c("ratio: ", a$p.value))
 
-    cairo_ps(paste(dir.name, "Figure P5d.eps", sep=""), width = 6, height = 6, onefile = TRUE)
-    par(family = "Arial") 
-    #boxplot(e$n_seed_go, g$n_seed_go, f$n_seed_go, col=8, names=labels, xlab="Disease category", ylab="Number of seed GO terms", ylim=c(0,150))
-    boxplot(e$n_seed_go, f$n_seed_go, col=8, names=labels, xlab="Disease category", ylab="Number of seed GO terms", ylim=c(0,150))
-    dev.off()
+    #svg(paste(out.dir, "seed_go.svg", sep=""))
+    #par(family = "Arial") 
+    #boxplot(e$n_seed_go, f$n_seed_go, col=8, names=labels, xlab="Disease category", ylab="Number of seed GO terms", ylim=c(0,150))
+    #dev.off()
     a<-wilcox.test(e$n_seed_go, f$n_seed_go)
     print(c("seed go: ", a$p.value))
 
-    cairo_ps(paste(dir.name, "Figure P5e.eps", sep=""), width = 6, height = 6, onefile = TRUE)
-    par(family = "Arial") 
-    #boxplot(e$n_go_in_modules, g$n_go_in_modules, f$n_go_in_modules, col=8, names=labels, xlab="Disease category", ylab="Number of GO terms in the modules", ylim=c(0,250))
-    boxplot(e$n_go_in_modules, f$n_go_in_modules, col=8, names=labels, xlab="Disease category", ylab="Number of GO terms in the modules", ylim=c(0,350))
-    dev.off()
-    a<-wilcox.test(e$n_go_in_modules, f$n_go_in_modules)
+    a<-wilcox.test(e$n_go, f$n_go)
     print(c("go: ", a$p.value))
 
-    cairo_ps(paste(dir.name, "Figure P5f.eps", sep=""), width = 6, height = 6, onefile = TRUE)
-    par(family = "Arial") 
-    #boxplot(e$n_go_in_modules/e$n_module, g$n_go_in_modules/g$n_module, f$n_go_in_modules/f$n_module, col=8, names=labels, xlab="Disease category", ylab="Average number of GO terms per module", ylim=c(0,100))
-    boxplot(e$n_go_in_modules/e$n_module, f$n_go_in_modules/f$n_module, col=8, names=labels, xlab="Disease category", ylab="Average number of GO terms per module", ylim=c(0,100))
-    dev.off()
+    #svg(paste(out.dir, "go.svg", sep=""))
+    #par(family = "Arial") 
+    #boxplot(e$n_go_in_modules, f$n_go_in_modules, col=8, names=labels, xlab="Disease category", ylab="Number of GO terms in the modules", ylim=c(0,350))
+    #dev.off()
+    a<-wilcox.test(e$n_go_in_modules, f$n_go_in_modules)
+    print(c("go in modules: ", a$p.value))
+
+    #svg(paste(out.dir, "go_per_module.svg", sep=""))
+    #par(family = "Arial") 
+    #boxplot(e$n_go_in_modules/e$n_module, f$n_go_in_modules/f$n_module, col=8, names=labels, xlab="Disease category", ylab="Average number of GO terms per module", ylim=c(0,100))
+    #dev.off()
     a<-wilcox.test(e$n_go_in_modules/e$n_module, f$n_go_in_modules/f$n_module)
     print(c("go per module: ", a$p.value))
 
-    cairo_ps(paste(dir.name, "Figure P5g.eps", sep=""), width = 6, height = 6, onefile = TRUE)
-    par(family = "Arial") 
-    #boxplot(e$n_seed_go_in_modules, g$n_seed_go_in_modules, f$n_seed_go_in_modules, col=8, names=labels, xlab="Disease category", ylab="Number of seed GO terms in the modules", ylim=c(0,100))
-    boxplot(e$n_seed_go_in_modules, f$n_seed_go_in_modules, col=8, names=labels, xlab="Disease category", ylab="Number of seed GO terms in the modules", ylim=c(0,100))
-    dev.off()
+    #svg(paste(out.dir, "seed_go_in_module.svg", sep=""))
+    #par(family = "Arial") 
+    #boxplot(e$n_seed_go_in_modules, f$n_seed_go_in_modules, col=8, names=labels, xlab="Disease category", ylab="Number of seed GO terms in the modules", ylim=c(0,100))
+    #dev.off()
     a<-wilcox.test(e$n_seed_go_in_modules, f$n_seed_go_in_modules)
     print(c("seed go in modules: ", a$p.value)) 
 
     s<-read.table(paste(dir.name, 'biana_no_tap-omim/seeds.dat', sep=""))
-    a<-merge(e, s, by.x="phenotype", by.y="row.names")
-    b<-merge(f, s, by.x="phenotype", by.y="row.names")
-    cairo_ps(paste(dir.name, "Figure P5h.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    e<-merge(e, s, by.x="phenotype", by.y="row.names")
+    f<-merge(f, s, by.x="phenotype", by.y="row.names")
+    svg(paste(out.dir, "seed_go_per_seed.svg", sep=""))
     par(family = "Arial") 
-    boxplot(a$n_seed_go/a$n_seed, b$n_seed_go/b$n_seed, col=8, names=labels, xlab="Disease category", ylab="Number of seed GO terms per seed", ylim=c(0,5))
+    boxplot(e$n_seed_go/e$n_seed, f$n_seed_go/f$n_seed, col=8, names=labels, xlab="Disease category", ylab="Number of seed GO terms per seed", ylim=c(0,5))
     dev.off()
-    a<-wilcox.test(a$n_seed_go/a$n_seed, b$n_seed_go/b$n_seed)
+    a<-wilcox.test(e$n_seed_go/e$n_seed, f$n_seed_go/f$n_seed)
     print(c("seed go per seed: ", a$p.value)) 
 
-    # n_seed and n_path in robust vs non-robust diseases
-    #dir.name<-dir.summary
-    cairo_ps(paste(dir.name, "Figure PS3a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    a<-wilcox.test(e$n_go_in_modules/e$n_seed, f$n_go_in_modules/f$n_seed)
+    print(c("go per seed in modules: ", a$p.value))
+
+    # Comparison of n_seed in robust vs non-robust diseases
+    svg(paste(out.dir, "seed.svg", sep=""))
     par(family = "Arial") 
-    #boxplot(s[common.up,"n_seed"], s[non.common,"n_seed"], s[common.down,"n_seed"], col=8, names=labels, xlab="Disease category", ylab="Number of seeds", ylim=c(0,120))
     boxplot(s[common.up,"n_seed"], s[common.down,"n_seed"], col=8, names=labels, xlab="Disease category", ylab="Number of seeds", ylim=c(0,120))
     dev.off()
     a<-wilcox.test(s[common.up,"n_seed"], s[common.down,"n_seed"])
     print(c("seed:", a$p.value))
-    cairo_ps(paste(dir.name, "Figure PS3b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    # Comparison of n_path (path length)
+    svg(paste(out.dir, "path.svg", sep=""))
     par(family = "Arial") 
-    #boxplot(s[common.up,"n_path"], s[non.common,"n_path"], s[common.down,"n_path"], col=8, names=labels, xlab="Disease category", ylab="Average length of seed connecting paths", ylim=c(0,5))
     boxplot(s[common.up,"n_path"], s[common.down,"n_path"], col=8, names=labels, xlab="Disease category", ylab="Average length of seed connecting paths", ylim=c(0,5))
     dev.off()
     a<-wilcox.test(s[common.up,"n_path"], s[common.down,"n_path"])
     print(c("path:", a$p.value))
 
+    a<-wilcox.test(s[common.up,"n_degree"], s[common.down,"n_degree"])
+    print(c("degree:", a$p.value))
 
-    # comparison of the age of the genes
-    cairo_ps(paste(dir.name, "Figure PS6.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    # Comparison of number of alternative paths
+    s<-read.table(paste(dir.name, 'biana_no_tap-omim/path_counts.dat', sep=""))
+
+    svg(paste(out.dir, "alternative_path.svg", sep=""))
+    par(family = "Arial") 
+    boxplot(s[common.up,"n_path"], s[common.down,"n_path"], col=8, names=labels, xlab="Disease category", ylab="Average length of seed connecting paths", ylim=c(0,5))
+    dev.off()
+    a<-wilcox.test(s[common.up,"n_path"], s[common.down,"n_path"])
+    print(c("alt. path:", a$p.value))
+    a<-wilcox.test(s[common.up,"n_path_per_seed"], s[common.down,"n_path_per_seed"])
+    print(c("alt. path per seed:", a$p.value))
+    a<-wilcox.test(s[common.up,"path_length"], s[common.down,"path_length"])
+    print(c("path length:", a$p.value))
+
+    # Comparison with non-redundant number of go terms
+    out.file<-paste(module.dir, "biana_no_tap-omim/module_summary_ns-seed_go_non_redundant.dat", sep="")
+    remove_go_term_redundancy(paste(module.dir, "biana_no_tap-omim/module_summary_ns-seed_go.dat", sep=""), out.file)
+    d2<-read.table(out.file, header=T)
+    #d2.up<-as.vector(table(as.vector(d2[d2$phenotype %in% common.up,]$phenotype)))
+    #d2.down<-as.vector(table(as.vector(d2[d2$phenotype %in% common.down,]$phenotype)))
+    d2.up<-c()
+    for(pheno in common.up) {
+	d2.up<-c(d2.up, nrow(d2[d2$phenotype==pheno,]))
+    }
+    d2.down<-c()
+    for(pheno in common.down) {
+	d2.down<-c(d2.down, nrow(d2[d2$phenotype==pheno,]))
+    }
+    a<-wilcox.test(d2.up, d2.down)
+    print(c("seed go non-redundant:", a$p.value))
+    a<-wilcox.test(d2.up/s[common.up,]$n_seed, d2.down/s[common.down,]$n_seed)
+    print(c("seed go non-redundant per seed:", a$p.value))
+
+    out.file<-paste(module.dir, "biana_no_tap-omim/module_summary_ns-all_go_non_redundant.dat", sep="")
+    remove_go_term_redundancy(paste(module.dir, "biana_no_tap-omim/module_summary_ns-all_go.dat", sep=""), out.file)
+    d2<-read.table(out.file, header=T)
+    d2.up<-c()
+    for(pheno in common.up) {
+	d2.up<-c(d2.up, nrow(d2[d2$phenotype==pheno,]))
+    }
+    d2.down<-c()
+    for(pheno in common.down) {
+	d2.down<-c(d2.down, nrow(d2[d2$phenotype==pheno,]))
+    }    
+    a<-wilcox.test(d2.up, d2.down)
+    print(c("all go non-redundant:", a$p.value))
+
+    # Comparison of the age of the genes
+    svg(paste(out.dir, "age.svg", sep=""))
     d<-read.table("../data/omim/2009_Aug_27/extended/age_category.dat")
     d<-d*100
     coords <- seq(0.7, 3.7, by=1)
@@ -609,24 +665,26 @@ disease_category_figures<-function() {
     a<-wilcox.test(d[common.up,4], d[common.down,4])
     print(c("mammals:", a$p.value))
 
-    return() 
+    return()
     
     # Below gives error in batch execution due to margins of the heatmaps but images can be generated in interactive mode
 
     library(gplots)
     library(RColorBrewer)
     #cols<-c(rep("red", length(common.up)), rep("grey", length(non.common)), rep("green", length(common.down)))
-    cols<-c(rep("green", length(common.up)), rep("lightgrey", length(common.down)))
-    val.cols <- brewer.pal(9,"Blues") #greenred
+    cols<-c(rep("green", length(common.up)), rep("orange", length(common.down)))
+    #val.cols <- brewer.pal(9,"Blues") #greenred
     # Common functions in pairwise  enrichment
-    dir.name<-dir.summary
-    cairo_ps(paste(dir.name, "Figure PS5a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    svg(paste(out.dir, "functional_similarity.svg", sep=""))
     dir.name<-"../data/module/"
     d<-read.table(paste(dir.name, "biana_no_tap-omim/functional_similarity_matrix.dat", sep=""), header=T)
     #e<-d[c(common.up, non.common, common.down),c(common.up, non.common, common.down)]
     e<-d[c(common.up, common.down),c(common.up, common.down)]
-    e[upper.tri(e)]<-NA
-    heatmap.2(as.matrix(e), revC=F, trace="none", dendrogram="none", col=val.cols, density.info="none", margins=c(12,12), RowSideColors=cols, Rowv=NA, Colv=NA, labRow=sapply(rownames(e), lambda), labCol=sapply(rownames(e), lambda), keysize=0.1)
+    e[e==0]<-NA
+    e[upper.tri(e)]<-0
+    palette.breaks <- seq(0, 1, by=0.0001)
+    val.cols  <- colorRampPalette(c("#FFFFFF", "#6D6DFF", "#0000FF"))(length(palette.breaks) - 1)
+    heatmap.2(as.matrix(e), revC=F, trace="none", dendrogram="none", col=val.cols, density.info="none", margins=c(12,12), RowSideColors=cols, Rowv=NA, Colv=NA, labRow=sapply(rownames(e), lambda), labCol=sapply(rownames(e), lambda), keysize=0.1,  breaks = palette.breaks, na.color="grey")
     par(fig=c(0.9, 1.0, 0.0, 0.1), new = T)
     par(xaxt="n", yaxt="n")
     image(as.matrix(1:5),col=greenred(5), mar=c(2,2))
@@ -644,42 +702,62 @@ disease_category_figures<-function() {
     text(x,y,sapply(rownames(e), lambda), cex=0.8, srt=30, pos=4)
     dev.off()
 
-    dir.name<-dir.summary
-    cairo_ps(paste(dir.name, "Figure PS5b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
-    dir.name<-"../data/module/"
-    d<-read.table(paste(dir.name, "biana_no_tap-omim/gene_similarity_matrix.dat", sep=""), header=T)
-    #e<-d[c(common.up, non.common, common.down),c(common.up, non.common, common.down)]
-    e<-d[c(common.up, common.down),c(common.up, common.down)]
-    e[upper.tri(e)]<-NA
-    heatmap.2(as.matrix(e), revC=F, trace="none", dendrogram="none", col=val.cols, density.info="none", margins=c(12,12), RowSideColors=cols, Rowv=NA, Colv=NA, labRow=sapply(rownames(e), lambda), labCol=sapply(rownames(e), lambda), keysize=0.1)
+    #svg(paste(out.dir, "gene_similarity.svg", sep=""))
+    #d<-read.table(paste(dir.name, "biana_no_tap-omim/gene_similarity_matrix.dat", sep=""), header=T)
+    ##e<-d[c(common.up, non.common, common.down),c(common.up, non.common, common.down)]
+    #e<-d[c(common.up, common.down),c(common.up, common.down)]
+    #e[upper.tri(e)]<-NA
+    #heatmap.2(as.matrix(e), revC=F, trace="none", dendrogram="none", col=val.cols, density.info="none", margins=c(12,12), RowSideColors=cols, Rowv=NA, Colv=NA, labRow=sapply(rownames(e), lambda), labCol=sapply(rownames(e), lambda), keysize=0.1)
+    #dev.off()
+
+    d<-read.table(paste(dir.name, "biana_no_tap-omim/phenotype_vs_functions.dat", sep=""), header=T)
+    svg(paste(out.dir, "functions.svg", sep=""))
+    selected<-c(common.up, common.down)
+    cols<-c(rep("green", length(common.up)), rep("orange", length(common.down)))
+    e<-d[,selected]
+    e<-e[rowSums(e)>2,]
+    #e<-e[,colSums(e)>0]
+    #val.cols<-4
+    #Rowv <- rowMeans(e, na.rm = F)
+    #a <- as.dendrogram(hclust(as.dist(e)))
+    #a <- reorder(a, Rowv)
+    a <- T
+    #e[e==0]<-NA
+    lambda2<-function(x) { words<-unlist(strsplit(x, "_")); x<-paste(words, collapse=" "); return(x) }
+    heatmap.2(as.matrix(e), revC=F, trace="none", dendrogram="none", col=val.cols, margins=c(11,34), ColSideColors=cols, Colv=NA, Rowv=a, keysize=0.1, labCol=sapply(colnames(e), lambda), labRow=sapply(rownames(e), lambda2), cexCol=0.9, na.color="grey")
     dev.off()
 
-    dir.name<-"../data/module/"
+    d<-read.table(paste("../data/summary_runs_on_random/", "breast_cancer_pruned/functional_comparison.dat", sep=""), header=T, sep="\t")
+    svg(paste(out.dir, "functional_comparison.svg", sep=""))
+    lambda2<-function(x) { words<-unlist(strsplit(x, "_")); x<-paste(words, collapse=" "); return(x) }
+    heatmap.2(as.matrix(d), revC=F, trace="none", dendrogram="none", col=val.cols, margins=c(5,30), Colv=NA, Rowv=T, keysize=0.1, labCol=sapply(colnames(d), lambda2), cexCol=0.9, na.color="grey")
+    dev.off()
+
+
+    return()
+
     d<-read.table(paste(dir.name, "biana_no_tap-omim/phenotype_vs_functions.dat", sep=""), header=T)
-    dir.name<-dir.summary
-    cairo_ps(paste(dir.name, "Figure PS5c.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    svg(paste(out.dir, "functions_tolerant.svg", sep=""))
     #selected<-c("omim_breast_cancer", "omim_lung_cancer", "omim_prostate_cancer", "omim_leukemia", "omim_diabetes", "omim_obesity", "omim_insulin")
     selected<-common.up
     e<-d[,selected]
-    e<-e[rowSums(e)>2,]
+    e<-e[rowSums(e)>1,]
     e<-e[,colSums(e)>0]
     lambda2<-function(x) { words<-unlist(strsplit(x, "_")); x<-paste(words, collapse=" "); return(x) }
     heatmap.2(as.matrix(e), revC=F, trace="none", dendrogram="none", col=val.cols, density.info="none", margins=c(7,30), keysize=0.1, labCol=sapply(colnames(e), lambda), labRow=sapply(rownames(e), lambda2), cexCol=0.9)
     dev.off()
 
-    cairo_ps(paste(dir.name, "Figure PS5d.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    svg(paste(out.dir, "functions_intolerant.svg", sep=""))
     selected<-common.down
     e<-d[,selected]
-    e<-e[rowSums(e)>2,]
+    e<-e[rowSums(e)>1,]
     e<-e[,colSums(e)>0]
     lambda2<-function(x) { words<-unlist(strsplit(x, "_")); x<-paste(words, collapse=" "); return(x) }
     heatmap.2(as.matrix(e), revC=F, trace="none", dendrogram="none", col=val.cols, density.info="none", margins=c(7,30), keysize=0.1, labCol=sapply(colnames(e), lambda), labRow=sapply(rownames(e), lambda2), cexCol=0.7, cexRow=0.7)
     dev.off()
 
-    dir.name<-"../data/module/"
     d<-read.table(paste(dir.name, "biana_no_tap-omim/phenotype_vs_genes.dat", sep=""), header=T)
-    dir.name<-dir.summary
-    cairo_ps(paste(dir.name, "Figure PS5e.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    svg(paste(out.dir, "genes_tolerant.svg", sep=""))
     selected<-common.up
     e<-d[,selected]
     e<-e[rowSums(e)>1,]
@@ -688,7 +766,7 @@ disease_category_figures<-function() {
     heatmap.2(as.matrix(e), revC=F, trace="none", dendrogram="none", col=val.cols, density.info="none", margins=c(7,30), keysize=0.1, labCol=sapply(colnames(e), lambda), labRow=rownames(e), cexCol=0.9)
     dev.off()
 
-    cairo_ps(paste(dir.name, "Figure PS5f.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    svg(paste(out.dir, "genes_intolerant.svg", sep=""))
     selected<-common.down
     e<-d[,selected]
     e<-e[rowSums(e)>1,]
@@ -730,8 +808,11 @@ disease_category_figures<-function() {
 
 ###### MODULE FIGURES ######
 module_figures<-function() {
+    to.remove<-c("omim_insulin", "omim_neuropathy", "omim_asthma", "omim_spastic_paraplegia") 
     dir.name<-"../data/module/"
     d<-read.table(paste(dir.name, "biana_no_tap-omim/module_summary.dat", sep=""), header=T)
+    i<-which(d$phenotype %in% to.remove)
+    d<-d[-i,]
     #d2<-read.table(paste(dir.name, "module_summary_top5_mcl_n5union.dat", sep=""), header=T)
     method.ids<-c("nn", "ns", "nz", "nd", "ff", "nr") #, "nc") 
     method.names<-c("N.hood", scoring.methods) #"NetScore", "NetZcore", "NetShort", "FunctionalFlow", "ToppGene") #scoring.methods) #, "NetComb.")
@@ -752,7 +833,7 @@ module_figures<-function() {
 	#e.seeds<-rbind(e.seeds, d2[d2$scoring==method.ids[i],]$n_seed_in_modules)
     }
     dir.name<-"../data/summary/"
-    cairo_ps(paste(dir.name, "Figure PS4a.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+    svg(paste(out.dir, "modules.svg", sep=""))
     par(family = "Arial") 
     #col = c(8, cols), names=method.names
     boxplot(t(e.modules), col=8, names=NA, xlab="Prediction method", ylab="Number of modules", ylim=c(0,20), pars=list(xaxt="n"))
@@ -760,13 +841,15 @@ module_figures<-function() {
     text(par("usr")[1]-0.23+(1:6)*(range/6.5), par("usr")[3]-0.5, labels=method.names, cex=0.9, xpd=NA)
     #axis(1, par("usr")[1]-0.23+(1:6)*(range/6.5), labels=method.names, cex=0.9)
     dev.off()
-    cairo_ps(paste(dir.name, "Figure PS4b.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+
+    svg(paste(out.dir, "seed_go_ratio_in_modules.svg", sep=""))
     par(family = "Arial") 
     boxplot(t(e.ratio),col=8, names=NA, xlab="Prediction method", ylab="Average seed GO term enrichment of the modules (%)", ylim=c(0,70), pars=list(xaxt="n")) 
     range<-par("usr")[2] - par("usr")[1]
     text(par("usr")[1]-0.23+(1:6)*(range/6.5), par("usr")[3]-2, labels=method.names, cex=0.9, xpd=NA)
     dev.off()
-    cairo_ps(paste(dir.name, "Figure PS4c.eps", sep=""), width = 6, height = 6, onefile = TRUE)
+
+    svg(paste(out.dir, "coverage.svg", sep=""), width = 6, height = 6, onefile = TRUE)
     par(family = "Arial") 
     boxplot(t(e.go),col=8, names=NA, xlab="Prediction method", ylab="Coverage of seed go terms within the modules (%)", ylim=c(0,100), pars=list(xaxt="n")) 
     range<-par("usr")[2] - par("usr")[1]
