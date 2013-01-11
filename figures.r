@@ -611,8 +611,9 @@ disease_category_figures<-function() {
     print(c("path length:", a$p.value))
 
     # Comparison with non-redundant number of go terms
+    s<-read.table(paste(dir.name, 'biana_no_tap-omim/seeds.dat', sep=""))
     out.file<-paste(module.dir, "biana_no_tap-omim/module_summary_ns-seed_go_non_redundant.dat", sep="")
-    remove_go_term_redundancy(paste(module.dir, "biana_no_tap-omim/module_summary_ns-seed_go.dat", sep=""), out.file)
+    #remove_go_term_redundancy(paste(module.dir, "biana_no_tap-omim/module_summary_ns-seed_go.dat", sep=""), out.file)
     d2<-read.table(out.file, header=T)
     #d2.up<-as.vector(table(as.vector(d2[d2$phenotype %in% common.up,]$phenotype)))
     #d2.down<-as.vector(table(as.vector(d2[d2$phenotype %in% common.down,]$phenotype)))
@@ -624,13 +625,15 @@ disease_category_figures<-function() {
     for(pheno in common.down) {
 	d2.down<-c(d2.down, nrow(d2[d2$phenotype==pheno,]))
     }
+
     a<-wilcox.test(d2.up, d2.down)
     print(c("seed go non-redundant:", a$p.value))
     a<-wilcox.test(d2.up/s[common.up,]$n_seed, d2.down/s[common.down,]$n_seed)
     print(c("seed go non-redundant per seed:", a$p.value))
+    print(c("seed go non-redundant per seed - ratio:", d2.up/s[common.up,]$n_seed / d2.down/s[common.down,]$n_seed))
 
     out.file<-paste(module.dir, "biana_no_tap-omim/module_summary_ns-all_go_non_redundant.dat", sep="")
-    remove_go_term_redundancy(paste(module.dir, "biana_no_tap-omim/module_summary_ns-all_go.dat", sep=""), out.file)
+    #remove_go_term_redundancy(paste(module.dir, "biana_no_tap-omim/module_summary_ns-all_go.dat", sep=""), out.file)
     d2<-read.table(out.file, header=T)
     d2.up<-c()
     for(pheno in common.up) {
@@ -642,6 +645,7 @@ disease_category_figures<-function() {
     }    
     a<-wilcox.test(d2.up, d2.down)
     print(c("all go non-redundant:", a$p.value))
+    print(c("all go non-redundant - ratio:", d2.up / d2.down))
 
     # Comparison of the age of the genes
     svg(paste(out.dir, "age.svg", sep=""))

@@ -7,9 +7,9 @@ omim_phenotypes = [ "omim_" + "_".join(p.split()) for p in omim_phenotypes ]
 
 def main():
     #output_ns_related_modules()
-    #case_study_pruned_networks()
+    case_study_pruned_networks()
     #case_study_neighborhood()
-    get_go_function_counts()
+    #get_go_function_counts()
     #get_similarity_of_go_terms_for_diseases()
     ##get_similarity_of_go_terms_for_omim_diseases()
     #get_number_of_seed_connecting_edges()
@@ -339,43 +339,215 @@ def get_similarity_of_go_terms_for_omim_diseases():
 	print pheno, len(phenotype_to_genes[pheno]), len(phenotype_to_genes[pheno] & duplicated_genes)
     return 
 
+
 def case_study_pruned_networks():
+    from toolbox import network_utilities as gu
+    from toolbox import functional_enrichment
+    from toolbox import mcl_utilities as mcl
+    from scipy.stats import hypergeom
+
+    network_file = DATA_DIR + "input_runs_for_draft/biana_no_tap_no_reliability/edge_scores.sif"
+    user_entity_id_mapping_file = DATA_DIR + "input_runs_for_draft/biana_no_tap_no_reliability/node_mapping.tsv.genesymbol.single"
+    seeds_file = DATA_DIR + "input_runs_for_draft/biana_no_tap_no_reliability/omim_breast_cancer/seed_scores.sif"
+    auc_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/breast_cancer_pruned_p80.txt"
+    module_file = DATA_DIR + "module/biana_no_tap-omim/mcl/modules.txt"
+
+    # Get node mapping
+    ueid_to_gene = get_ues_gene_mapping(user_entity_id_mapping_file)
+    # Get seeds
+    seeds = set([line.strip().split()[0] for line in open(seeds_file)])
+    # Get neighborhood in the original network
+    g_org = gu.create_network_from_sif_file(network_file, use_edge_data=False)
+    g_neighborhood = gu.get_neighborhood_subgraph(g_org, seeds)
+    #neighborhood_edges = set(g_neighborhood.edges()) # edge node order may be different for the same edge
+
+    # Get indices of min/max networks
+    aucs = []
+    for line in open(auc_file):
+	aucs.append(float(line.split()[1]))
+    indices = zip(*sorted([ (auc, i) for i, auc in enumerate(aucs) ]))[1]
+    print indices[:3], indices[-3:] # real index in file name is one higher
+
+    # Get max neighborhood network
+    g_maxs = [ ] 
+    for i in indices[-2:]:
+	network_file_pruned = DATA_DIR + "human_interactome_biana/pruned/omim_breast_cancer/80/sampled_graph.sif.%d" % (i+1)
+	g = gu.create_network_from_sif_file(network_file_pruned, use_edge_data=False)
+	g_maxs.append(g) 
+	#g_maxs.append(g.subgraph(g_neighborhood.nodes()))
+
+    # Get min neighborhood network
+    g_mins = [ ] 
+    for i in indices[:2]:
+	network_file_pruned = DATA_DIR + "human_interactome_biana/pruned/omim_breast_cancer/80/sampled_graph.sif.%d" % (i+1)
+	g = gu.create_network_from_sif_file(network_file_pruned, use_edge_data=False)
+	g_mins.append(g)
+	#g_mins.append(g.subgraph(g_neighborhood.nodes()))
+
+    # Get common edges in min/max networks
+    g_max = reduce(lambda x,y: gu.networkx.intersection(x, y), g_maxs)
+    g_min = reduce(lambda x,y: gu.networkx.intersection(x, y), g_mins)
+
+    # Get differential edges
+    g_diff = gu.networkx.difference(g_max, g_min)
+    print len(g_max.edges()), len(g_min.edges()), len(g_diff.edges())
+    nodes = set()
+    for node in g_diff.nodes():
+	if node in ueid_to_gene:
+	    nodes.add(node)
+    g_sub = g_diff.subgraph(nodes)
+
+    #!
+    weak_edges = set()
+    strong_edges = g_sub.edges()
+    output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/breast_cancer_pruned_p80_diff.dot"
+    gu.create_dot_network_file(g_sub, output_file, seeds, ueid_to_gene, weak_edges=weak_edges, draw_type="all")
+    os.system("fdp -Tgif -O %s" % output_file) 
+    return
+
+    # Get seed GOs to check their coverage in top connected component
+    phenotype_to_functions = get_go_function_counts() 
+    seed_terms = phenotype_to_functions["omim_breast_cancer"][0]
+
+    # Get all functions enriched in the network
+    output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/network_genes.txt"
+    f = open(output_file, 'w')
+    [ f.write("%s\n" % gene) for gene in set(ueid_to_gene.values()) ]
+    f.close()
+    #functional_enrichment.check_functional_enrichment_of_human_gene_symbols(output_file, output_file+".funcassoc")
+    network_go_terms = functional_enrichment.get_functional_enrichment(output_file + ".funcassoc", remove_parents=False, only_biological_processes=True)
+    print 23928, len(network_go_terms)
+    
+    # Check the functions enriched in the largest connected component of each module
+    for i, module in enumerate(gu.get_connected_components(g_sub, return_as_graph_list=False)):
+	if len(module) < 10:
+	    continue
+	output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/M%d_.txt" % i
+	# Draw diff network component
+	weak_edges = set()
+	g_sub_sub = g_sub.subgraph(module)
+	gu.create_dot_network_file(g_sub_sub, output_file+".dot", seeds, ueid_to_gene, weak_edges=weak_edges, draw_type="all")
+	os.system("fdp -Tgif -O %s" % output_file+".dot")
+	# Get functions
+	f = open(output_file, 'w')
+	for node in module:
+	    f.write("%s\n" % ueid_to_gene[node])
+	f.close()
+	#functional_enrichment.check_functional_enrichment_of_human_gene_symbols(output_file, output_file+".funcassoc")
+	go_terms = functional_enrichment.get_functional_enrichment(output_file + ".funcassoc", remove_parents=False, only_biological_processes=True)
+	print len(seed_terms), len(go_terms), len(seed_terms & go_terms), len(seed_terms & go_terms) / float(len(seed_terms))
+	print "p_value:", sum(hypergeom.pmf(range(len(seed_terms & go_terms),len(go_terms)+1), len(network_go_terms), len(seed_terms), len(go_terms)))
+
+    weak_edges = set()
+    strong_edges = g_sub.edges()
+
+    # Draw diff neighborhood network
+    output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/breast_cancer_pruned_p80_diff.dot"
+    gu.create_dot_network_file(g_sub, output_file, seeds, ueid_to_gene, weak_edges=weak_edges, draw_type="all")
+    os.system("fdp -Tgif -O %s" % output_file) 
+    return
+
+    # Get modules of high scoring network
+    modules = mcl.get_modules_from_file(module_file)
+    
+    # Create nested Cytoscape network file
+    output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/breast_cancer_pruned_p80_modularized_diff.nnf"
+    f = open(output_file, 'w')
+    network_name = "breast_cancer_pruned_p80_"
+    module_sets = []
+    included_nodes = set()
+    included_edges = set()
+    # Output modules
+    for i, module in enumerate(modules):
+	m = set(module) & nodes
+	if len(m) > 0:
+	    module_sets.append(m)
+	    f.write("%s M%d_\n" % (network_name, i))
+	    for u, v in g_sub.edges(m):
+		if u == v:
+		    continue
+		if u in m and v in m:
+		    w = "pp"
+		    if (u,v) in weak_edges or (v,u) in weak_edges:
+			w = "weak"
+		    elif (u,v) in strong_edges or (v,u) in strong_edges:
+			w = "strong"
+		    included_nodes.add(u)
+		    included_nodes.add(v)
+		    included_edges.add((u,v))
+		    included_edges.add((v,u))
+		    u = ueid_to_gene[u]
+		    v = ueid_to_gene[v]
+		    f.write("M%d_ %s %s %s\n" % (i, u, w, v))
+	    for u in m:
+		if u not in included_nodes:
+		    included_nodes.add(u)
+		    u = ueid_to_gene[u]
+		    f.write("M%d_ %s\n" % (i, u))
+    # Connect modules
+    for i, module1 in enumerate(module_sets):
+	for j, module2 in enumerate(module_sets):
+	    if i<j:
+		connected_weak = False
+		connected_strong = False
+		for u in module1:
+		    for v in module2:
+			if (u,v) in strong_edges:
+			    connected_strong = True
+			    break
+			if (u,v) in weak_edges:
+			    connected_weak = True
+		if connected_strong:
+		    f.write("%s M%d_ %s M%d_\n" % (network_name, i, "strong", j))
+		elif connected_weak:
+		    f.write("%s M%d_ %s M%d_\n" % (network_name, i, "weak", j))
+    # Output the rest
+    for u,v in g_sub.edges():
+	if u == v:
+	    continue
+	if (u,v) in included_edges:
+	    continue
+	included_nodes.add(u)
+	included_nodes.add(v)
+	w = "pp"
+	if (u,v) in weak_edges or (v,u) in weak_edges:
+	    w = "weak"
+	elif (u,v) in strong_edges or (v,u) in strong_edges:
+	    w = "strong"
+	u = ueid_to_gene[u]
+	v = ueid_to_gene[v]
+	f.write("%s %s %s %s\n" % (network_name, u,w,v))
+    for node in nodes - included_nodes:
+	f.write("%s %s\n" % (network_name, ueid_to_gene[node]))
+    f.close()
+
+    # Check the functions enriched in the largest connected component of each module
+    for i, module in enumerate(module_sets):
+	output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/M%d_.txt" % i
+	g_sub_sub = g_sub.subgraph(module) 
+	module = gu.get_connected_components(g_sub_sub, return_as_graph_list=False)[0] 
+	f = open(output_file, 'w')
+	for node in module:
+	    f.write("%s\n" % ueid_to_gene[node])
+	f.close()
+	functional_enrichment.check_functional_enrichment_of_human_gene_symbols(output_file, output_file+".funcassoc")
+    return
+
+def case_study_pruned_networks_old():
     """
-    cat /sbi/users/emre/data/netzcore/from_gaudi_2011/output_runs_on_random/biana_no_tap_no_reliability_pruned_p50_*/omim_breast_cancer/ns/r3i2/auc.txt > arastirma/netzcore/data/summary_runs_on_random/breast_cancer_pruned_p50.txt
+    cat /sbi/users/emre/data/netzcore/from_gaudi_2011/output_runs_on_random/biana_no_tap_no_reliability_pruned_p50_*/omim_breast_cancer/ns/r3i2/auc.txt > arastirma/netzcore/data/summary_runs_on_random/breast_cancer_pruned_p80.txt
     vi %s/"//g
     d<-read.table("breast_cancer_pruned_p50.txt")
     e<-d$V2
     f<-(e-mean(e))/sd(e)
-    which(f<=(-2))
-    > [1] 64
-    which(f>=2)
-    > [1] 38 42 78
-    e[which(f>=2)]
-    > [1] 0.886 0.870 0.898
-    e[which(f<=-2)]
-    > [1] 0.653
-
-    permuted:
-    which(f<=(-2))
-    > [1] 28 76
-    which(f>=(2))
-    > [1] 46
-    e[which(f>=(2))]
-    > [1] 0.865
-    e[which(f<=(-2))]
-    > [1] 0.580 0.543
-
-    pruned_80:
-    min(e)
-    > [1] 0.461
-    max(e)
-    > [1] 0.82
-    which(e==max(e))
-    > [1] 58
-    which(e==min(e)
-    > [1] 7
+    which(e %in% sort(e)[98:100])
+    > 22 54 58
+    which(e %in% sort(e)[1:3])
+    > 7 39 55 99
     """
     from toolbox import network_utilities as gu
+    from toolbox import functional_enrichment
+
     network_file = DATA_DIR + "input_runs_for_draft/biana_no_tap_no_reliability/edge_scores.sif"
     user_entity_id_mapping_file = DATA_DIR + "input_runs_for_draft/biana_no_tap_no_reliability/node_mapping.tsv.genesymbol.single"
     seeds_file = DATA_DIR + "input_runs_for_draft/biana_no_tap_no_reliability/omim_breast_cancer/seed_scores.sif"
@@ -387,7 +559,7 @@ def case_study_pruned_networks():
     seeds = set([line.strip().split()[0] for line in open(seeds_file)])
     g = gu.create_network_from_sif_file(network_file, use_edge_data=False)
     g_neighborhood = gu.get_neighborhood_subgraph(g, seeds)
-    neighborhood_edges = set(g_neighborhood.edges())
+    neighborhood_edges = set(g_neighborhood.edges()) # edge node order may be different for the same edge
     #g_sub_pruned = gu.get_neighborhood_subgraph(g_pruned, seeds)
     #print len(g_sub.nodes()), len(g_sub.edges())
     #print len(g_sub_pruned.nodes()), len(g_sub_pruned.edges())
@@ -405,11 +577,14 @@ def case_study_pruned_networks():
     #print len(weak_edges), len(strong_edges), len(common_edges)
     g_sub = gu.create_graph()
     #g_sub.add_edges_from(weak_edges | strong_edges)
-    g_sub.add_edges_from(strong_edges)
+
+    #strong_edges = weak_edges # To check differential network from the other side (edges in min but not in max)
+
+    g_sub.add_edges_from(strong_edges) 
     weak_edges = set() 
 
+    # Run scoring on pruned networks
     if False:
-	# run scoring on pruned networks
 	from toolbox import guild_utilities
 	data_dir = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/" 
 	executable_path = "scoreNetwork/scoreN"
@@ -426,9 +601,9 @@ def case_study_pruned_networks():
 	    # Run GUILD and create output files, the case for Netcombo
 	    guild_utilities.run_scoring(scoring_folder, executable_path, scoring_type="netscore", parameters={"n_iteration":2, "n_repetition":3}, qname=None, name=None, calculate_pvalue=False)
 
+    # Get functions of high scoring portions in 3 networks 
     network_types = ("original", "pruned_max", "pruned_min")
     if False:
-	# Get functions of high scoring portions in 3 networks 
 	import analyze_results
 	association_scores_file_identifier_type = "genesymbol"
 	node_mapping_file = DATA_DIR + "input_runs_for_draft/biana_no_tap_no_reliability/node_mapping.tsv"
@@ -444,13 +619,13 @@ def case_study_pruned_networks():
 	    analyze_results.check_functional_enrichment_at_given_cutoff(output_scores_file, node_scores_file, node_mapping_file, "5%", association_scores_file_identifier_type, file_enrichment.write, 0.01, exclude_seeds=False, specie = "Homo sapiens")
 	    file_enrichment.close()
 
-    if True: #!
-	phenotype_to_functions = get_go_function_counts() 
-	seed_terms = phenotype_to_functions["omim_breast_cancer"][0]
-
-    if True: # False:
-	from toolbox import functional_enrichment
+    # Get functions of the top scroing portions for all diseases
+    if False: 
 	from toolbox import OboParser
+
+    	phenotype_to_functions = get_go_function_counts() 
+    	seed_terms = phenotype_to_functions["omim_breast_cancer"][0]
+
 	go = OboParser.getOboGraph("/home/emre/arastirma/celldiff/data/GO/gene_ontology.1_2.obo")
 	all_terms = set()
 	common_terms = None
@@ -519,7 +694,17 @@ def case_study_pruned_networks():
 	    print n, n_pair, n_path/n_pair, count, count/n, count/n_pair, path_length/float(count)
 	return
 
+    # Check seed interaction counts on pruned max
     if False:
+	output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/breast_cancer_pruned_p80_seeds.txt"
+	f = open(output_file, 'w')
+	for seed in seeds:
+	    if seed not in ueid_to_gene:
+		print seed
+		continue
+	    f.write("%s\n" % ueid_to_gene[seed])
+	f.close()
+
 	for network_type, graph in zip(network_types, [g, g_pruned, g_pruned2]):
 	    output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/%s_seed_interaction_counts.txt" % network_type
 	    g_neighborhood = gu.get_neighborhood_subgraph(graph, seeds)
@@ -536,130 +721,129 @@ def case_study_pruned_networks():
 	    #gu.create_dot_network_file(g_neighborhood, output_file, seeds, ueid_to_gene, draw_type="all")
 	    #os.system("twopi -Tgif -O %s" % output_file)
 
-    return
+    # Check modules in pruned max
+    if False:
+	nodes = set()
+	for node in g_sub.nodes():
+	    if node in ueid_to_gene:
+		nodes.add(node)
+	g_sub = g_sub.subgraph(nodes)
 
-    nodes = set()
-    for node in g_sub.nodes():
-	if node in ueid_to_gene:
-	    nodes.add(node)
-    g_sub = g_sub.subgraph(nodes)
-
-    output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/breast_cancer_pruned_p80_strong.dot"
-    #gu.create_dot_network_file(g_sub, output_file, seeds, ueid_to_gene, weaks=weaks, draw_type="weak")
-    #gu.create_dot_network_file(g_sub_pruned, output_file, seeds, ueid_to_gene, weaks=weaks, draw_type="weak")
-    gu.create_dot_network_file(g_sub, output_file, seeds, ueid_to_gene, weak_edges=weak_edges, draw_type="all")
-    os.system("twopi -Tgif -O %s" % output_file)
-    
-    from toolbox import mcl_utilities as mcl
-    modules = mcl.get_modules_from_file(module_file)
-    
-    output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/breast_cancer_pruned_p80_modularized_strong.nnf"
-    f = open(output_file, 'w')
-
-    network_name = "breast_cancer_pruned_p80_"
-    module_sets = []
-    included_nodes = set()
-    included_edges = set()
-    # Output modules
-    for i, module in enumerate(modules):
-	m = set(module) & nodes
-	if len(m) > 0:
-	    module_sets.append(m)
-	    f.write("%s M%d_\n" % (network_name, i))
-	    for u, v in g_sub.edges(m):
-		if u == v:
-		    continue
-		if u in m and v in m:
-		    w = "pp"
-		    if (u,v) in weak_edges or (v,u) in weak_edges:
-			w = "weak"
-		    elif (u,v) in strong_edges or (v,u) in strong_edges:
-			w = "strong"
-		    included_nodes.add(u)
-		    included_nodes.add(v)
-		    included_edges.add((u,v))
-		    included_edges.add((v,u))
-		    u = ueid_to_gene[u]
-		    v = ueid_to_gene[v]
-		    f.write("M%d_ %s %s %s\n" % (i, u, w, v))
-	    for u in m:
-		if u not in included_nodes:
-		    included_nodes.add(u)
-		    u = ueid_to_gene[u]
-		    f.write("M%d_ %s\n" % (i, u))
-    # Connect modules
-    for i, module1 in enumerate(module_sets):
-	for j, module2 in enumerate(module_sets):
-	    if i<j:
-		connected_weak = False
-		connected_strong = False
-		for u in module1:
-		    for v in module2:
-			if (u,v) in strong_edges:
-			    connected_strong = True
-			    break
-			if (u,v) in weak_edges:
-			    connected_weak = True
-		if connected_strong:
-		    f.write("%s M%d_ %s M%d_\n" % (network_name, i, "strong", j))
-		elif connected_weak:
-		    f.write("%s M%d_ %s M%d_\n" % (network_name, i, "weak", j))
-    # Output the rest
-    for u,v in g_sub.edges():
-	if u == v:
-	    continue
-	if (u,v) in included_edges:
-	    continue
-	included_nodes.add(u)
-	included_nodes.add(v)
-	w = "pp"
-	if (u,v) in weak_edges or (v,u) in weak_edges:
-	    w = "weak"
-	elif (u,v) in strong_edges or (v,u) in strong_edges:
-	    w = "strong"
-	u = ueid_to_gene[u]
-	v = ueid_to_gene[v]
-    	f.write("%s %s %s %s\n" % (network_name, u,w,v))
-    for node in nodes - included_nodes:
-	f.write("%s %s\n" % (network_name, ueid_to_gene[node]))
-    f.close()
-
-    output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/breast_cancer_pruned_p80_strong.sif"
-    f = open(output_file, 'w')
-    included_nodes = set()
-    for u,v in g_sub.edges():
-	if u == v:
-	    continue
-	included_nodes.add(u)
-	included_nodes.add(v)
-	w = "pp"
-	if (u,v) in weak_edges or (v,u) in weak_edges:
-	    w = "weak"
-	elif (u,v) in strong_edges or (v,u) in strong_edges:
-	    w = "strong"
-	u = ueid_to_gene[u]
-	v = ueid_to_gene[v]
-    	f.write("%s %s %s\n" % (u,w,v))
-    for node in nodes - included_nodes:
-	f.write("%s\n" % ueid_to_gene[node])
-    f.close()
-
-    output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/breast_cancer_pruned_p80_seeds.txt"
-    f = open(output_file, 'w')
-    for seed in seeds:
-	if seed not in ueid_to_gene:
-	    print seed
-	    continue
-	f.write("%s\n" % ueid_to_gene[seed])
-    f.close()
-
-    for i, module in enumerate(module_sets):
-	output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/M%d_.txt" % i
+	output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/breast_cancer_pruned_p80_strong.dot"
+	#gu.create_dot_network_file(g_sub, output_file, seeds, ueid_to_gene, weaks=weaks, draw_type="weak")
+	#gu.create_dot_network_file(g_sub_pruned, output_file, seeds, ueid_to_gene, weaks=weaks, draw_type="weak")
+	gu.create_dot_network_file(g_sub, output_file, seeds, ueid_to_gene, weak_edges=weak_edges, draw_type="all")
+	os.system("twopi -Tgif -O %s" % output_file)
+	
+	from toolbox import mcl_utilities as mcl
+	modules = mcl.get_modules_from_file(module_file)
+	
+	output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/breast_cancer_pruned_p80_modularized_strong.nnf"
 	f = open(output_file, 'w')
-	for node in module:
+
+	network_name = "breast_cancer_pruned_p80_"
+	module_sets = []
+	included_nodes = set()
+	included_edges = set()
+	# Output modules
+	for i, module in enumerate(modules):
+	    m = set(module) & nodes
+	    if len(m) > 0:
+		module_sets.append(m)
+		f.write("%s M%d_\n" % (network_name, i))
+		for u, v in g_sub.edges(m):
+		    if u == v:
+			continue
+		    if u in m and v in m:
+			w = "pp"
+			if (u,v) in weak_edges or (v,u) in weak_edges:
+			    w = "weak"
+			elif (u,v) in strong_edges or (v,u) in strong_edges:
+			    w = "strong"
+			included_nodes.add(u)
+			included_nodes.add(v)
+			included_edges.add((u,v))
+			included_edges.add((v,u))
+			u = ueid_to_gene[u]
+			v = ueid_to_gene[v]
+			f.write("M%d_ %s %s %s\n" % (i, u, w, v))
+		for u in m:
+		    if u not in included_nodes:
+			included_nodes.add(u)
+			u = ueid_to_gene[u]
+			f.write("M%d_ %s\n" % (i, u))
+	# Connect modules
+	for i, module1 in enumerate(module_sets):
+	    for j, module2 in enumerate(module_sets):
+		if i<j:
+		    connected_weak = False
+		    connected_strong = False
+		    for u in module1:
+			for v in module2:
+			    if (u,v) in strong_edges:
+				connected_strong = True
+				break
+			    if (u,v) in weak_edges:
+				connected_weak = True
+		    if connected_strong:
+			f.write("%s M%d_ %s M%d_\n" % (network_name, i, "strong", j))
+		    elif connected_weak:
+			f.write("%s M%d_ %s M%d_\n" % (network_name, i, "weak", j))
+	# Output the rest
+	for u,v in g_sub.edges():
+	    if u == v:
+		continue
+	    if (u,v) in included_edges:
+		continue
+	    included_nodes.add(u)
+	    included_nodes.add(v)
+	    w = "pp"
+	    if (u,v) in weak_edges or (v,u) in weak_edges:
+		w = "weak"
+	    elif (u,v) in strong_edges or (v,u) in strong_edges:
+		w = "strong"
+	    u = ueid_to_gene[u]
+	    v = ueid_to_gene[v]
+	    f.write("%s %s %s %s\n" % (network_name, u,w,v))
+	for node in nodes - included_nodes:
+	    f.write("%s %s\n" % (network_name, ueid_to_gene[node]))
+	f.close()
+
+	output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/breast_cancer_pruned_p80_strong.sif"
+	f = open(output_file, 'w')
+	included_nodes = set()
+	for u,v in g_sub.edges():
+	    if u == v:
+		continue
+	    included_nodes.add(u)
+	    included_nodes.add(v)
+	    w = "pp"
+	    if (u,v) in weak_edges or (v,u) in weak_edges:
+		w = "weak"
+	    elif (u,v) in strong_edges or (v,u) in strong_edges:
+		w = "strong"
+	    u = ueid_to_gene[u]
+	    v = ueid_to_gene[v]
+	    f.write("%s %s %s\n" % (u,w,v))
+	for node in nodes - included_nodes:
 	    f.write("%s\n" % ueid_to_gene[node])
 	f.close()
-	check_functional_enrichment(output_file, output_file+"funcassoc")
+
+	for i, module in enumerate(module_sets):
+	    output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/M%d_.txt" % i
+	    #g_sub_sub = g_sub.subgraph(module) # For checking the functions enriched in the largest connected component of the module
+	    #module = gu.get_connected_components(g_sub_sub, return_as_graph_list=False)[0] 
+	    f = open(output_file, 'w')
+	    for node in module:
+		f.write("%s\n" % ueid_to_gene[node])
+	    f.close()
+	    functional_enrichment.check_functional_enrichment_of_human_gene_symbols(output_file, output_file+".funcassoc")
+
+    if False:
+	for i in range(4):
+	    enrichment_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/" + "%s/M%d_.txt.funcassoc" % ("strong/func-all", i) # strong/func-all strong weak
+	    go_terms = functional_enrichment.get_functional_enrichment(enrichment_file, remove_parents=False, only_biological_processes=True)
+	    print "m%d<-c(\"%s\")" % (i, "\", \"".join(go_terms))
     return
 
 
