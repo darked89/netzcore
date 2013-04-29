@@ -198,6 +198,24 @@ def decide_association_data(ASSOCIATION, PPI):
 	    association_scores_file_identifier_type = "genesymbol"
 	else:
 	    raise ValueError("Unrecognized ppi for perturbed association!")
+    elif ASSOCIATION.startswith("persuaded_omim_"):
+	params = ASSOCIATION[len("persuaded_omim_"):]
+	idx = params.rindex("_")
+	i = params[idx+1:]
+	idx2 = params.rindex("_", 0, idx)
+	p = params[idx2+1:idx]
+	p = p.lstrip("p")
+	assoc = "omim_" + params[:idx2]
+	if PPI.startswith("biana_no_tap_no_reliability"):
+	    association_dir = data_dir + "human_interactome_biana" + os.sep + "persuaded" + os.sep + assoc + os.sep + str(p) + os.sep
+	    association_scores_file = association_dir + "sampled.txt." + str(i)
+	    association_scores_file_identifier_type = None 
+	elif PPI.startswith("goh"):
+	    association_dir = data_dir + "goh_human_ppi" + os.sep + "persuaded" + os.sep + assoc + os.sep + str(p) + os.sep
+	    association_scores_file = association_dir + "sampled.txt." + str(i)
+	    association_scores_file_identifier_type = "genesymbol"
+	else:
+	    raise ValueError("Unrecognized ppi for persuaded association!")
     else:
 	raise ValueError("Unrecognized association!")
     return (association_scores_file, association_scores_file_identifier_type, association_scores_validation_file, candidates_file, association_dir)
@@ -313,7 +331,7 @@ def decide_interaction_data(PPI, ASSOCIATION, association_scores_file):
 		raise ValueError("Unrecognized ppi!")
 	else:
 	    raise ValueError("Unrecognized ppi!")
-	if ASSOCIATION.startswith("perturbed_"):
+	if ASSOCIATION.startswith("perturbed_") or ASSOCIATION.startswith("persuaded_"):
 	    node_description_file = None 
 	    node_file = association_scores_file
 	    network_dir = data_dir + "input" + os.sep + PPI + os.sep
@@ -352,7 +370,7 @@ def decide_interaction_data(PPI, ASSOCIATION, association_scores_file):
 	    network_dir = goh_network_dir + "pruned" + os.sep + ASSOCIATION + os.sep + str(p) + os.sep
 	    network_file = network_dir + "sampled_graph.sif." + str(i) 
 	    network_file_filtered = network_file
-	if ASSOCIATION.startswith("perturbed_"):
+	if ASSOCIATION.startswith("perturbed_") or ASSOCIATION.startswith("persuaded_"):
 	    node_description_file = None 
 	    node_file = association_scores_file
 	    network_dir = data_dir + "input" + os.sep + PPI + os.sep
@@ -525,6 +543,12 @@ def decide_interaction_data(PPI, ASSOCIATION, association_scores_file):
 	#node_description_file = None 
 	network_file_identifier_type = "geneid" #"genesymbol"
 	network_file = data_dir + "arcadi" + os.sep + "humannet_filtered.sif" #"HumanNet.v1.join_evidence1_bPPI_genes.sif"
+	network_file_filtered = network_file
+	node_file = association_scores_file
+    # HumanNet GWASCat subnetwork
+    elif PPI == "humannet_gwascat_subnetwork":
+	network_file_identifier_type = "geneid" 
+	network_file = data_dir + "arcadi" + os.sep + "humannet_gwascat_subnetwork.sif" 
 	network_file_filtered = network_file
 	node_file = association_scores_file
     # ENTREZ network with interactions for only genes in bPPI
@@ -1371,7 +1395,23 @@ def prepare(PPI, ASSOCIATION, biana_node_file_prefix, biana_network_file_prefix,
 	g = prepare_data.get_network_as_graph(edge_scores_file, use_edge_data = True)
 	if seed_to_score is None:
 	    seed_to_score = prepare_data.get_node_to_score_from_node_scores_file(seed_scores_file)
-	if prepare_mutated == "perturbed":
+	if prepare_mutated == "persuaded":
+	    print "Creating persuaded seeds for network"
+	    output_dir = network_dir + "persuaded" + os.sep 
+	    if not os.path.exists(output_dir):
+		os.mkdir(output_dir)
+	    output_dir += ASSOCIATION + os.sep
+	    if not os.path.exists(output_dir):
+		os.mkdir(output_dir)
+	    for n_seed in [10]:
+		output_dir_inter = output_dir + str(n_seed) + os.sep 
+		if not os.path.exists(output_dir_inter):
+		    os.mkdir(output_dir_inter)
+		output_prefix = output_dir_inter + "sampled.txt."
+		if os.path.exists(output_prefix + "1"):
+		    break
+		prepare_data.sample_persuaded_seeds(seed_to_score, g.nodes(), N_SAMPLE_GRAPH, n_seed, output_prefix) 
+	elif prepare_mutated == "perturbed":
 	    print "Creating perturbed seeds for network"
 	    output_dir = network_dir + "perturbed" + os.sep 
 	    if not os.path.exists(output_dir):
@@ -1892,6 +1932,7 @@ def prepare_scoring_files(PPI, seed_scores_file, network_file_filtered, seed_to_
 	seed_to_score = prepare_data.get_node_to_score_from_node_scores_file(seed_scores_file)
 	prepare_data.create_edge_scores_as_node_scores_file(edges = edges, node_to_score = seed_to_score, edge_to_score = edge_to_score, edge_scores_file = edge_scores_as_node_scores_file, ignored_nodes = None, default_score = DEFAULT_NON_SEED_SCORE)
 	prepare_data.generate_cross_validation_edge_score_as_node_score_files(edges = edges, seed_to_score = seed_to_score, edge_to_score = edge_to_score, edge_scores_file = edge_scores_as_node_scores_file, xval = N_X_VAL, default_score = DEFAULT_NON_SEED_SCORE, replicable = REPLICABLE)
+    return #!
     # Create random network files
     if not os.path.exists(sampled_file_prefix + ".sif.1"): 
 	print "Creating sampled networks"

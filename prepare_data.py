@@ -127,6 +127,16 @@ def sample_pruned_network_at_percentage(g, n_sample, percentage, output_prefix, 
 	network_utilities.output_network_in_sif(g_sampled, output_prefix+"%s"%i)
     return
 
+def sample_persuaded_seeds(seed_to_score, nodes, n_sample, n_seed, output_prefix):
+    from random import shuffle
+    reserved_nodes = seed_to_score.keys()
+    #non_reserved_nodes = list(set(nodes) - set(reserved_nodes))
+    for i in xrange(1,n_sample+1):
+	shuffle(reserved_nodes)
+	node_to_score = dict([ (node, seed_to_score[node]) for node in reserved_nodes[:n_seed] ])
+	create_node_scores_file(nodes = node_to_score.keys(), node_to_score = node_to_score, node_scores_file = output_prefix + "%s"%i)
+    return
+
 
 def sample_perturbed_seeds_at_percentage(seed_to_score, nodes, n_sample, percentage, output_prefix):
     from random import shuffle

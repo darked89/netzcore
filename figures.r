@@ -36,8 +36,9 @@ manuscript2<-function() {
 manuscript2_figures<-function() {
     neighborhood_figures()
     robustness_figures()
-    disease_category_figures() 
     module_figures() 
+    disease_category_figures() 
+    bc_case_study_figures()
 }
 
 lambda<-function(x) { x<-substring(x, 6); words<-unlist(strsplit(x, "_")); x<-paste(words, collapse=" "); return(x) }
@@ -101,6 +102,43 @@ robustness_figures <- function() {
 
     percentages<-seq(0,80,by=10) # c(0, 10, 30, 50, 70)
     scoring.methods<-c("N.Score", "N.Zcore", "N.Short", "F.Flow", "P.Rank")
+
+    svg(paste(out.dir, "permuted2.svg", sep=""))
+    coords <- seq(0.05,7.75,by=0.95)
+    i = 1
+    for(scoring.method.id in scoring.method.ids) {
+	e<-matrix(nrow=100, ncol=length(percentages))
+	j<-1
+	for(p in percentages) {
+	    if(p == 0) {
+		d <- read.table(paste(dir.name, 'biana_no_tap-omim/auc_phenotypes.dat', sep=""))
+	    }
+	    else {
+		d <- read.table(paste(dir.name, 'biana_no_tap_permuted_p', p, '-omim/auc_phenotypes.dat', sep=""))
+		if(!all(dim(d) == c(100, 5))) {
+		    stop("Object dimension is different from expected!")
+		}
+	    }
+	    d<-d[,scoring.method.id]
+	    e[,j]<-as.vector(d)
+	    j<-j + 1
+	}
+	if(i == 1) {
+	    boxplot(e,col=cols[i],at=coords, boxwex=0.15, pars=list(xaxt="n"), xlab="Perturbation level", ylab="AUC (%)", ylim=c(40,80), xlim=c(0.18,8.42))
+	} 
+	else {
+	    boxplot(e,col=cols[i],at=coords, boxwex=0.15, pars=list(xaxt="n"), names=F, add=T)
+	}
+	if(i == 4) {
+	    text.coords<-coords
+	    #axis(1,tick=F,labels=scoring.methods,at=coords)
+	}
+	coords <- coords + 0.2
+	i = i + 1
+    }
+    #legend(0.5, 119, c("Goh", "Entrez", "PPI", "bPPI", "weighted bPPI"), fill=color5, bty="n", ncol=3, cex=0.9) #horiz=T, x.intersp=0.5)
+    text(text.coords+0.15, par("usr")[3]-3, srt=40, adj=1, labels=percentages, xpd=T, cex=0.9)
+    dev.off()
 
     # Average AUC (%) at different levels of interaction permutation over OMIM disorders on bPPI network
     #cairo_ps(paste(dir.name, "Figure P2a.eps", sep=""), width = 6, height = 6, onefile = TRUE) # ps: horizontal = FALSE, onefile = FALSE, paper = "special")
@@ -325,7 +363,7 @@ remove_go_term_redundancy<-function(input.file, out.file) {
 		}
 	    }
 	}
-	print(c(pheno, union(to.remove, to.remove)))
+	print(c(pheno, union(to.remove, to.remove))) # self union to convert it to set
 	for(go in setdiff(d[d$phenotype == pheno,"go"],to.remove)) {
 	    #d2<-rbind(d2, c(pheno, go))
 	    d2[k,1]<-pheno
@@ -338,13 +376,54 @@ remove_go_term_redundancy<-function(input.file, out.file) {
     return()
 }
 
-disease_category_figures<-function() {
+remove_redundant_go_terms<-function(go.term.levels, similarity) {
+    library(GOSemSim)
+    d<-go.term.levels
+    to.remove<-c()
+    for(i in 1:nrow(d)) {
+	for(j in 1:nrow(d)) {
+	    if(i<j) {
+		go1<-as.character(d[i,"go"])
+		go2<-as.character(d[j,"go"])
+		a<-goSim(go1, go2, ont="BP", measure="Wang")
+		if(!is.na(a) & a>=similarity) {
+		    #print(c(go1, go2, a))
+		    if(d[i,"level"] < d[j,"level"]) {
+			to.remove<-c(to.remove,go2)
+		    } else {
+			to.remove<-c(to.remove,go1)
+		    }
+		}
+	    }
+	}
+    }
+    print(union(to.remove, to.remove)) 
+    go.terms.nonredundant<-setdiff(d[,"go"],to.remove)
+    return(go.terms.nonredundant)
+}
 
-    #common.up.old<-c('omim_anemia', 'omim_breast_cancer', 'omim_leukemia', 'omim_lymphoma', 'omim_systemic_lupus_erythematosus')
-    #common.down.old<-c('omim_asthma', 'omim_ataxia', 'omim_cataract', 'omim_neuropathy', 'omim_schizophrenia', 'omim_spastic_paraplegia')
+
+disease_category_figures<-function() {
     common.up<-c("omim_breast_cancer", "omim_cardiomyopathy", "omim_diabetes", "omim_leukemia", "omim_obesity", "omim_parkinson_disease")
     common.down<-c("omim_anemia", "omim_ataxia", "omim_cataract", "omim_epilepsy", "omim_hypertension", "omim_mental_retardation", "omim_schizophrenia", 
 		    "omim_alzheimer", "omim_lung_cancer", "omim_lymphoma", "omim_myopathy", "omim_prostate_cancer", "omim_systemic_lupus_erythematosus")
+    print(common.up);
+    print(common.down);
+    categories<-get_disease_categories()
+    common.up<-categories$up
+    common.down<-categories$down
+    print(common.up);
+    print(common.down);
+
+    disease_category_comparison(common.up, common.down)
+    # Below gives error in batch execution due to margins of the heatmaps but images can be generated in interactive mode
+    disease_category_functional_comparison(common.up, common.down)
+}
+
+
+get_disease_categories<-function() {
+    #common.up.old<-c('omim_anemia', 'omim_breast_cancer', 'omim_leukemia', 'omim_lymphoma', 'omim_systemic_lupus_erythematosus')
+    #common.down.old<-c('omim_asthma', 'omim_ataxia', 'omim_cataract', 'omim_neuropathy', 'omim_schizophrenia', 'omim_spastic_paraplegia')
     #cols<-2:23
     #to.remove<-c("omim_insulin", "omim_neuropathy", "omim_asthma", "omim_spastic_paraplegia") # they are already out in the new analysis files
     method<-"ns"
@@ -440,9 +519,6 @@ disease_category_figures<-function() {
     container<-container.pruned
     container.pruned.down<-container[common.down,]
 
-    print(common.up);
-    print(common.down);
-
     svg(paste(out.dir, "tolerant.svg", sep=""))
     par(family = "Arial") 
 
@@ -487,8 +563,37 @@ disease_category_figures<-function() {
     legend(40, 20, c("Interaction permutation", "Interaction pruning"), lty=c(1,2), col=c(1,1), bty="n")
     dev.off()
 
+    return(list(up=common.up, down=common.down));
+
+    # Was trying an alternative definition
+    # Robustness cutoff: median of sum of auc_i-(auc_0/2) for each disease where i = 0 - 80 (%)
+    n<-9
+
+    d<-container.permuted[,]-container.permuted[,1]/2
+    d<-rowSums(d[,1:n])/n
+    cutoff.d<-median(d)
+
+    e<-container.pruned[,]-container.pruned[,1]/2
+    e<-rowSums(e[,1:n])/n
+    cutoff.e<-median(e)
+
+    common.up<-names(which(d>cutoff.d & e>cutoff.e))
+    common.down<-names(which(d<cutoff.d & e<cutoff.e))
+
+    common<-union(common.up, common.down)
+    non.common<-phenotypes[!(phenotypes %in% common)]
+
+    container<-container.permuted
+    container.permuted.up<-container[common.up,]
+    container.permuted.down<-container[common.down,]
+    container<-container.pruned
+    container.pruned.up<-container[common.up,]
+    container.pruned.down<-container[common.down,]
+}
+
+disease_category_comparison<-function(common.up, common.down) {
     # Functional enrichment of modules in robust vs non-robust diseases
-    #method<-"nn"
+    method<-"ns" # "nn"
     module.dir<-"../data/module/"
     d<-read.table(paste(module.dir, "biana_no_tap-omim/module_summary.dat", sep=""), header=T) 
     e2<-d[d$scoring==method & d$phenotype %in% common.up, "n_module"]
@@ -541,6 +646,10 @@ disease_category_figures<-function() {
     a<-wilcox.test(e$n_seed_go, f$n_seed_go)
     print(c("seed go: ", a$p.value))
 
+    svg(paste(out.dir, "go_at_top.svg", sep=""))
+    par(family = "Arial") 
+    boxplot(e$n_go, f$n_go, col=8, names=labels, xlab="Disease category", ylab="Number of GO terms among top ranking genes") #, ylim=c(0,3))
+    dev.off()
     a<-wilcox.test(e$n_go, f$n_go)
     print(c("go: ", a$p.value))
 
@@ -570,7 +679,7 @@ disease_category_figures<-function() {
     f<-merge(f, s, by.x="phenotype", by.y="row.names")
     svg(paste(out.dir, "seed_go_per_seed.svg", sep=""))
     par(family = "Arial") 
-    boxplot(e$n_seed_go/e$n_seed, f$n_seed_go/f$n_seed, col=8, names=labels, xlab="Disease category", ylab="Number of seed GO terms per seed", ylim=c(0,5))
+    boxplot(e$n_seed_go/e$n_seed, f$n_seed_go/f$n_seed, col=8, names=labels, xlab="Disease category", ylab="Number of seed GO terms per seed", ylim=c(0,3))
     dev.off()
     a<-wilcox.test(e$n_seed_go/e$n_seed, f$n_seed_go/f$n_seed)
     print(c("seed go per seed: ", a$p.value)) 
@@ -593,15 +702,25 @@ disease_category_figures<-function() {
     a<-wilcox.test(s[common.up,"n_path"], s[common.down,"n_path"])
     print(c("path:", a$p.value))
 
+    a<-wilcox.test(s[common.up,"n_linker"], s[common.down,"n_linker"])
+    print(c("n_linker:", a$p.value))
+
     a<-wilcox.test(s[common.up,"n_degree"], s[common.down,"n_degree"])
     print(c("degree:", a$p.value))
+
+    e<-intersect(rownames(s[s$n_seed<50,]),common.up)
+    f<-intersect(rownames(s[s$n_seed<50,]),common.down)
+    a<-wilcox.test(container.permuted[e,"50"], container.permuted[f,"50"])
+    print(c("auc-permuted-seed50:", a$p.value))
+    a<-wilcox.test(container.pruned[e,"50"], container.pruned[f,"50"])
+    print(c("auc-pruned-seed50:", a$p.value))
 
     # Comparison of number of alternative paths
     s<-read.table(paste(dir.name, 'biana_no_tap-omim/path_counts.dat', sep=""))
 
     svg(paste(out.dir, "alternative_path.svg", sep=""))
     par(family = "Arial") 
-    boxplot(s[common.up,"n_path"], s[common.down,"n_path"], col=8, names=labels, xlab="Disease category", ylab="Average length of seed connecting paths", ylim=c(0,5))
+    boxplot(s[common.up,"n_path"], s[common.down,"n_path"], col=8, names=labels, xlab="Disease category", ylab="Average length of seed connecting paths") #, ylim=c(0,5))
     dev.off()
     a<-wilcox.test(s[common.up,"n_path"], s[common.down,"n_path"])
     print(c("alt. path:", a$p.value))
@@ -630,7 +749,7 @@ disease_category_figures<-function() {
     print(c("seed go non-redundant:", a$p.value))
     a<-wilcox.test(d2.up/s[common.up,]$n_seed, d2.down/s[common.down,]$n_seed)
     print(c("seed go non-redundant per seed:", a$p.value))
-    print(c("seed go non-redundant per seed - ratio:", d2.up/s[common.up,]$n_seed / d2.down/s[common.down,]$n_seed))
+    print(c("seed go non-redundant per seed - ratio:", a$p.value))
 
     out.file<-paste(module.dir, "biana_no_tap-omim/module_summary_ns-all_go_non_redundant.dat", sep="")
     #remove_go_term_redundancy(paste(module.dir, "biana_no_tap-omim/module_summary_ns-all_go.dat", sep=""), out.file)
@@ -645,7 +764,6 @@ disease_category_figures<-function() {
     }    
     a<-wilcox.test(d2.up, d2.down)
     print(c("all go non-redundant:", a$p.value))
-    print(c("all go non-redundant - ratio:", d2.up / d2.down))
 
     # Comparison of the age of the genes
     svg(paste(out.dir, "age.svg", sep=""))
@@ -670,9 +788,9 @@ disease_category_figures<-function() {
     print(c("mammals:", a$p.value))
 
     return()
+}
     
-    # Below gives error in batch execution due to margins of the heatmaps but images can be generated in interactive mode
-
+disease_category_functional_comparison<-function(common.up, common.down) {
     library(gplots)
     library(RColorBrewer)
     #cols<-c(rep("red", length(common.up)), rep("grey", length(non.common)), rep("green", length(common.down)))
@@ -719,24 +837,20 @@ disease_category_figures<-function() {
     selected<-c(common.up, common.down)
     cols<-c(rep("green", length(common.up)), rep("orange", length(common.down)))
     e<-d[,selected]
-    e<-e[rowSums(e)>2,]
+    e<-e[rowSums(e)>3,]
+    e<-e[order(rownames(e)),]
     #e<-e[,colSums(e)>0]
     #val.cols<-4
     #Rowv <- rowMeans(e, na.rm = F)
     #a <- as.dendrogram(hclust(as.dist(e)))
     #a <- reorder(a, Rowv)
-    a <- T
+    a <- F
     #e[e==0]<-NA
     lambda2<-function(x) { words<-unlist(strsplit(x, "_")); x<-paste(words, collapse=" "); return(x) }
-    heatmap.2(as.matrix(e), revC=F, trace="none", dendrogram="none", col=val.cols, margins=c(11,34), ColSideColors=cols, Colv=NA, Rowv=a, keysize=0.1, labCol=sapply(colnames(e), lambda), labRow=sapply(rownames(e), lambda2), cexCol=0.9, na.color="grey")
+    labels.col<-as.vector(sapply(colnames(e), lambda))
+    labels.col<-c(labels.col[-19], "systemic lup. ery.")
+    heatmap.2(as.matrix(e), revC=F, trace="none", dendrogram="none", col=val.cols, margins=c(7,34), ColSideColors=cols, Colv=NA, Rowv=a, keysize=0.1, labCol=labels.col, labRow=sapply(rownames(e), lambda2), cexCol=0.9, cexRow=0.9, na.color="grey")
     dev.off()
-
-    d<-read.table(paste("../data/summary_runs_on_random/", "breast_cancer_pruned/functional_comparison.dat", sep=""), header=T, sep="\t")
-    svg(paste(out.dir, "functional_comparison.svg", sep=""))
-    lambda2<-function(x) { words<-unlist(strsplit(x, "_")); x<-paste(words, collapse=" "); return(x) }
-    heatmap.2(as.matrix(d), revC=F, trace="none", dendrogram="none", col=val.cols, margins=c(5,30), Colv=NA, Rowv=T, keysize=0.1, labCol=sapply(colnames(d), lambda2), cexCol=0.9, na.color="grey")
-    dev.off()
-
 
     return()
 
@@ -778,36 +892,34 @@ disease_category_figures<-function() {
     print(c("common.down", rownames(e)))
     heatmap.2(as.matrix(e), revC=F, trace="none", dendrogram="none", col=val.cols, density.info="none", margins=c(7,30), keysize=0.1, labCol=sapply(colnames(e), lambda), labRow=rownames(e), cexCol=0.9)
     dev.off()
-
-    return()
-
-    # Was trying an alternative definition
-    # Robustness cutoff: median of sum of auc_i-(auc_0/2) for each disease where i = 0 - 80 (%)
-    n<-9
-
-    d<-container.permuted[,]-container.permuted[,1]/2
-    d<-rowSums(d[,1:n])/n
-    cutoff.d<-median(d)
-
-    e<-container.pruned[,]-container.pruned[,1]/2
-    e<-rowSums(e[,1:n])/n
-    cutoff.e<-median(e)
-
-    common.up<-names(which(d>cutoff.d & e>cutoff.e))
-    common.down<-names(which(d<cutoff.d & e<cutoff.e))
-
-    common<-union(common.up, common.down)
-    non.common<-phenotypes[!(phenotypes %in% common)]
-
-    container<-container.permuted
-    container.permuted.up<-container[common.up,]
-    container.permuted.down<-container[common.down,]
-    container<-container.pruned
-    container.pruned.up<-container[common.up,]
-    container.pruned.down<-container[common.down,]
-
 }
 
+
+###### BC CASE STUDY FIGURES ######
+bc_case_study_figures<-function() {
+    data.dir <- "../data/summary_runs_on_random/breast_cancer_pruned/"
+    # Remove redundancy among GO terms enriched in the component + seed GO terms
+    #d<-read.table(paste(data.dir, "functional_comparison_goids.dat", sep=""), header=T)
+    #print(length(d))
+    #out.file<-paste(data.dir, "functional_comparison_goids-non_redundant.dat", sep="")
+    #d2<-remove_redundant_go_terms(d, 0.8)
+    #print(length(d2))
+    #write(d2, out.file)
+    #d2<-as.vector(read.table(out.file,header=F)[,1])
+    
+    # Draw heatmap of the functions among GO terms enriched in the component + seed GO terms
+    library(gplots)
+    d<-read.table(paste(data.dir, "functional_comparison.dat", sep=""), header=T, row.names=1, sep="\t", check.names=F)
+    #d<-d[d2,]
+    e<-d[order(d[,1]),2:3]
+    e[e[,1]==1,1]<-2
+    #e[e==0]<-NA
+    rownames(e)<-d[order(d[,1]),1]
+    svg(paste(out.dir, "functional_comparison.svg", sep=""))
+    #lambda2<-function(x) { words<-unlist(strsplit(x, ".")); x<-paste(words, collapse=" "); return(x) }
+    heatmap.2(as.matrix(e), revC=F, trace="none", dendrogram="none", col=c("lightgrey","blue","red"), margins=c(7,40), Colv=NA, Rowv=F, keysize=0.1, cexCol=0.9, cexRow=0.9, na.color="grey")
+    dev.off()
+}
 
 
 ###### MODULE FIGURES ######

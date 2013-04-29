@@ -1,4 +1,5 @@
 import os
+import networkx
 
 DATA_DIR = "../data/"
 
@@ -61,14 +62,14 @@ def get_similarity_of_go_terms_for_diseases():
     f3.close()
 
     from toolbox import OboParser
-    g=OboParser.getOboGraph("/home/emre/arastirma/celldiff/data/GO/gene_ontology.1_2.obo")
+    go = OboParser.getOboGraph("/home/emre/arastirma/celldiff/data/GO/gene_ontology.1_2.obo")
 
     # Phenotype vs function matrix
     f = open(base_dir + "phenotype_vs_functions.dat", 'w')
     f.write("%s\n" % " ".join(phenotypes))
     all_go_ids = reduce(lambda x,y: x|y, zip(*phenotype_to_functions.values())[2])
     for go_id in all_go_ids:
-	f.write("%s " % "_".join(g.node[go_id]['n'].split(" "))) 
+	f.write("%s " % "_".join(go.node[go_id]['n'].split(" "))) 
 	values = []
 	for pheno in phenotypes:
 	    if go_id in phenotype_to_functions[pheno][2]:
@@ -82,7 +83,7 @@ def get_similarity_of_go_terms_for_diseases():
     f.write("%s\n" % " ".join(phenotypes))
     all_seed_go_ids = reduce(lambda x,y: x|y, zip(*phenotype_to_functions.values())[0])
     for go_id in all_seed_go_ids:
-	f.write("%s " % "_".join(g.node[go_id]['n'].split(" ")))
+	f.write("%s " % "_".join(go.node[go_id]['n'].split(" ")))
 	values = []
 	for pheno in phenotypes:
 	    if go_id in phenotype_to_functions[pheno][0]:
@@ -339,6 +340,118 @@ def get_similarity_of_go_terms_for_omim_diseases():
 	print pheno, len(phenotype_to_genes[pheno]), len(phenotype_to_genes[pheno] & duplicated_genes)
     return 
 
+def get_differential_network(g_org, ueid_to_gene, auc_file, critical_auc):
+    from toolbox import network_utilities as gu
+    from statsmodels.stats.weightstats import ttest_ind
+
+    # Get indices of min/max networks
+    aucs = []
+    for line in open(auc_file):
+	aucs.append(float(line.split()[1]))
+    indices = zip(*sorted([ (auc, i) for i, auc in enumerate(aucs) ]))[1]
+    #print indices[:3], indices[-3:] # real index in file name is one higher
+    indices_max = indices[-2:]
+    indices_min = indices[:2]
+
+    # Get max neighborhood network
+    g_maxs = [ ] 
+    for i in indices_max:
+	network_file_pruned = DATA_DIR + "human_interactome_biana/pruned/omim_breast_cancer/80/sampled_graph.sif.%d" % (i+1)
+	g = gu.create_network_from_sif_file(network_file_pruned, use_edge_data=False)
+	g_maxs.append(g) 
+	##g_maxs.append(g.subgraph(g_neighborhood.nodes()))
+
+    # Get min neighborhood network
+    g_mins = [ ] 
+    for i in indices_min:
+	network_file_pruned = DATA_DIR + "human_interactome_biana/pruned/omim_breast_cancer/80/sampled_graph.sif.%d" % (i+1)
+	g = gu.create_network_from_sif_file(network_file_pruned, use_edge_data=False)
+	g_mins.append(g)
+	##g_mins.append(g.subgraph(g_neighborhood.nodes()))
+
+    print len(g_maxs), len(g_mins)
+
+    # Get common edges in min/max networks
+    g_max = reduce(lambda x,y: gu.networkx.intersection(x, y), g_maxs)
+    g_min = reduce(lambda x,y: gu.networkx.intersection(x, y), g_mins)
+
+    # Get differential edges
+    g_diff = gu.networkx.difference(g_max, g_min)
+    print len(g_max.edges()), len(g_min.edges()), len(g_diff.edges())
+
+    nodes = set()
+    for node in g_diff.nodes():
+	if node in ueid_to_gene:
+	    nodes.add(node)
+    g_sub = g_diff.subgraph(nodes)
+    return g_sub
+
+
+def get_differential_network_using_all_networks(g_org, ueid_to_gene, auc_file, critical_auc):
+    from toolbox import network_utilities as gu
+    from statsmodels.stats.weightstats import ttest_ind
+
+    # Get indices of min/max networks
+    aucs = []
+    for line in open(auc_file):
+	aucs.append(float(line.split()[1]))
+    indices_max = [] 
+    indices_min = [] 
+    for i, auc in enumerate(aucs):
+    	if auc >= critical_auc:
+    	    indices_max.append(i)
+    	else:
+    	    indices_min.append(i)
+
+    # Get max neighborhood network
+    g_maxs = [ ] 
+    for i in indices_max:
+	network_file_pruned = DATA_DIR + "human_interactome_biana/pruned/omim_breast_cancer/80/sampled_graph.sif.%d" % (i+1)
+	g = gu.create_network_from_sif_file(network_file_pruned, use_edge_data=False)
+	g_maxs.append(g) 
+
+    # Get min neighborhood network
+    g_mins = [ ] 
+    for i in indices_min:
+	network_file_pruned = DATA_DIR + "human_interactome_biana/pruned/omim_breast_cancer/80/sampled_graph.sif.%d" % (i+1)
+	g = gu.create_network_from_sif_file(network_file_pruned, use_edge_data=False)
+	g_mins.append(g)
+
+    print len(g_maxs), len(g_mins)
+
+    #f=open("test.dat", 'w')
+    #f.write("stat pval\n")
+    g_diff = networkx.Graph()
+    for u, v in g_org.edges():
+	if u == v:
+	    continue
+	values_max = []
+	values_min = []
+	for i, g in enumerate(g_maxs):
+	    if g.has_edge(u,v):
+		values_max.append(1)
+	    else:
+		values_max.append(0)
+	for i, g in enumerate(g_mins):
+	    if g.has_edge(u,v):
+		values_min.append(1)
+	    else:
+		values_min.append(0)
+	vals = ttest_ind(values_max, values_min, usevar="separate")
+	stat, pval = vals[:2]
+	#f.write("%s.%s %s %s\n" % (u, v, stat, pval))
+	if pval <= 0.05:
+	    if stat > 0:
+		g_diff.add_edge(u, v)
+    #f.close()
+
+    nodes = set()
+    for node in g_diff.nodes():
+	if node in ueid_to_gene:
+	    nodes.add(node)
+    g_sub = g_diff.subgraph(nodes)
+    return g_sub
+
 
 def case_study_pruned_networks():
     from toolbox import network_utilities as gu
@@ -361,177 +474,114 @@ def case_study_pruned_networks():
     g_neighborhood = gu.get_neighborhood_subgraph(g_org, seeds)
     #neighborhood_edges = set(g_neighborhood.edges()) # edge node order may be different for the same edge
 
-    # Get indices of min/max networks
-    aucs = []
-    for line in open(auc_file):
-	aucs.append(float(line.split()[1]))
-    indices = zip(*sorted([ (auc, i) for i, auc in enumerate(aucs) ]))[1]
-    print indices[:3], indices[-3:] # real index in file name is one higher
-
-    # Get max neighborhood network
-    g_maxs = [ ] 
-    for i in indices[-2:]:
-	network_file_pruned = DATA_DIR + "human_interactome_biana/pruned/omim_breast_cancer/80/sampled_graph.sif.%d" % (i+1)
-	g = gu.create_network_from_sif_file(network_file_pruned, use_edge_data=False)
-	g_maxs.append(g) 
-	#g_maxs.append(g.subgraph(g_neighborhood.nodes()))
-
-    # Get min neighborhood network
-    g_mins = [ ] 
-    for i in indices[:2]:
-	network_file_pruned = DATA_DIR + "human_interactome_biana/pruned/omim_breast_cancer/80/sampled_graph.sif.%d" % (i+1)
-	g = gu.create_network_from_sif_file(network_file_pruned, use_edge_data=False)
-	g_mins.append(g)
-	#g_mins.append(g.subgraph(g_neighborhood.nodes()))
-
-    # Get common edges in min/max networks
-    g_max = reduce(lambda x,y: gu.networkx.intersection(x, y), g_maxs)
-    g_min = reduce(lambda x,y: gu.networkx.intersection(x, y), g_mins)
-
-    # Get differential edges
-    g_diff = gu.networkx.difference(g_max, g_min)
-    print len(g_max.edges()), len(g_min.edges()), len(g_diff.edges())
-    nodes = set()
-    for node in g_diff.nodes():
-	if node in ueid_to_gene:
-	    nodes.add(node)
-    g_sub = g_diff.subgraph(nodes)
-
-    #!
-    weak_edges = set()
-    strong_edges = g_sub.edges()
-    output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/breast_cancer_pruned_p80_diff.dot"
-    gu.create_dot_network_file(g_sub, output_file, seeds, ueid_to_gene, weak_edges=weak_edges, draw_type="all")
-    os.system("fdp -Tgif -O %s" % output_file) 
-    return
+    critical_auc = 0.634
+    g_sub = get_differential_network(g_org, ueid_to_gene, auc_file, critical_auc)
 
     # Get seed GOs to check their coverage in top connected component
     phenotype_to_functions = get_go_function_counts() 
     seed_terms = phenotype_to_functions["omim_breast_cancer"][0]
 
+    go = functional_enrichment.get_go_ontology("/home/emre/arastirma/celldiff/data/GO/gene_ontology.1_2.obo")
+
+    # Get network genes
+    network_genes = set() # set(ueid_to_gene.values())
+    seed_genes = set()
+    for node in g_org.nodes():
+	if node in ueid_to_gene:
+	    network_genes.add(ueid_to_gene[node])
+	    if node in seeds:
+		seed_genes.add(ueid_to_gene[node])
+    # Get current (up-to-date) seed GO terms
+    output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/seed_genes.txt" 
+    #functional_enrichment.check_functional_enrichment(list(seed_genes), list(network_genes), "genesymbol", open(output_file+".funcassoc", 'w').write) 
+    #seed_go_terms = functional_enrichment.get_functional_enrichment(output_file + ".funcassoc", go, remove_parents=False, only_biological_processes=True)
+    #print "current seed go:", len(seed_go_terms)
+
     # Get all functions enriched in the network
     output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/network_genes.txt"
     f = open(output_file, 'w')
-    [ f.write("%s\n" % gene) for gene in set(ueid_to_gene.values()) ]
+    [ f.write("%s\n" % gene) for gene in network_genes ]
     f.close()
     #functional_enrichment.check_functional_enrichment_of_human_gene_symbols(output_file, output_file+".funcassoc")
-    network_go_terms = functional_enrichment.get_functional_enrichment(output_file + ".funcassoc", remove_parents=False, only_biological_processes=True)
+    network_go_terms = functional_enrichment.get_functional_enrichment(output_file + ".funcassoc", go, remove_parents=False, only_biological_processes=True)
     print 23928, len(network_go_terms)
     
     # Check the functions enriched in the largest connected component of each module
     for i, module in enumerate(gu.get_connected_components(g_sub, return_as_graph_list=False)):
 	if len(module) < 10:
 	    continue
-	output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/M%d_.txt" % i
+	output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/M%d" % i
+
+	if i == 0:
+	    f = open(output_file + ".txt.seeds", 'w')
+	    f2 = open(output_file + ".txt.nonseeds", 'w')
+	    module_seed_genes = set()
+	    module_nonseed_genes = set()
+	    for node in module:
+		if True: #node in ueid_to_gene:
+		    if node in seeds:
+			f.write("%s\n" % ueid_to_gene[node])
+			module_seed_genes.add(ueid_to_gene[node])
+		    else:
+			f2.write("%s\n" % ueid_to_gene[node])
+			module_nonseed_genes.add(ueid_to_gene[node])
+	    f.close()
+	    f2.close()
+	    ##functional_enrichment.check_functional_enrichment_of_human_gene_symbols(output_file + "seeds.txt", output_file + "seeds.txt.funcassoc")
+	    functional_enrichment.check_functional_enrichment(list(module_seed_genes), list(network_genes), "genesymbol", open(output_file+".txt.seeds.funcassoc", 'w').write) 
+	    ##functional_enrichment.check_functional_enrichment_of_human_gene_symbols(output_file + "nonseeds.txt", output_file + "nonseeds.txt.funcassoc")
+	    functional_enrichment.check_functional_enrichment(list(module_nonseed_genes), list(network_genes), "genesymbol", open(output_file+".txt.nonseeds.funcassoc", 'w').write) 
+	    go_terms_seeds = functional_enrichment.get_functional_enrichment(output_file + ".txt.seeds.funcassoc", go, remove_parents=False, only_biological_processes=True)
+	    go_terms_nonseeds = functional_enrichment.get_functional_enrichment(output_file + ".txt.nonseeds.funcassoc", go, remove_parents=False, only_biological_processes=True)
+	    print len(seed_terms), len(go_terms_nonseeds), len(seed_terms & go_terms_nonseeds), len(seed_terms & go_terms_nonseeds) / float(len(seed_terms))
+	    print "p_value:", sum(hypergeom.pmf(range(len(seed_terms & go_terms_nonseeds),len(go_terms_nonseeds)+1), len(network_go_terms), len(seed_terms), len(go_terms_nonseeds)))
+
 	# Draw diff network component
 	weak_edges = set()
 	g_sub_sub = g_sub.subgraph(module)
-	gu.create_dot_network_file(g_sub_sub, output_file+".dot", seeds, ueid_to_gene, weak_edges=weak_edges, draw_type="all")
-	os.system("fdp -Tgif -O %s" % output_file+".dot")
+	gu.create_dot_network_file(g_sub_sub, output_file + ".dot", seeds, ueid_to_gene, weak_edges=weak_edges, draw_type="all")
+	gu.output_network_in_sif(g_sub_sub, output_file + ".sif", ueid_to_gene, delim = " ", include_unconnected=True)
+	os.system("fdp -Tgif -O %s" % (output_file + ".dot")) 
 	# Get functions
-	f = open(output_file, 'w')
+	f = open(output_file + ".txt", 'w')
+	module_genes = set()
 	for node in module:
 	    f.write("%s\n" % ueid_to_gene[node])
+	    module_genes.add(ueid_to_gene[node])
 	f.close()
-	#functional_enrichment.check_functional_enrichment_of_human_gene_symbols(output_file, output_file+".funcassoc")
-	go_terms = functional_enrichment.get_functional_enrichment(output_file + ".funcassoc", remove_parents=False, only_biological_processes=True)
+	##functional_enrichment.check_functional_enrichment_of_human_gene_symbols(output_file + ".txt", output_file + ".txt.funcassoc")
+	functional_enrichment.check_functional_enrichment(list(module_genes), list(network_genes), "genesymbol", open(output_file+".txt.funcassoc", 'w').write) 
+	go_terms = functional_enrichment.get_functional_enrichment(output_file + ".txt.funcassoc", go, remove_parents=False, only_biological_processes=True)
 	print len(seed_terms), len(go_terms), len(seed_terms & go_terms), len(seed_terms & go_terms) / float(len(seed_terms))
 	print "p_value:", sum(hypergeom.pmf(range(len(seed_terms & go_terms),len(go_terms)+1), len(network_go_terms), len(seed_terms), len(go_terms)))
-
+	
     weak_edges = set()
     strong_edges = g_sub.edges()
-
     # Draw diff neighborhood network
-    output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/breast_cancer_pruned_p80_diff.dot"
-    gu.create_dot_network_file(g_sub, output_file, seeds, ueid_to_gene, weak_edges=weak_edges, draw_type="all")
-    os.system("fdp -Tgif -O %s" % output_file) 
-    return
+    output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/breast_cancer_pruned_p80_diff"
+    gu.create_dot_network_file(g_sub, output_file + ".dot", seeds, ueid_to_gene, weak_edges=weak_edges, draw_type="all")
+    gu.output_network_in_sif(g_sub, output_file + ".sif", ueid_to_gene, delim = " ", include_unconnected=True)
+    os.system("fdp -Tgif -O %s" % (output_file + ".dot")) 
 
-    # Get modules of high scoring network
-    modules = mcl.get_modules_from_file(module_file)
-    
-    # Create nested Cytoscape network file
-    output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/breast_cancer_pruned_p80_modularized_diff.nnf"
-    f = open(output_file, 'w')
-    network_name = "breast_cancer_pruned_p80_"
-    module_sets = []
-    included_nodes = set()
-    included_edges = set()
-    # Output modules
-    for i, module in enumerate(modules):
-	m = set(module) & nodes
-	if len(m) > 0:
-	    module_sets.append(m)
-	    f.write("%s M%d_\n" % (network_name, i))
-	    for u, v in g_sub.edges(m):
-		if u == v:
-		    continue
-		if u in m and v in m:
-		    w = "pp"
-		    if (u,v) in weak_edges or (v,u) in weak_edges:
-			w = "weak"
-		    elif (u,v) in strong_edges or (v,u) in strong_edges:
-			w = "strong"
-		    included_nodes.add(u)
-		    included_nodes.add(v)
-		    included_edges.add((u,v))
-		    included_edges.add((v,u))
-		    u = ueid_to_gene[u]
-		    v = ueid_to_gene[v]
-		    f.write("M%d_ %s %s %s\n" % (i, u, w, v))
-	    for u in m:
-		if u not in included_nodes:
-		    included_nodes.add(u)
-		    u = ueid_to_gene[u]
-		    f.write("M%d_ %s\n" % (i, u))
-    # Connect modules
-    for i, module1 in enumerate(module_sets):
-	for j, module2 in enumerate(module_sets):
-	    if i<j:
-		connected_weak = False
-		connected_strong = False
-		for u in module1:
-		    for v in module2:
-			if (u,v) in strong_edges:
-			    connected_strong = True
-			    break
-			if (u,v) in weak_edges:
-			    connected_weak = True
-		if connected_strong:
-		    f.write("%s M%d_ %s M%d_\n" % (network_name, i, "strong", j))
-		elif connected_weak:
-		    f.write("%s M%d_ %s M%d_\n" % (network_name, i, "weak", j))
-    # Output the rest
-    for u,v in g_sub.edges():
-	if u == v:
-	    continue
-	if (u,v) in included_edges:
-	    continue
-	included_nodes.add(u)
-	included_nodes.add(v)
-	w = "pp"
-	if (u,v) in weak_edges or (v,u) in weak_edges:
-	    w = "weak"
-	elif (u,v) in strong_edges or (v,u) in strong_edges:
-	    w = "strong"
-	u = ueid_to_gene[u]
-	v = ueid_to_gene[v]
-	f.write("%s %s %s %s\n" % (network_name, u,w,v))
-    for node in nodes - included_nodes:
-	f.write("%s %s\n" % (network_name, ueid_to_gene[node]))
+    all_terms = seed_terms #(go_terms_seeds | seed_terms | go_terms_nonseeds)
+    file_name = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/functional_comparison"
+    functional_enrichment.output_go_terms_and_levels(all_terms, go, file_name+"_goids.dat")
+    f = open(file_name+".dat", 'w')
+    #f.write("GO id\tGO term\tAll seeds\tModule seeds\tModule non-seeds\n") #"seed GO terms\tmodule GO terms (w/out seeds)\n"
+    f.write("GO id\tGO term\tModule seeds\tModule non-seeds\n") #"seed GO terms\tmodule GO terms (w/out seeds)\n"
+    term_list = [go_terms_seeds, go_terms_nonseeds] #[seed_terms, go_terms_seeds, go_terms_nonseeds]
+    for go_term in all_terms:
+	values = []
+	for terms in term_list:
+	    if go_term in terms: 
+		val = 1
+	    else:
+		val = 0
+	    values.append(val)
+	f.write("%s\t%s\t%s\n" % (go_term, go.node[go_term]['n'], "\t".join(map(str, values))))
     f.close()
-
-    # Check the functions enriched in the largest connected component of each module
-    for i, module in enumerate(module_sets):
-	output_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/M%d_.txt" % i
-	g_sub_sub = g_sub.subgraph(module) 
-	module = gu.get_connected_components(g_sub_sub, return_as_graph_list=False)[0] 
-	f = open(output_file, 'w')
-	for node in module:
-	    f.write("%s\n" % ueid_to_gene[node])
-	f.close()
-	functional_enrichment.check_functional_enrichment_of_human_gene_symbols(output_file, output_file+".funcassoc")
     return
+
 
 def case_study_pruned_networks_old():
     """
@@ -583,6 +633,8 @@ def case_study_pruned_networks_old():
     g_sub.add_edges_from(strong_edges) 
     weak_edges = set() 
 
+    go = functional_enrichment.get_go_ontology("/home/emre/arastirma/celldiff/data/GO/gene_ontology.1_2.obo")
+
     # Run scoring on pruned networks
     if False:
 	from toolbox import guild_utilities
@@ -621,19 +673,16 @@ def case_study_pruned_networks_old():
 
     # Get functions of the top scroing portions for all diseases
     if False: 
-	from toolbox import OboParser
-
     	phenotype_to_functions = get_go_function_counts() 
     	seed_terms = phenotype_to_functions["omim_breast_cancer"][0]
 
-	go = OboParser.getOboGraph("/home/emre/arastirma/celldiff/data/GO/gene_ontology.1_2.obo")
 	all_terms = set()
 	common_terms = None
 	network_to_terms = {}
 	#network_types = network_types[:2]
 	for network_type in network_types:
 	    enrichment_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/%s.txt" % network_type
-	    go_terms = functional_enrichment.get_functional_enrichment(enrichment_file, remove_parents=False, only_biological_processes=True, only_slim=False)
+	    go_terms = functional_enrichment.get_functional_enrichment(enrichment_file, go, remove_parents=False, only_biological_processes=True, only_slim=False)
 	    network_to_terms[network_type] = set() | go_terms
 	    print network_type, len(go_terms)
 	    all_terms |= go_terms
@@ -842,7 +891,7 @@ def case_study_pruned_networks_old():
     if False:
 	for i in range(4):
 	    enrichment_file = DATA_DIR + "summary_runs_on_random/breast_cancer_pruned/" + "%s/M%d_.txt.funcassoc" % ("strong/func-all", i) # strong/func-all strong weak
-	    go_terms = functional_enrichment.get_functional_enrichment(enrichment_file, remove_parents=False, only_biological_processes=True)
+	    go_terms = functional_enrichment.get_functional_enrichment(enrichment_file, go, remove_parents=False, only_biological_processes=True)
 	    print "m%d<-c(\"%s\")" % (i, "\", \"".join(go_terms))
     return
 
@@ -975,13 +1024,14 @@ def get_go_function_counts():
 
     base_dir = "/home/emre/arastirma/netzcore/data/module/biana_no_tap-omim/"
 
-    from toolbox import OboParser, functional_enrichment
+    from toolbox import functional_enrichment
     enrichment_file = base_dir + "enrichment.txt" # enrichment for all top 5% genes not only the ones in modules
-    name_to_go_terms = functional_enrichment.get_functional_enrichment(enrichment_file, remove_parents=False, only_biological_processes=True)
+
+    go = functional_enrichment.get_go_ontology("/home/emre/arastirma/celldiff/data/GO/gene_ontology.1_2.obo")
+
+    name_to_go_terms = functional_enrichment.get_functional_enrichment(enrichment_file, go, remove_parents=False, only_biological_processes=True)
     #for name, go_terms in name_to_go_terms.iteritems():
     #	print name, go_terms
-
-    g=OboParser.getOboGraph("/home/emre/arastirma/celldiff/data/GO/gene_ontology.1_2.obo")
 
     i, mode, disease, name, seed_terms = None, None, None, None, None
     go_terms = None
@@ -1000,7 +1050,7 @@ def get_go_function_counts():
 		#    disease_to_go_terms["omim_"+disease.replace(" ", "_")] = (seed_terms, go_terms, all_go_terms)
 		#else:
 		#    count = "NA"
-		#go_terms = functional_enrichment.remove_parent_terms(go_terms, g)
+		#go_terms = functional_enrichment.remove_parent_terms(go_terms, go)
 		#print disease, go_terms
 		print i, i_seed, len(go_terms), len(go_terms & seed_terms), len(seed_terms)
 		#f_out.write("biana_no_tap_no_reliability omim_%s ns %d %d %d %s\n" % ("_".join(disease.split()), len(seed_terms), len(go_terms & seed_terms), len(go_terms), count)) #i_seed, i))
@@ -1019,7 +1069,7 @@ def get_go_function_counts():
 	    i = 0
 	    i_seed = 0
 	    #print seed_terms
-	    #seed_terms = functional_enrichment.remove_parent_terms(seed_terms, g) 
+	    #seed_terms = functional_enrichment.remove_parent_terms(seed_terms, go) 
 	    #print disease, seed_terms
 	    go_terms = set()
 
@@ -1033,18 +1083,18 @@ def get_go_function_counts():
 	    continue
 	go_term = words[5]
 	if mode == 1:
-	    if g.node[go_term]['t'] == "biological_process": # and 'a' in g.node[go_term]: #is bp and slim # ("molecular_function", "biological_process"):
+	    if go.node[go_term]['t'] == "biological_process": # and 'a' in go.node[go_term]: #is bp and slim # ("molecular_function", "biological_process"):
 		seed_terms.add(go_term)
 	else:
-	    if g.node[go_term]['t'] == "biological_process":
+	    if go.node[go_term]['t'] == "biological_process":
 		go_terms.add(go_term)
 	    if go_term in seed_terms:
 		i_seed += 1
 
-	if g.node[go_term]['t'] == "biological_process": # and 'a' in g.node[go_term]: #in ("molecular_function", "biological_process"):
+	if go.node[go_term]['t'] == "biological_process": # and 'a' in go.node[go_term]: #in ("molecular_function", "biological_process"):
 	    i += 1
 
-    #go_terms = functional_enrichment.remove_parent_terms(go_terms, g)
+    #go_terms = functional_enrichment.remove_parent_terms(go_terms, go)
     #print disease, go_terms
     print i, i_seed, len(go_terms), len(go_terms & seed_terms), len(seed_terms)
     #if name in name_to_go_terms: # Some diseases are excluded in the functional enrichment analysis
@@ -1058,7 +1108,6 @@ def get_go_function_counts():
     disease_to_go_terms[disease] = (seed_terms, go_terms)
     f.close()
 
-    import networkx
     f_out = open(base_dir + "module_summary_ns-seed_go.dat", 'w')
     f_out.write("phenotype go level\n")
     f_out2 = open(base_dir + "module_summary_ns-all_go.dat", 'w')
@@ -1072,10 +1121,10 @@ def get_go_function_counts():
 	all_terms = name_to_go_terms[name]
 	seed_terms, go_terms = values
 	for go_id in seed_terms:
-	    level = len(networkx.bidirectional_shortest_path(g, go_id, root_id))
+	    level = len(networkx.bidirectional_shortest_path(go, go_id, root_id))
 	    f_out.write("omim_%s %s %d\n" % ("_".join(disease.split()), go_id, level)) 
 	for go_id in all_terms:
-	    level = len(networkx.bidirectional_shortest_path(g, go_id, root_id))
+	    level = len(networkx.bidirectional_shortest_path(go, go_id, root_id))
 	    f_out2.write("omim_%s %s %d\n" % ("_".join(disease.split()), go_id, level)) 
     f_out.close()
     f_out2.close()
@@ -1092,7 +1141,7 @@ def get_go_function_counts():
 	else:
 	    all_go_terms = set()
 	#union_terms = seed_terms | go_terms | all_go_terms
-	#union_terms = functional_enrichment.remove_parent_terms(union_terms, g)
+	#union_terms = functional_enrichment.remove_parent_terms(union_terms, go)
 	#seed_terms &= union_terms
 	#go_terms &= union_terms
 	#all_go_terms &= union_terms
