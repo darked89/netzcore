@@ -2,4 +2,3 @@
 *.pyc
 *.Rout
 test_*.txt
-scoreNetwork/guild/*

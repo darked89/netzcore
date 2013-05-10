@@ -141,14 +141,17 @@ def decide_association_data(ASSOCIATION, PPI):
 	association_dir = data_dir + "angels" + os.sep 
 	association_scores_file = association_dir + "seeds.txt"
 	association_scores_file_identifier_type = "genesymbol"
-    elif ASSOCIATION.startswith("arcadi_5e8_"):
-	association_dir = data_dir + "arcadi" + os.sep + "associations_5e8" + os.sep 
-	association_scores_file = association_dir + ASSOCIATION[11:] + ".txt"
+    elif ASSOCIATION.startswith("arcadi_"):
+	s_idx = len("arcadi_")
+	e_idx = ASSOCIATION[s_idx:].index("_")
+	suffix = ASSOCIATION[s_idx:s_idx+e_idx]
+	association_dir = data_dir + "arcadi" + os.sep + "associations_%s" % suffix + os.sep 
+	association_scores_file = association_dir + ASSOCIATION[s_idx+e_idx+1:] + ".txt"
 	association_scores_file_identifier_type = "geneid" 
-    elif ASSOCIATION.startswith("arcadi_1e7_"):
-	association_dir = data_dir + "arcadi" + os.sep + "associations_1e7" + os.sep 
-	association_scores_file = association_dir + ASSOCIATION[11:] + ".txt"
-	association_scores_file_identifier_type = "geneid" 
+    #elif ASSOCIATION.startswith("arcadi_1e7_"):
+    #	association_dir = data_dir + "arcadi" + os.sep + "associations_1e7" + os.sep 
+    #	association_scores_file = association_dir + ASSOCIATION[11:] + ".txt"
+    #	association_scores_file_identifier_type = "geneid" 
     elif ASSOCIATION == "santana":
 	association_dir = data_dir + "angels" + os.sep + "santana_paper" + os.sep
 	association_scores_file = association_dir + "seeds_geneid.txt"
