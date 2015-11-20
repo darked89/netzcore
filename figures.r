@@ -12,7 +12,9 @@ out.dir<-"../doc/draft/plos_one_plasticity/img/"
 
 main <- function() {
     #manuscript()
-    manuscript2()
+
+    disease_category_figures() 
+    #! manuscript2()
 
     #omim_similarity_figures() 
     #case_study_figures()
@@ -404,29 +406,32 @@ remove_redundant_go_terms<-function(go.term.levels, similarity) {
 
 
 disease_category_figures<-function() {
-    common.up<-c("omim_breast_cancer", "omim_cardiomyopathy", "omim_diabetes", "omim_leukemia", "omim_obesity", "omim_parkinson_disease")
-    common.down<-c("omim_anemia", "omim_ataxia", "omim_cataract", "omim_epilepsy", "omim_hypertension", "omim_mental_retardation", "omim_schizophrenia", 
-		    "omim_alzheimer", "omim_lung_cancer", "omim_lymphoma", "omim_myopathy", "omim_prostate_cancer", "omim_systemic_lupus_erythematosus")
-    print(common.up);
-    print(common.down);
-    categories<-get_disease_categories()
+    #common.up<-c("omim_breast_cancer", "omim_cardiomyopathy", "omim_diabetes", "omim_leukemia", "omim_obesity", "omim_parkinson_disease")
+    #common.down<-c("omim_anemia", "omim_ataxia", "omim_cataract", "omim_epilepsy", "omim_hypertension", "omim_mental_retardation", "omim_schizophrenia", 
+    #		    "omim_alzheimer", "omim_lung_cancer", "omim_lymphoma", "omim_myopathy", "omim_prostate_cancer", "omim_systemic_lupus_erythematosus")
+    #print(common.up);
+    #print(common.down);
+    method<-"ns" #! 
+    categories<-get_disease_categories(method)
     common.up<-categories$up
     common.down<-categories$down
-    print(common.up);
-    print(common.down);
+    print(c("up", common.up))
+    print(c("down", common.down))
 
-    disease_category_comparison(common.up, common.down)
+    #return(); 
+    # below uses "ns" specific file for go, 
+    disease_category_comparison(method, common.up, common.down)
     # Below gives error in batch execution due to margins of the heatmaps but images can be generated in interactive mode
     disease_category_functional_comparison(common.up, common.down)
 }
 
 
-get_disease_categories<-function() {
+get_disease_categories<-function(method) {
     #common.up.old<-c('omim_anemia', 'omim_breast_cancer', 'omim_leukemia', 'omim_lymphoma', 'omim_systemic_lupus_erythematosus')
     #common.down.old<-c('omim_asthma', 'omim_ataxia', 'omim_cataract', 'omim_neuropathy', 'omim_schizophrenia', 'omim_spastic_paraplegia')
     #cols<-2:23
     #to.remove<-c("omim_insulin", "omim_neuropathy", "omim_asthma", "omim_spastic_paraplegia") # they are already out in the new analysis files
-    method<-"ns"
+    #method<-"ns"
     percentages<-seq(0,80,by=10)
     dir.name<-"../data/summary_runs_on_random/"
 
@@ -455,34 +460,70 @@ get_disease_categories<-function() {
 
     # Take common to both permuted and pruned
 
-    # Robustness cutoff: auc-(auc-50)/2
-    common.up<-c()
-    common.down<-c()
-    for(pheno in phenotypes) {
-	d<-container.permuted[pheno,] 
-	if(d["0"] <= 50) { next }
-	cutoff<-d["0"]-(d["0"]-50)/2
-	idx<-match(F, d>cutoff)
-	if(is.na(idx)) { idx<-length(d) }
-	idx.permuted<-idx
-	d<-container.pruned[pheno,] 
-	idx<-match(F, d>cutoff)
-	if(is.na(idx)) { idx<-length(d) }
-	idx.pruned<-idx
-	if(idx.permuted < 6 & idx.pruned < 6) {
-	    common.down<-c(common.down, pheno)
-	} else if(idx.permuted > 6 & idx.pruned > 6) {
-	    common.up<-c(common.up, pheno)
+    if(method == "ns") {
+	# Robustness cutoff: auc-(auc-50)/2
+	common.up<-c()
+	common.down<-c()
+	for(pheno in phenotypes) {
+	    d<-container.permuted[pheno,] 
+	    if(d["0"] <= 50) { next }
+	    cutoff<-d["0"]-(d["0"]-50)/2
+	    idx<-match(F, d>cutoff)
+	    if(is.na(idx)) { idx<-length(d) }
+	    idx.permuted<-idx
+	    d<-container.pruned[pheno,] 
+	    idx<-match(F, d>cutoff)
+	    if(is.na(idx)) { idx<-length(d) }
+	    idx.pruned<-idx
+	    if(idx.permuted < 6 & idx.pruned < 6) {
+		common.down<-c(common.down, pheno)
+	    } else if(idx.permuted >= 6 & idx.pruned >= 6) { #! if >= several diseases are added to up
+		common.up<-c(common.up, pheno)
+	    }
 	}
+	write.table(cbind(container.permuted[,1], container.permuted[,1]-(container.permuted[,1]-50)/2, container.permuted[,6], container.pruned[,6]), paste(dir.name, 'critical_auc.dat', sep=""), sep="\t", col.names=c("AUC", "critical AUC", "50% swap AUC", "50% deletion AUC"))
+    } else if(method == "nd") {
+	# Robustness cutoff: 100-(100-auc)/2
+	# new way of categorization - based on only pruning 
+	common.up<-c()
+	common.down<-c()
+	for(pheno in phenotypes) {
+	    #d<-container.permuted[pheno,] 
+	    #print(c(pheno, d))
+	    #if(d["0"] <= 50) { next }
+	    #cutoff<-d["0"]/2+25 # same as above when auc/2 + 50 is used none of them is tolerant
+	    #idx<-match(F, d>cutoff)
+	    #if(is.na(idx)) { idx<-length(d) }
+	    #idx.permuted<-idx
+	    d<-container.pruned[pheno,] 
+	    #print(c(pheno, d))
+	    if(d["0"] <= 50) { next }
+	    cutoff<-d["0"]/2+25 # same as above when auc/2 + 50 is used none of them is tolerant in case of pruned/permuted
+	    #print(c("cutoff", cutoff)) 
+	    idx<-match(F, d>cutoff)
+	    if(is.na(idx)) { idx<-length(d) }
+	    idx.pruned<-idx
+	    #if(idx.permuted < 6 & idx.pruned < 6) {
+	    #	common.down<-c(common.down, pheno)
+	    #} else if(idx.permuted >= 6 & idx.pruned >= 6) {
+	    #	common.up<-c(common.up, pheno)
+	    #}
+	    #print(c("idx", idx.pruned))
+	    if(idx.pruned < 6) {
+	    	common.down<-c(common.down, pheno)
+	    } else if(idx.pruned > 6) { # to make it compatible with above
+	    	common.up<-c(common.up, pheno)
+	    }
+	}
+	write.table(cbind(container.permuted[,1], container.permuted[,1]/2+25, container.permuted[,6], container.pruned[,6]), paste(dir.name, 'critical_auc_nd.dat', sep=""), sep="\t", col.names=c("AUC", "critical AUC", "50% swap AUC", "50% deletion AUC"))
     }
+
     container<-container.permuted
     container.permuted.up<-container[common.up,]
     container.permuted.down<-container[common.down,]
     container<-container.pruned
     container.pruned.up<-container[common.up,]
     container.pruned.down<-container[common.down,]
-
-    write.table(cbind(container.permuted[,1], container.permuted[,1]-(container.permuted[,1]-50)/2, container.permuted[,6], container.pruned[,6]), paste(dir.name, 'critical_auc.dat', sep=""), sep="\t", col.names=c("AUC", "critical AUC", "50% swap AUC", "50% deletion AUC"))
 
     # Before robustness cutoff: median(aucs)
     container<-container.permuted
@@ -563,6 +604,14 @@ get_disease_categories<-function() {
     legend(40, 20, c("Interaction permutation", "Interaction pruning"), lty=c(1,2), col=c(1,1), bty="n")
     dev.off()
 
+    s<-read.table(paste(dir.name, 'biana_no_tap-omim/seeds.dat', sep=""))
+    e<-intersect(rownames(s[s$n_seed<50,]),common.up)
+    f<-intersect(rownames(s[s$n_seed<50,]),common.down)
+    a<-wilcox.test(container.permuted[e,"50"], container.permuted[f,"50"])
+    print(c("auc-permuted-seed50:", a$p.value))
+    a<-wilcox.test(container.pruned[e,"50"], container.pruned[f,"50"])
+    print(c("auc-pruned-seed50:", a$p.value))
+
     return(list(up=common.up, down=common.down));
 
     # Was trying an alternative definition
@@ -591,9 +640,9 @@ get_disease_categories<-function() {
     container.pruned.down<-container[common.down,]
 }
 
-disease_category_comparison<-function(common.up, common.down) {
+disease_category_comparison<-function(method, common.up, common.down) {
     # Functional enrichment of modules in robust vs non-robust diseases
-    method<-"ns" # "nn"
+    #method<-"ns" # "nn"
     module.dir<-"../data/module/"
     d<-read.table(paste(module.dir, "biana_no_tap-omim/module_summary.dat", sep=""), header=T) 
     e2<-d[d$scoring==method & d$phenotype %in% common.up, "n_module"]
@@ -707,13 +756,6 @@ disease_category_comparison<-function(common.up, common.down) {
 
     a<-wilcox.test(s[common.up,"n_degree"], s[common.down,"n_degree"])
     print(c("degree:", a$p.value))
-
-    e<-intersect(rownames(s[s$n_seed<50,]),common.up)
-    f<-intersect(rownames(s[s$n_seed<50,]),common.down)
-    a<-wilcox.test(container.permuted[e,"50"], container.permuted[f,"50"])
-    print(c("auc-permuted-seed50:", a$p.value))
-    a<-wilcox.test(container.pruned[e,"50"], container.pruned[f,"50"])
-    print(c("auc-pruned-seed50:", a$p.value))
 
     # Comparison of number of alternative paths
     s<-read.table(paste(dir.name, 'biana_no_tap-omim/path_counts.dat', sep=""))

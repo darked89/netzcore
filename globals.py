@@ -28,7 +28,7 @@ delay_experiment = True
 tex_format = True #False 
 functional_enrichment = False #!
 
-MODE = "prepare" # prepare, score, analyze, compare, summary, module
+MODE = "score" # prepare, score, analyze, compare, summary, module
 user_friendly_id = "biana_no_tap-omim" #"biana_no_tap_relevance-new_omim_aids-gad_function" #"bppi_relevance-new_omim-uncommon-max" #goh-omim_w_LI" #"biana_no_tap-omim" #"all7_vs_all5-top5" # "navlakha" #"biana_no_tap" # a.k.a. emre friendly id for compare and summary
 summary_seed_cutoff = 1 #None # 2 #20 # Seed cutoff considered for inclusion of an experiment in sum_up_experiments, if None seed.dat is not created. Also used in compare_experiments if analysis_type is user
 prepare_mutated = None #"perturbed" # Creates permutad/pruned networks 
@@ -63,14 +63,20 @@ arcadi_phenotypes_5e8 = [ "arcadi_5e8_" + p for p in arcadi_phenotypes_5e8 ]
 arcadi_phenotypes_1e7 = [ "Age-related_macular_degeneration", "Alopecia_areata", "Alzheimers_disease", "Ankylosing_spondylitis", "Asthma", "Basal_cell_carcinoma_", "Bipolar_disorder", "Bipolar_disorder_and_schizophrenia", "Bladder_cancer", "Breast_cancer", "Celiac_disease", "Chronic_kidney_disease", "Chronic_lymphocytic_leukemia", "Chronic_obstructive_pulmonary_disease", "Colorectal_cancer", "Coronary_heart_disease", "Creutzfeldt-Jakob_disease", "Crohns_disease", "Dupuytrens_disease", "Esophageal_cancer", "Glaucoma", "Graves_disease", "HIV-1_control", "Hypertension", "IgA_nephropathy", "Inflammatory_bowel_disease", "Intracranial_aneurysm", "Kawasaki_disease", "Leprosy", "Lung_cancer", "Melanoma", "Multiple_sclerosis", "Myocardial_infarction", "Nasopharyngeal_carcinoma", "Pagets_disease", "Pancreatic_cancer", "Parkinsons_disease", "Primary_biliary_cirrhosis", "Progressive_supranuclear_palsy", "Prostate_cancer", "Psoriasis", "Renal_cell_carcinoma", "Restless_legs_syndrome", "Rheumatoid_arthritis", "Schizophrenia", "Sudden_cardiac_arrest", "Systemic_lupus_erythematosus", "Systemic_sclerosis", "Testicular_cancer", "Type_1_diabetes", "Type_2_diabetes", "Ulcerative_colitis", "Vitiligo" ]
 arcadi_phenotypes_1e7 = [ "arcadi_1e7_" + p for p in arcadi_phenotypes_1e7 ]
 
-arcadi_phenotypes_A = [ "AIDS", "Acute_lymphoblastic_leukemia_childhood", "Age-related_macular_degeneration", "Alcoholism_alcohol_use_disorder_factor_score", "Alcoholism_heaviness_of_drinking", "Alzheimers_disease", "Amyotrophic_lateral_sclerosis", "Atrioventricular_conduction", "Bipolar_disorder", "Chronic_kidney_disease", "Chronic_obstructive_pulmonary_disease", "Coronary_heart_disease", "Crohns_disease", "Eosinophilic_esophagitis_pediatric", "Hypertension", "Hypertriglyceridemia", "Kawasaki_disease", "Multiple_sclerosis", "Orofacial_clefts", "Osteoporosis", "Pancreatic_cancer", "Rheumatoid_arthritis", "Schizophrenia", "Sudden_cardiac_arrest", "Systemic_lupus_erythematosus", "Type_1_diabetes", "Type_2_diabetes" ]
+#arcadi_phenotypes_A = [ "AIDS", "Acute_lymphoblastic_leukemia_childhood", "Age-related_macular_degeneration", "Alcoholism_alcohol_use_disorder_factor_score", "Alcoholism_heaviness_of_drinking", "Alzheimers_disease", "Amyotrophic_lateral_sclerosis", "Atrioventricular_conduction", "Bipolar_disorder", "Chronic_kidney_disease", "Chronic_obstructive_pulmonary_disease", "Coronary_heart_disease", "Crohns_disease", "Eosinophilic_esophagitis_pediatric", "Hypertension", "Hypertriglyceridemia", "Kawasaki_disease", "Multiple_sclerosis", "Orofacial_clefts", "Osteoporosis", "Pancreatic_cancer", "Rheumatoid_arthritis", "Schizophrenia", "Sudden_cardiac_arrest", "Systemic_lupus_erythematosus", "Type_1_diabetes", "Type_2_diabetes" ]
+arcadi_phenotypes_A = [ "Acute_lymphoblastic_leukemia_childhood", "Age-related_macular_degeneration", "Alzheimers_disease", "Amyotrophic_lateral_sclerosis", "Behcets_disease", "Beta_thalassemia_hemoglobin_E_disease", "Bipolar_disorder", "Chronic_obstructive_pulmonary_disease", "Crohns_disease", "Esophageal_cancer", "Hepatocellular_carcinoma", "Inflammatory_bowel_disease", "Kawasaki_disease", "Lymphoma", "Multiple_sclerosis", "Nasopharyngeal_carcinoma", "Nephropathy", "Nephropathy_idiopathic_membranous", "Orofacial_clefts", "Pancreatic_cancer", "Parkinsons_disease", "Primary_biliary_cirrhosis", "Rheumatoid_arthritis", "Schizophrenia", "Stevens-Johnson_syndrome_and_toxic_epidermal_necrolysis_SJS-TEN", "Systemic_lupus_erythematosus", "Systemic_sclerosis", "Type_1_diabetes", "Type_2_diabetes", "Ulcerative_colitis" ]
 arcadi_phenotypes_A = [ "arcadi_A_" + p for p in arcadi_phenotypes_A ]
 
-arcadi_phenotypes_B = [ "Age-related_macular_degeneration", "Alzheimers_disease", "Chronic_kidney_disease", "Coronary_heart_disease", "Sudden_cardiac_arrest", "Systemic_lupus_erythematosus", "Type_1_diabetes" ]
+#arcadi_phenotypes_B = [ "Age-related_macular_degeneration", "Alzheimers_disease", "Chronic_kidney_disease", "Coronary_heart_disease", "Sudden_cardiac_arrest", "Systemic_lupus_erythematosus", "Type_1_diabetes" ]
+arcadi_phenotypes_B = [ "Age-related_macular_degeneration", "Beta_thalassemia_hemoglobin_E_disease", "Crohns_disease", "Esophageal_cancer", "Inflammatory_bowel_disease", "Multiple_sclerosis", "Nasopharyngeal_carcinoma", "Nephropathy", "Nephropathy_idiopathic_membranous", "Primary_biliary_cirrhosis", "Rheumatoid_arthritis", "Systemic_lupus_erythematosus", "Systemic_sclerosis", "Type_1_diabetes", "Ulcerative_colitis" ]
 arcadi_phenotypes_B = [ "arcadi_B_" + p for p in arcadi_phenotypes_B ]
 
-arcadi_phenotypes_C = [ "Age-related_macular_degeneration", "Alzheimers_disease", "Amyotrophic_lateral_sclerosis", "Crohns_disease", "Eosinophilic_esophagitis_pediatric", "Orofacial_clefts", "Pancreatic_cancer", "Rheumatoid_arthritis", "Sudden_cardiac_arrest", "Systemic_lupus_erythematosus", "Type_1_diabetes", "Type_2_diabetes" ]
+#arcadi_phenotypes_C = [ "Age-related_macular_degeneration", "Alzheimers_disease", "Amyotrophic_lateral_sclerosis", "Crohns_disease", "Eosinophilic_esophagitis_pediatric", "Orofacial_clefts", "Pancreatic_cancer", "Rheumatoid_arthritis", "Sudden_cardiac_arrest", "Systemic_lupus_erythematosus", "Type_1_diabetes", "Type_2_diabetes" ]
+arcadi_phenotypes_C = [ "Acute_lymphoblastic_leukemia_childhood", "Age-related_macular_degeneration", "Alzheimers_disease", "Amyotrophic_lateral_sclerosis", "Bipolar_disorder", "Crohns_disease", "Esophageal_cancer", "Inflammatory_bowel_disease", "Kawasaki_disease", "Lymphoma", "Multiple_sclerosis", "Nasopharyngeal_carcinoma", "Nephropathy", "Orofacial_clefts", "Primary_biliary_cirrhosis", "Rheumatoid_arthritis", "Systemic_lupus_erythematosus", "Systemic_sclerosis", "Type_2_diabetes", "Ulcerative_colitis" ]
 arcadi_phenotypes_C = [ "arcadi_C_" + p for p in arcadi_phenotypes_C ]
+
+arcadi_phenotypes_1e10 = [ "Acute_lymphoblastic_leukemia_childhood", "Age-related_macular_degeneration", "Alzheimers_disease", "Asthma", "Atopic_dermatitis", "Basal_cell_carcinoma", "Behcets_disease", "Beta_thalassemia_hemoglobin_E_disease", "Bladder_cancer", "Breast_cancer", "Celiac_disease", "Cervical_cancer", "Colorectal_cancer", "Coronary_heart_disease", "Crohns_disease", "Dupuytrens_disease", "Esophageal_cancer", "Graves_disease", "Hepatocellular_carcinoma", "Hypothyroidism", "IgA_nephropathy", "Inflammatory_bowel_disease", "Kawasaki_disease", "Lung_cancer", "Melanoma", "Multiple_sclerosis", "Nasopharyngeal_carcinoma", "Nephrolithiasis", "Nephropathy", "Nephropathy_idiopathic_membranous", "Pagets_disease", "Pancreatic_cancer", "Pancreatitis", "Parkinsons_disease", "Polycystic_ovary_syndrome", "Primary_biliary_cirrhosis", "Primary_sclerosing_cholangitis", "Progressive_supranuclear_palsy", "Prostate_cancer", "Psoriasis", "Restless_legs_syndrome", "Rheumatoid_arthritis", "Sarcoidosis", "Schizophrenia", "Systemic_lupus_erythematosus", "Systemic_sclerosis", "Type_1_diabetes", "Type_2_diabetes", "Ulcerative_colitis", "Vitiligo" ]
+arcadi_phenotypes_1e10 = [ "arcadi_1e10_" + p for p in arcadi_phenotypes_1e10 ]
 
 #omim_phenotypes_persuaded = ["breast cancer", "cardiomyopathy", "diabetes", "leukemia", "anemia", "ataxia", "epilepsy", "mental retardation", "myopathy" ] 
 #omim_phenotypes_persuaded = [ "omim_" + "_".join(p.split()) for p in omim_phenotypes_persuaded ]
@@ -163,13 +169,14 @@ phenotypes = []
 phenotypes += arcadi_phenotypes_A
 phenotypes += arcadi_phenotypes_B
 phenotypes += arcadi_phenotypes_C
+phenotypes += arcadi_phenotypes_1e10
 #phenotypes += omim_phenotypes_persuaded
 #phenotypes += [ "persuaded_%s_p%i_%i" % (d, p, i) for d in omim_phenotypes for p in [10] for i in xrange(1,11) ]
 
 scoring_parameters = []
 #scoring_parameters += [("nr", 1, 1), ("ff", 1, 5)] 
-#scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
-#scoring_parameters += [("nd", 1, 1)] 
+scoring_parameters += [("nz", 1, 5), ("ns", 3, 2)] 
+scoring_parameters += [("nd", 1, 1)] 
 #scoring_parameters += [("rw", 1, 1), ("np", 1, 1)] 
 #scoring_parameters += [("nr", 1, 1)]
 #scoring_parameters += [("rw", 1, 1)]
@@ -177,10 +184,10 @@ scoring_parameters = []
 #scoring_parameters += [("mcl", 1, 1)]
 #scoring_parameters += [("nc", 1, 1)]
 #scoring_parameters += [("nc2", 1, 1)]
-#scoring_parameters += [("nc3", 1, 1)]
+scoring_parameters += [("nc3", 1, 1)]
 #scoring_parameters += [("nc7", 1, 1)]
 #scoring_parameters += [("nz", 1, 5)]
-scoring_parameters += [("ns", 3, 2)]
+#scoring_parameters += [("ns", 3, 2)]
 #scoring_parameters += [("ff", 1, 5)] 
 #scoring_parameters += [("ns", 2, 3), ("ns", 2, 2)]
 #scoring_parameters += [("nw",1, 1)]
