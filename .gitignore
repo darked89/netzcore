@@ -1,4 +1,5 @@
 *.o
 *.pyc
 *.Rout
+*.gz
 test_*.txt
