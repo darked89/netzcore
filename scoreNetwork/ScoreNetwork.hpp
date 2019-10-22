@@ -94,7 +94,7 @@ private:
     // CONSTANTS (MACROS)
     //static const float MIN_SCORE = 0.0;
     //static const float MAX_SCORE = 1.0;
-    static const float PRECISION = 0.00001f;
+    static constexpr float PRECISION = 0.00001f;
     //static const enum TransferType { IDENTITY, POLYNOMIAL, LOGARITHMIC, EXPONENTIAL };
     enum TransferType { IDENTITY, POLYNOMIAL, LOGARITHMIC, EXPONENTIAL } typeTransfer;
     
