@@ -85,8 +85,8 @@ void Netween::initializeNodeCounts() {
 
 
 void Netween::getIncludedNodes() {
-    boost::unordered_set<Vertex>::iterator seedIt, seedItEnd;
-    boost::unordered_set<Vertex>::iterator setIt, setItEnd;
+    unordered_set<Vertex>::iterator seedIt, seedItEnd;
+    unordered_set<Vertex>::iterator setIt, setItEnd;
     Vertex v, v_prev;
     PredecessorList * pMapPredecessors;
 
@@ -129,8 +129,8 @@ void Netween::getIncludedNodes() {
 	
 
 void Netween::getNodeCounts() {
-    boost::unordered_set<Vertex>::iterator seedIt, seedItEnd;
-    boost::unordered_set<Vertex>::iterator setIt, setItEnd;
+    unordered_set<Vertex>::iterator seedIt, seedItEnd;
+    unordered_set<Vertex>::iterator setIt, setItEnd;
     VertexIterator it, itEnd;
     Vertex vTarget;
     PredecessorList * pMapPredecessors;
