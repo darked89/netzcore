@@ -1,3 +1,5 @@
+#!/bin/bash
+
 data_dir="../../data/toy_data/"
 node_file=$data_dir"test_proteins_small.sif"
 network_file=$data_dir"test_interactions_small.sif"
